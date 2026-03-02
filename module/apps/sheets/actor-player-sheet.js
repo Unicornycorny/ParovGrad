@@ -5,16 +5,19 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
     id: "parovgrad-player-sheet",
     classes: ["parovgrad", "sheet", "actor", "player"],
     position: { width: 700, height: 650 },
-    window: { title: "Parovgrad: Player" },
+    window: { title: "ParovGrad: Player", resizable: true },
     form: {
-      handler: this.#onSubmit,
       submitOnChange: true,
       closeOnSubmit: false
     }
   };
 
   static PARTS = {
-    main: { template: "systems/ParovGrad/templates/sheet/actor-player.hbs" }
+    form: {
+      template: "systems/ParovGrad/templates/sheet/actor-player.hbs",
+      // В v13 допускается указать "" чтобы корень part'а считался скроллируемым
+      scrollable: [""]
+    }
   };
 
   /** @override */
@@ -22,10 +25,5 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
     const context = await super._prepareContext(options);
     context.system = this.document.system;
     return context;
-  }
-
-  static async #onSubmit(event, form, formData) {
-    // formData is a FormDataExtended-like structure; update the document
-    await this.document.update(formData.object);
   }
 }

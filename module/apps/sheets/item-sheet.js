@@ -5,25 +5,23 @@ export class ParovGradItemSheet extends foundry.applications.api.HandlebarsAppli
         id: "parovgrad-item-sheet",
         classes: ["ParovGrad", "sheet", "item"],
         position: { width: 650, height: 500 },
-        window: { title: "ParovGrad: Item" },
+        window: { title: "ParovGrad: Item", resizable: true },
         form: {
-            handler: this.#onSubmit,
             submitOnChange: true,
             closeOnSubmit: false
         }
     };
 
     static PARTS = {
-        main: { template: "systems/ParovGrad/templates/sheet/item-item.hbs" }
+        form: {
+            template: "systems/ParovGrad/templates/sheet/item-item.hbs",
+            scrollable: [""]
+        }
     };
 
     async _prepareContext(options) {
         const context = await super._prepareContext(options);
         context.system = this.document.system;
         return context;
-    }
-
-    static async #onSubmit(event, form, formData) {
-        await this.document.update(formData.object);
     }
 }

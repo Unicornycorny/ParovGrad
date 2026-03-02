@@ -1,0 +1,11 @@
+/* Make inner content scroll within a resizable DocumentSheetV2 */
+.pg-sheet {
+  height: 100%;
+}
+
+.pg-sheet .sheet-body {
+  height: 100%;
+  overflow: auto;
+  padding: 12px;
+  box-sizing: border-box;
+}

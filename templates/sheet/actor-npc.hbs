@@ -1,13 +1,68 @@
-<form>
-  <h1>{{document.name}}</h1>
+<section class="pg-sheet">
+  <div class="sheet-body">
+    <h1>{{document.name}}</h1>
 
-  <label>Role</label>
-  <input type="text" name="system.role" value="{{system.role}}">
+    <section>
+      <h2>NPC</h2>
+      <div>
+        <label>Роль</label>
+        <input type="text" name="system.role" value="{{system.role}}">
+      </div>
+    </section>
 
-  <label>HP</label>
-  <div>
-    <input type="number" name="system.hp.value" value="{{system.hp.value}}">
-    /
-    <input type="number" name="system.hp.max" value="{{system.hp.max}}">
+    <section>
+      <h2>Характеристики</h2>
+
+      <div>
+        <label>Телосложение</label>
+        <input type="number" name="system.stats.constitution" min="1" max="20" value="{{system.stats.constitution}}">
+      </div>
+
+      <div>
+        <label>Внимание</label>
+        <input type="number" name="system.stats.awareness" min="1" max="20" value="{{system.stats.awareness}}">
+      </div>
+
+      <div>
+        <label>Движение</label>
+        <input type="number" name="system.stats.movement" min="1" max="20" value="{{system.stats.movement}}">
+      </div>
+
+      <div>
+        <label>Мышление</label>
+        <input type="number" name="system.stats.thinking" min="1" max="20" value="{{system.stats.thinking}}">
+      </div>
+
+      <div>
+        <label>Воля</label>
+        <input type="number" name="system.stats.will" min="1" max="20" value="{{system.stats.will}}">
+      </div>
+    </section>
+
+    <section>
+      <h2>Показатели</h2>
+
+      <div>
+        <label>Вдохновение</label>
+        <input type="number" name="system.inspiration" min="0" value="{{system.inspiration}}">
+      </div>
+
+      <div>
+        <label>Опыт</label>
+        <input type="number" name="system.experience" min="0" value="{{system.experience}}">
+      </div>
+
+      <div>
+        <label>Уровень</label>
+        <input type="number" name="system.level" min="0" value="{{system.level}}">
+      </div>
+
+      <div>
+        <label>Здоровье</label>
+        <input type="number" name="system.health.value" min="0" value="{{system.health.value}}">
+        /
+        <input type="number" name="system.health.max" min="0" value="{{system.health.max}}">
+      </div>
+    </section>
   </div>
-</form>
+</section>
