@@ -1,0 +1,43 @@
+{
+    "id": "ParovGrad",
+    "title": "Starting world build",
+    "description": "Custom system for Parovgrad",
+    "version": "0.0.1",
+    "compatibility": {
+        "minimum": 13,
+        "verified": 13
+    },
+    "esmodules": [
+        "module/Parovgrad.js"
+    ],
+    "styles": [
+        "styles/system-styles.css"
+    ],
+    "documentTypes": {
+        "Actor": {
+            "Player": {},
+            "NPC": {}
+        },
+        "Item": {
+            "item": {}
+        }
+    },
+    "languages": [
+        {
+            "lang": "en",
+            "name": "English",
+            "path": "lang/en.json"
+        },
+        {
+            "lang": "ru",
+            "name": "Russian",
+            "path": "lang/ru.json"
+        }
+    ],
+    "socket": false,
+    "grid": {
+        "distance": 10,
+        "units": "ft"
+    },
+    "url": "https://github.com/Unicornycorny/ParovGrad.git"
+}
