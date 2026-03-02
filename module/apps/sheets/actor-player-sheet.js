@@ -1,4 +1,4 @@
-export class ParovgradPlayerSheet extends foundry.applications.api.HandlebarsApplicationMixin(
+export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.DocumentSheetV2
 ) {
   static DEFAULT_OPTIONS = {
@@ -14,7 +14,7 @@ export class ParovgradPlayerSheet extends foundry.applications.api.HandlebarsApp
   };
 
   static PARTS = {
-    main: { template: "templates/sheet/actor-player.hbs" }
+    main: { template: "systems/ParovGrad/templates/sheet/actor-player.hbs" }
   };
 
   /** @override */

@@ -13,17 +13,17 @@ Hooks.once("init", () => {
   CONFIG.Item.dataModels.item = ItemDataModel;
 
   // 2) Регистрируем sheets (новый API)
-  DocumentSheetConfig.registerSheet(Actor, "ParovGrad", ParovGradPlayerSheet, {
-    types: ["Player"],
-    makeDefault: true
-  });
+  foundry.applications.apps.DocumentSheetConfig.registerSheet(Actor, "ParovGrad", ParovGradPlayerSheet, {
+  types: ["Player"],
+  makeDefault: true
+});
 
-  DocumentSheetConfig.registerSheet(Actor, "ParovGrad", ParovGradNpcSheet, {
+  foundry.applications.apps.DocumentSheetConfig.registerSheet(Actor, "ParovGrad", ParovGradNpcSheet, {
     types: ["NPC"],
     makeDefault: true
   });
 
-  DocumentSheetConfig.registerSheet(Item, "ParovGrad", ParovGradItemSheet, {
+  foundry.applications.apps.DocumentSheetConfig.registerSheet(Item, "ParovGrad", ParovGradItemSheet, {
     types: ["item"],
     makeDefault: true
   });
