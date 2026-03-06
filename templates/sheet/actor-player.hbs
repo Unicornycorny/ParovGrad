@@ -56,5 +56,31 @@
         <input type="number" name="system.health.max" min="0" value="{{system.health.max}}">
       </div>
     </section>
+
+    <section>
+      <h2>Предметы</h2>
+
+      {{#if items.length}}
+      <ul class="pg-item-list">
+        {{#each items}}
+        <li class="pg-item-row">
+          <button type="button" class="pg-item-link" data-item-id="{{this.id}}">
+            {{this.name}}
+          </button>
+
+          <button type="button" class="pg-item-delete" data-item-id="{{this.id}}" aria-label="Удалить предмет"
+            title="Удалить предмет">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path
+                d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v8h-2V9zm4 0h2v8h-2V9zM7 9h2v8H7V9zm-1 12h12a2 2 0 0 0 2-2V7H4v12a2 2 0 0 0 2 2z" />
+            </svg>
+          </button>
+        </li>
+        {{/each}}
+      </ul>
+      {{else}}
+      <p>Нет предметов</p>
+      {{/if}}
+    </section>
   </div>
 </section>

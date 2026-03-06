@@ -9,3 +9,47 @@
   padding: 12px;
   box-sizing: border-box;
 }
+
+.pg-item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pg-item-row+.pg-item-row {
+  margin-top: 6px;
+}
+
+.pg-item-link {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pg-item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pg-item-link {
+  flex: 1 1 auto;
+}
+
+.pg-item-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.pg-item-delete svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  pointer-events: none;
+}
