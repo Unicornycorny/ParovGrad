@@ -1,3 +1,5 @@
+import { startWeaponAttack } from "../../workflows/weapon-attack.js";
+
 export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.sheets.ActorSheetV2
 ) {
@@ -27,7 +29,8 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
       id: item.id,
       name: item.name,
       type: item.type,
-      img: item.img
+      img: item.img,
+      isWeapon: item.type === "weapon"
     }));
 
     return context;
@@ -65,7 +68,7 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
         const item = this.document.items.get(itemId);
         if (!item) return;
 
-        await this._openItemRollDialog(item);
+        await this._useItem(item);
       });
     });
 
@@ -94,8 +97,20 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
     });
   }
 
+  async _useItem(item) {
+    if (item.type === "weapon") {
+      await startWeaponAttack({ actor: this.document, item });
+      return;
+    }
+
+    const result = await this._openItemRollDialog(item);
+    if (!result) return;
+
+    await this._rollItem(item, result.mode, result.modifier);
+  }
+
   async _openItemRollDialog(item) {
-    const result = await foundry.applications.api.DialogV2.wait({
+    return foundry.applications.api.DialogV2.wait({
       window: {
         title: `Бросок предмета: ${item.name}`
       },
@@ -116,7 +131,7 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
           label: "Обычный",
           callback: (event, button) => ({
             mode: "normal",
-            modifier: Number(button.form.elements.modifier.value) || 0
+            modifier: Number(button.form?.elements?.modifier?.value) || 0
           })
         },
         {
@@ -124,7 +139,7 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
           label: "Преимущество",
           callback: (event, button) => ({
             mode: "advantage",
-            modifier: Number(button.form.elements.modifier.value) || 0
+            modifier: Number(button.form?.elements?.modifier?.value) || 0
           })
         },
         {
@@ -132,15 +147,11 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
           label: "Помеха",
           callback: (event, button) => ({
             mode: "disadvantage",
-            modifier: Number(button.form.elements.modifier.value) || 0
+            modifier: Number(button.form?.elements?.modifier?.value) || 0
           })
         }
       ]
     });
-
-    if (!result) return;
-
-    await this._rollItem(item, result.mode, result.modifier);
   }
 
   async _rollItem(item, mode, modifier = 0) {

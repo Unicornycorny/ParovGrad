@@ -1,10 +1,30 @@
 <section class="pg-sheet">
   <div class="sheet-body">
-    <h1>{{document.name}}</h1>
+    <header class="pg-sheet-header">
+      <h1>{{document.name}}</h1>
+      <div class="pg-item-sheet-mode">
+        {{#if isEditMode}}
+          Режим: редактирование
+        {{else}}
+          Режим: просмотр
+        {{/if}}
+      </div>
+    </header>
 
-    <div>
+    <div class="pg-form-field">
       <label>Description</label>
-      <textarea name="system.description">{{system.description}}</textarea>
+      <textarea name="system.description" {{#unless isEditMode}}disabled{{/unless}}>{{system.description}}</textarea>
     </div>
+
+    {{#if isWeapon}}
+    <div class="pg-form-field">
+      <label>Кость урона</label>
+      <select name="system.damageDie" {{#unless isEditMode}}disabled{{/unless}}>
+        {{#each damageDieOptions}}
+        <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+        {{/each}}
+      </select>
+    </div>
+    {{/if}}
   </div>
 </section>

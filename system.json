@@ -19,7 +19,8 @@
             "NPC": {}
         },
         "Item": {
-            "item": {}
+            "item": {},
+            "weapon": {}
         }
     },
     "languages": [

@@ -69,3 +69,84 @@
   margin: 0;
   opacity: 0.8;
 }
+
+.pg-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pg-sheet-header h1 {
+  margin: 0;
+}
+
+.pg-item-sheet-mode {
+  white-space: nowrap;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.pg-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.pg-chat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pg-chat-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pg-chat-card__title {
+  font-weight: 700;
+}
+
+.pg-chat-card__subtitle,
+.pg-chat-card__meta {
+  opacity: 0.9;
+}
+
+.pg-chat-card__comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pg-chat-card__result {
+  font-weight: 700;
+}
+
+.pg-chat-card__result.is-success {
+  color: #1b7f3b;
+}
+
+.pg-chat-card__result.is-failure {
+  color: #a33a3a;
+}
+
+.pg-chat-card__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pg-chat-button {
+  cursor: pointer;
+}
+
+.pg-chat-button--danger {
+  font-weight: 700;
+}
+
+.pg-chat-card__roll {
+  margin-top: 4px;
+}
