@@ -5,6 +5,7 @@ import { ItemDataModel } from "./data/item/item-data.js";
 import { ParovGradPlayerSheet } from "./apps/sheets/actor-player-sheet.js";
 import { ParovGradNpcSheet } from "./apps/sheets/actor-npc-sheet.js";
 import { ParovGradItemSheet } from "./apps/sheets/item-sheet.js";
+import { createParovgradRoll, rollToMessage } from "./dice/parovgrad-roll.js";
 
 Hooks.once("init", () => {
   // 1) Регистрируем DataModels строго по ID типов (case-sensitive!)
@@ -27,4 +28,14 @@ Hooks.once("init", () => {
     types: ["item"],
     makeDefault: true
   });
+});
+
+Hooks.once("setup", () => {
+  game.parovgrad = {
+    ...(game.parovgrad ?? {}),
+    dice: {
+      createRoll: createParovgradRoll,
+      rollToMessage
+    }
+  };
 });

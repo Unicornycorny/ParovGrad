@@ -16,14 +16,8 @@
   padding: 0;
 }
 
-.pg-item-row+.pg-item-row {
+.pg-item-row + .pg-item-row {
   margin-top: 6px;
-}
-
-.pg-item-link {
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
 }
 
 .pg-item-row {
@@ -34,8 +28,12 @@
 
 .pg-item-link {
   flex: 1 1 auto;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
 }
 
+.pg-item-roll,
 .pg-item-delete {
   display: inline-flex;
   align-items: center;
@@ -47,9 +45,27 @@
   flex: 0 0 auto;
 }
 
+.pg-item-roll svg,
 .pg-item-delete svg {
   width: 16px;
   height: 16px;
   fill: currentColor;
   pointer-events: none;
+}
+
+.pg-roll-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pg-roll-dialog__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pg-roll-dialog__hint {
+  margin: 0;
+  opacity: 0.8;
 }
