@@ -150,3 +150,39 @@
 .pg-chat-card__roll {
   margin-top: 4px;
 }
+
+.pg-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.pg-stat-row label {
+  flex: 1 1 auto;
+}
+
+.pg-stat-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.pg-stat-controls input {
+  width: 72px;
+  text-align: right;
+}
+
+.pg-stat-roll {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 28px;
+  padding: 0 8px;
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-weight: 700;
+}

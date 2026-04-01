@@ -5,29 +5,119 @@
     <section>
       <h2>Характеристики</h2>
 
-      <div>
-        <label>Телосложение</label>
-        <input type="number" name="system.stats.constitution" min="1" max="20" value="{{system.stats.constitution}}">
+      <div class="pg-stat-row">
+        <label for="pg-stat-constitution">Телосложение</label>
+        <div class="pg-stat-controls">
+          <input
+            id="pg-stat-constitution"
+            type="number"
+            name="system.stats.constitution"
+            min="1"
+            max="20"
+            value="{{system.stats.constitution}}"
+          >
+          <button
+            type="button"
+            class="pg-stat-roll"
+            data-stat-key="constitution"
+            aria-label="Проверка характеристики Телосложение"
+            title="Проверка характеристики Телосложение"
+          >
+            D20
+          </button>
+        </div>
       </div>
 
-      <div>
-        <label>Внимание</label>
-        <input type="number" name="system.stats.awareness" min="1" max="20" value="{{system.stats.awareness}}">
+      <div class="pg-stat-row">
+        <label for="pg-stat-awareness">Внимание</label>
+        <div class="pg-stat-controls">
+          <input
+            id="pg-stat-awareness"
+            type="number"
+            name="system.stats.awareness"
+            min="1"
+            max="20"
+            value="{{system.stats.awareness}}"
+          >
+          <button
+            type="button"
+            class="pg-stat-roll"
+            data-stat-key="awareness"
+            aria-label="Проверка характеристики Внимание"
+            title="Проверка характеристики Внимание"
+          >
+            D20
+          </button>
+        </div>
       </div>
 
-      <div>
-        <label>Движение</label>
-        <input type="number" name="system.stats.movement" min="1" max="20" value="{{system.stats.movement}}">
+      <div class="pg-stat-row">
+        <label for="pg-stat-movement">Движение</label>
+        <div class="pg-stat-controls">
+          <input
+            id="pg-stat-movement"
+            type="number"
+            name="system.stats.movement"
+            min="1"
+            max="20"
+            value="{{system.stats.movement}}"
+          >
+          <button
+            type="button"
+            class="pg-stat-roll"
+            data-stat-key="movement"
+            aria-label="Проверка характеристики Движение"
+            title="Проверка характеристики Движение"
+          >
+            D20
+          </button>
+        </div>
       </div>
 
-      <div>
-        <label>Мышление</label>
-        <input type="number" name="system.stats.thinking" min="1" max="20" value="{{system.stats.thinking}}">
+      <div class="pg-stat-row">
+        <label for="pg-stat-thinking">Мышление</label>
+        <div class="pg-stat-controls">
+          <input
+            id="pg-stat-thinking"
+            type="number"
+            name="system.stats.thinking"
+            min="1"
+            max="20"
+            value="{{system.stats.thinking}}"
+          >
+          <button
+            type="button"
+            class="pg-stat-roll"
+            data-stat-key="thinking"
+            aria-label="Проверка характеристики Мышление"
+            title="Проверка характеристики Мышление"
+          >
+            D20
+          </button>
+        </div>
       </div>
 
-      <div>
-        <label>Воля</label>
-        <input type="number" name="system.stats.will" min="1" max="20" value="{{system.stats.will}}">
+      <div class="pg-stat-row">
+        <label for="pg-stat-will">Воля</label>
+        <div class="pg-stat-controls">
+          <input
+            id="pg-stat-will"
+            type="number"
+            name="system.stats.will"
+            min="1"
+            max="20"
+            value="{{system.stats.will}}"
+          >
+          <button
+            type="button"
+            class="pg-stat-roll"
+            data-stat-key="will"
+            aria-label="Проверка характеристики Воля"
+            title="Проверка характеристики Воля"
+          >
+            D20
+          </button>
+        </div>
       </div>
     </section>
 
@@ -80,11 +170,15 @@
             </svg>
           </button>
 
-          <button type="button" class="pg-item-delete" data-item-id="{{this.id}}" aria-label="Удалить предмет"
-            title="Удалить предмет">
+          <button
+            type="button"
+            class="pg-item-delete"
+            data-item-id="{{this.id}}"
+            aria-label="Удалить предмет"
+            title="Удалить предмет"
+          >
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <path
-                d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v8h-2V9zm4 0h2v8h-2V9zM7 9h2v8H7V9zm-1 12h12a2 2 0 0 0 2-2V7H4v12a2 2 0 0 0 2 2z" />
+              <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v8h-2V9zm4 0h2v8h-2V9zM7 9h2v8H7V9zm-1 12h12a2 2 0 0 0 2-2V7H4v12a2 2 0 0 0 2 2z" />
             </svg>
           </button>
         </li>

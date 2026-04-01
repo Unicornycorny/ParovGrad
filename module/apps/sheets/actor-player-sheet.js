@@ -95,6 +95,18 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
         await this.document.deleteEmbeddedDocuments("Item", [itemId]);
       });
     });
+
+    htmlElement.querySelectorAll(".pg-stat-roll").forEach(element => {
+      element.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const statKey = element.dataset.statKey;
+        if (!statKey) return;
+
+        await this._openStatRollDialog(statKey);
+      });
+    });
   }
 
   async _useItem(item) {
@@ -103,17 +115,25 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
       return;
     }
 
-    const result = await this._openItemRollDialog(item);
+    const result = await this._openD20RollDialog(`Бросок предмета: ${item.name}`);
     if (!result) return;
 
     await this._rollItem(item, result.mode, result.modifier);
   }
 
-  async _openItemRollDialog(item) {
+  async _openStatRollDialog(statKey) {
+    const statConfig = this._getStatConfig(statKey);
+    if (!statConfig) return;
+
+    const result = await this._openD20RollDialog(`Проверка характеристики: ${statConfig.label}`);
+    if (!result) return;
+
+    await this._rollStatCheck(statKey, result.mode, result.modifier);
+  }
+
+  async _openD20RollDialog(title) {
     return foundry.applications.api.DialogV2.wait({
-      window: {
-        title: `Бросок предмета: ${item.name}`
-      },
+      window: { title },
       modal: true,
       rejectClose: false,
       content: `
@@ -155,17 +175,10 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
   }
 
   async _rollItem(item, mode, modifier = 0) {
-    const baseFormula = this._getItemRollFormula(mode);
-    const modifierPart = modifier === 0 ? "" : ` ${modifier >= 0 ? "+" : "-"} ${Math.abs(modifier)}`;
-    const formula = `${baseFormula}${modifierPart}`;
-
+    const formula = this._buildD20Formula(mode, [modifier]);
     const roll = await (new Roll(formula)).evaluate();
 
-    const modeLabel = {
-      normal: "Обычный бросок",
-      advantage: "Бросок с преимуществом",
-      disadvantage: "Бросок с помехой"
-    }[mode] ?? "Бросок";
+    const modeLabel = this._getRollModeLabel(mode);
 
     await roll.toMessage({
       speaker: ChatMessage.getSpeaker({ actor: this.document }),
@@ -173,7 +186,36 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
     });
   }
 
-  _getItemRollFormula(mode) {
+  async _rollStatCheck(statKey, mode, modifier = 0) {
+    const statConfig = this._getStatConfig(statKey);
+    if (!statConfig) return;
+
+    const statValue = Number(foundry.utils.getProperty(this.document.system, `stats.${statKey}`)) || 0;
+    const formula = this._buildD20Formula(mode, [statValue, modifier]);
+    const roll = await (new Roll(formula)).evaluate();
+
+    const modeLabel = this._getRollModeLabel(mode);
+
+    await roll.toMessage({
+      speaker: ChatMessage.getSpeaker({ actor: this.document }),
+      flavor: `${modeLabel}: Проверка характеристики «${statConfig.label}»`
+    });
+  }
+
+  _buildD20Formula(mode, numericModifiers = []) {
+    let formula = this._getD20RollFormula(mode);
+
+    for (const value of numericModifiers) {
+      const number = Number(value);
+      if (!Number.isFinite(number) || number === 0) continue;
+
+      formula += number >= 0 ? ` + ${number}` : ` - ${Math.abs(number)}`;
+    }
+
+    return formula;
+  }
+
+  _getD20RollFormula(mode) {
     switch (mode) {
       case "advantage":
         return "2d20kh";
@@ -182,5 +224,25 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
       default:
         return "1d20";
     }
+  }
+
+  _getRollModeLabel(mode) {
+    return {
+      normal: "Обычный бросок",
+      advantage: "Бросок с преимуществом",
+      disadvantage: "Бросок с помехой"
+    }[mode] ?? "Бросок";
+  }
+
+  _getStatConfig(statKey) {
+    const stats = {
+      constitution: { label: "Телосложение" },
+      awareness: { label: "Внимание" },
+      movement: { label: "Движение" },
+      thinking: { label: "Мышление" },
+      will: { label: "Воля" }
+    };
+
+    return stats[statKey] ?? null;
   }
 }
