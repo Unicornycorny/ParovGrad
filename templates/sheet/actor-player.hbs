@@ -125,6 +125,11 @@
       <h2>Показатели</h2>
 
       <div>
+        <label for="pg-life-path">Жизненный путь</label>
+        <input id="pg-life-path" type="number" name="system.lifePath" min="1" max="5" value="{{system.lifePath}}">
+      </div>
+
+      <div>
         <label>Вдохновение</label>
         <input type="number" name="system.inspiration" min="0" value="{{system.inspiration}}">
       </div>
@@ -141,9 +146,9 @@
 
       <div>
         <label>Здоровье</label>
-        <input type="number" name="system.health.value" min="0" value="{{system.health.value}}">
+        <input type="number" name="system.health.value" min="0" max="{{derivedHealthMax}}" value="{{system.health.value}}">
         /
-        <input type="number" name="system.health.max" min="0" value="{{system.health.max}}">
+        <input type="number" value="{{derivedHealthMax}}" disabled>
       </div>
     </section>
 

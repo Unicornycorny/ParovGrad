@@ -23,7 +23,10 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
 
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
+    const derivedHealthMax = this._getDerivedHealthMax();
+
     context.system = this.document.system;
+    context.derivedHealthMax = derivedHealthMax;
 
     context.items = Array.from(this.document.items).map(item => ({
       id: item.id,
@@ -244,5 +247,11 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
     };
 
     return stats[statKey] ?? null;
+  }
+
+  _getDerivedHealthMax() {
+    const constitution = Number(foundry.utils.getProperty(this.document.system, "stats.constitution")) || 0;
+    const lifePath = Number(foundry.utils.getProperty(this.document.system, "lifePath")) || 0;
+    return Math.max(0, constitution * lifePath);
   }
 }

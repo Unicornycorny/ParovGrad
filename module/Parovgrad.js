@@ -37,10 +37,54 @@ Hooks.once("setup", () => {
     dice: {
       createRoll: createParovgradRoll,
       rollToMessage
+    },
+    actors: {
+      getDerivedHealthMax
     }
   };
+});
+
+Hooks.on("preCreateActor", (actor, data) => {
+  if (actor.type !== "Player") return;
+  applyDerivedHealthToSource(data);
+});
+
+Hooks.on("preUpdateActor", (actor, changed) => {
+  if (actor.type !== "Player") return;
+  applyDerivedHealthToUpdate(actor, changed);
 });
 
 Hooks.on("renderChatMessageHTML", (message, html) => {
   renderAttackChatButtons(message, html);
 });
+
+function getDerivedHealthMax(source) {
+  const constitution = Number(foundry.utils.getProperty(source, "system.stats.constitution")) || 0;
+  const lifePath = Number(foundry.utils.getProperty(source, "system.lifePath")) || 0;
+  return Math.max(0, constitution * lifePath);
+}
+
+function applyDerivedHealthToSource(source) {
+  const derivedMax = getDerivedHealthMax(source);
+  const currentValue = Number(foundry.utils.getProperty(source, "system.health.value"));
+  const nextValue = Number.isFinite(currentValue) ? Math.min(Math.max(currentValue, 0), derivedMax) : derivedMax;
+
+  foundry.utils.setProperty(source, "system.health.max", derivedMax);
+  foundry.utils.setProperty(source, "system.health.value", nextValue);
+}
+
+function applyDerivedHealthToUpdate(actor, changed) {
+  const merged = foundry.utils.mergeObject(actor.toObject(), changed, { inplace: false });
+  const derivedMax = getDerivedHealthMax(merged);
+
+  foundry.utils.setProperty(changed, "system.health.max", derivedMax);
+
+  const currentValue = Number(foundry.utils.getProperty(merged, "system.health.value"));
+  if (!Number.isFinite(currentValue)) {
+    foundry.utils.setProperty(changed, "system.health.value", derivedMax);
+    return;
+  }
+
+  const clampedValue = Math.min(Math.max(currentValue, 0), derivedMax);
+  foundry.utils.setProperty(changed, "system.health.value", clampedValue);
+}
