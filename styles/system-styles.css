@@ -186,3 +186,17 @@
   flex: 0 0 auto;
   font-weight: 700;
 }
+
+.pg-roll-dialog__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pg-roll-dialog__checkbox input {
+  margin: 0;
+}
+
+.pg-roll-dialog__value {
+  font-weight: 700;
+}

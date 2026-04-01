@@ -1,14 +1,18 @@
 /**
- * Создаёт системный Roll с авто-взрывом всех dN, кроме d20.
- * Важно: используем встроенный exploding modifier Foundry,
- * а не пишем свою рекурсию руками.
+ * Создаёт системный Roll с авто-взрывом всех dN, кроме d20,
+ * и умеет добавлять 1 дополнительный куб к первому DiceTerm.
  */
 export function createParovgradRoll(formula, data = {}, options = {}) {
-  const roll = new Roll(formula, data, options);
+  const { addExtraDie = false, ...rollOptions } = options;
+  const roll = new Roll(formula, data, rollOptions);
 
   // Не применяем авто-взрыв для служебных max/min вычислений,
   // иначе максимизация d6x6 может уйти в бесконечный взрыв.
-  if (!options.maximize && !options.minimize) {
+  if (!rollOptions.maximize && !rollOptions.minimize) {
+    if (addExtraDie) {
+      applyExtraDie(roll);
+    }
+
     applyAutoExplode(roll);
     roll.resetFormula();
   }
@@ -23,9 +27,22 @@ export async function rollToMessage({
   messageData = {},
   chatOptions = {}
 } = {}) {
-  const roll = createParovgradRoll(formula, data, options);
-  await roll.evaluate(options);
+  const { addExtraDie = false, ...rollOptions } = options;
+  const roll = createParovgradRoll(formula, data, { ...rollOptions, addExtraDie });
+  await roll.evaluate(rollOptions);
   await roll.toMessage(messageData, chatOptions);
+  return roll;
+}
+
+export function applyExtraDie(roll) {
+  const die = roll.dice.find(term => {
+    const faces = Number(term.faces);
+    return Number.isFinite(faces) && (Number(term.number) || 0) > 0;
+  });
+
+  if (!die) return roll;
+
+  die.number = (Number(die.number) || 1) + 1;
   return roll;
 }
 

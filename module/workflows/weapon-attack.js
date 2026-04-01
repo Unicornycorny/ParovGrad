@@ -1,3 +1,9 @@
+import {
+  consumeActorInspiration,
+  openConfiguredD20RollDialog,
+  openConfiguredDamageRollDialog
+} from "../dice/roll-dialog.js";
+
 function getSingleTargetToken() {
   const targets = Array.from(game.user.targets ?? []);
   if (targets.length !== 1) {
@@ -50,49 +56,6 @@ function buildFormula(baseFormula, modifier = 0) {
   const normalizedModifier = Number(modifier) || 0;
   if (!normalizedModifier) return baseFormula;
   return `${baseFormula} ${normalizedModifier >= 0 ? "+" : "-"} ${Math.abs(normalizedModifier)}`;
-}
-
-async function openD20RollDialog({ title }) {
-  return foundry.applications.api.DialogV2.wait({
-    window: { title },
-    modal: true,
-    rejectClose: false,
-    content: `
-      <form class="pg-roll-dialog">
-        <div class="pg-roll-dialog__field">
-          <label for="pg-roll-modifier">Ручной модификатор</label>
-          <input id="pg-roll-modifier" name="modifier" type="number" step="1" value="0" autofocus>
-        </div>
-        <p class="pg-roll-dialog__hint">Выберите вариант броска.</p>
-      </form>
-    `,
-    buttons: [
-      {
-        action: "normal",
-        label: "Обычный",
-        callback: (event, button) => ({
-          mode: "normal",
-          modifier: Number(button.form?.elements?.modifier?.value) || 0
-        })
-      },
-      {
-        action: "advantage",
-        label: "Преимущество",
-        callback: (event, button) => ({
-          mode: "advantage",
-          modifier: Number(button.form?.elements?.modifier?.value) || 0
-        })
-      },
-      {
-        action: "disadvantage",
-        label: "Помеха",
-        callback: (event, button) => ({
-          mode: "disadvantage",
-          modifier: Number(button.form?.elements?.modifier?.value) || 0
-        })
-      }
-    ]
-  });
 }
 
 async function createRollCardMessage({ roll, speaker, content, flags = {} }) {
@@ -152,13 +115,23 @@ export async function startWeaponAttack({ actor, item }) {
     return;
   }
 
-  const attackConfig = await openD20RollDialog({
-    title: `Атака оружием: ${item.name}`
+  const attackConfig = await openConfiguredD20RollDialog({
+    title: `Атака оружием: ${item.name}`,
+    actor
   });
   if (!attackConfig) return;
 
+  if (attackConfig.useInspiration) {
+    const spent = await consumeActorInspiration(actor);
+    if (!spent) return;
+  }
+
   const attackFormula = buildFormula(getD20Formula(attackConfig.mode), attackConfig.modifier);
-  const roll = await (new Roll(attackFormula)).evaluate();
+  const roll = game.parovgrad.dice.createRoll(attackFormula, {}, {
+    addExtraDie: attackConfig.useInspiration
+  });
+  await roll.evaluate();
+
   const speaker = ChatMessage.getSpeaker({ actor });
 
   await createRollCardMessage({
@@ -169,7 +142,7 @@ export async function startWeaponAttack({ actor, item }) {
         <div class="pg-chat-card__title">Атака оружием</div>
         <div class="pg-chat-card__subtitle">${actor.name} атакует ${targetDocument.name} оружием «${item.name}»</div>
       </div>
-      <div class="pg-chat-card__meta">Режим: ${getRollModeLabel(attackConfig.mode)}${attackConfig.modifier ? ` · Модификатор: ${attackConfig.modifier >= 0 ? "+" : "-"}${Math.abs(attackConfig.modifier)}` : ""}</div>
+      <div class="pg-chat-card__meta">Режим: ${getRollModeLabel(attackConfig.mode)}${attackConfig.modifier ? ` · Модификатор: ${attackConfig.modifier >= 0 ? "+" : "-"}${Math.abs(attackConfig.modifier)}` : ""}${attackConfig.useInspiration ? " · Вдохновение" : ""}</div>
       <div class="pg-chat-card__actions">
         <button type="button" class="pg-chat-button" data-action="roll-defense">Защита от атаки</button>
       </div>
@@ -186,6 +159,7 @@ export async function startWeaponAttack({ actor, item }) {
         formula: attackFormula,
         mode: attackConfig.mode,
         modifier: attackConfig.modifier,
+        usedInspiration: attackConfig.useInspiration,
         resolved: false
       }
     }
@@ -267,13 +241,23 @@ export async function handleDefenseButtonClick(message) {
     return;
   }
 
-  const defenseConfig = await openD20RollDialog({
-    title: `Защита: ${attackData.targetName}`
+  const defenseConfig = await openConfiguredD20RollDialog({
+    title: `Защита: ${attackData.targetName}`,
+    actor: targetToken.actor
   });
   if (!defenseConfig) return;
 
+  if (defenseConfig.useInspiration) {
+    const spent = await consumeActorInspiration(targetToken.actor);
+    if (!spent) return;
+  }
+
   const defenseFormula = buildFormula(getD20Formula(defenseConfig.mode), defenseConfig.modifier);
-  const defenseRoll = await (new Roll(defenseFormula)).evaluate();
+  const defenseRoll = game.parovgrad.dice.createRoll(defenseFormula, {}, {
+    addExtraDie: defenseConfig.useInspiration
+  });
+  await defenseRoll.evaluate();
+
   const speaker = ChatMessage.getSpeaker({ actor: targetToken.actor, token: targetToken.document ?? targetToken });
   const success = Number(attackData.total) >= Number(defenseRoll.total);
 
@@ -285,6 +269,7 @@ export async function handleDefenseButtonClick(message) {
         <div class="pg-chat-card__title">Защита от атаки</div>
         <div class="pg-chat-card__subtitle">${attackData.targetName} защищается от атаки «${attackData.itemName}»</div>
       </div>
+      <div class="pg-chat-card__meta">Режим: ${getRollModeLabel(defenseConfig.mode)}${defenseConfig.modifier ? ` · Модификатор: ${defenseConfig.modifier >= 0 ? "+" : "-"}${Math.abs(defenseConfig.modifier)}` : ""}${defenseConfig.useInspiration ? " · Вдохновение" : ""}</div>
       <div class="pg-chat-card__comparison">
         <div>Атака: <strong>${attackData.total}</strong></div>
         <div>Защита: <strong>${defenseRoll.total}</strong></div>
@@ -299,7 +284,8 @@ export async function handleDefenseButtonClick(message) {
         attackMessageId: message.id,
         targetTokenUuid: attackData.targetTokenUuid,
         total: defenseRoll.total,
-        success
+        success,
+        usedInspiration: defenseConfig.useInspiration
       }
     }
   });
@@ -320,7 +306,23 @@ export async function handleDefenseButtonClick(message) {
     return;
   }
 
-  const damageRoll = await game.parovgrad.dice.createRoll(damageDie).evaluate();
+  const attackerActor = fromUuidSync(attackData.attackerActorUuid);
+  const damageConfig = await openConfiguredDamageRollDialog({
+    title: `Урон оружия: ${attackData.itemName}`,
+    actor: attackerActor,
+    damageDie
+  });
+  if (!damageConfig) return;
+
+  if (damageConfig.useInspiration && attackerActor) {
+    const spent = await consumeActorInspiration(attackerActor);
+    if (!spent) return;
+  }
+
+  const damageRoll = game.parovgrad.dice.createRoll(damageDie, {}, {
+    addExtraDie: damageConfig.useInspiration
+  });
+  await damageRoll.evaluate();
 
   await createRollCardMessage({
     roll: damageRoll,
@@ -330,6 +332,7 @@ export async function handleDefenseButtonClick(message) {
         <div class="pg-chat-card__title">Урон оружия</div>
         <div class="pg-chat-card__subtitle">${attackData.itemName} наносит урон цели ${attackData.targetName}</div>
       </div>
+      <div class="pg-chat-card__meta">Кость урона: ${String(damageDie).toUpperCase()}${damageConfig.useInspiration ? " · Вдохновение" : ""}</div>
       <div class="pg-chat-card__actions">
         <button type="button" class="pg-chat-button pg-chat-button--danger" data-action="apply-damage">Нанести урон</button>
       </div>
@@ -342,6 +345,7 @@ export async function handleDefenseButtonClick(message) {
         amount: damageRoll.total,
         weaponName: attackData.itemName,
         sourceAttackMessageId: message.id,
+        usedInspiration: damageConfig.useInspiration,
         applied: false
       }
     }

@@ -1,3 +1,4 @@
+import { openConfiguredD20RollDialog, consumeActorInspiration } from "../../dice/roll-dialog.js";
 import { startWeaponAttack } from "../../workflows/weapon-attack.js";
 
 export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApplicationMixin(
@@ -118,91 +119,70 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
       return;
     }
 
-    const result = await this._openD20RollDialog(`Бросок предмета: ${item.name}`);
+    const result = await openConfiguredD20RollDialog({
+      title: `Бросок предмета: ${item.name}`,
+      actor: this.document
+    });
     if (!result) return;
 
-    await this._rollItem(item, result.mode, result.modifier);
+    await this._rollItem(item, result.mode, result.modifier, result.useInspiration);
   }
 
   async _openStatRollDialog(statKey) {
     const statConfig = this._getStatConfig(statKey);
     if (!statConfig) return;
 
-    const result = await this._openD20RollDialog(`Проверка характеристики: ${statConfig.label}`);
+    const result = await openConfiguredD20RollDialog({
+      title: `Проверка характеристики: ${statConfig.label}`,
+      actor: this.document
+    });
     if (!result) return;
 
-    await this._rollStatCheck(statKey, result.mode, result.modifier);
+    await this._rollStatCheck(statKey, result.mode, result.modifier, result.useInspiration);
   }
 
-  async _openD20RollDialog(title) {
-    return foundry.applications.api.DialogV2.wait({
-      window: { title },
-      modal: true,
-      rejectClose: false,
-      content: `
-        <form class="pg-roll-dialog">
-          <div class="pg-roll-dialog__field">
-            <label for="pg-roll-modifier">Ручной модификатор</label>
-            <input id="pg-roll-modifier" name="modifier" type="number" step="1" value="0" autofocus>
-          </div>
-          <p class="pg-roll-dialog__hint">Выберите вариант броска.</p>
-        </form>
-      `,
-      buttons: [
-        {
-          action: "normal",
-          label: "Обычный",
-          callback: (event, button) => ({
-            mode: "normal",
-            modifier: Number(button.form?.elements?.modifier?.value) || 0
-          })
-        },
-        {
-          action: "advantage",
-          label: "Преимущество",
-          callback: (event, button) => ({
-            mode: "advantage",
-            modifier: Number(button.form?.elements?.modifier?.value) || 0
-          })
-        },
-        {
-          action: "disadvantage",
-          label: "Помеха",
-          callback: (event, button) => ({
-            mode: "disadvantage",
-            modifier: Number(button.form?.elements?.modifier?.value) || 0
-          })
-        }
-      ]
-    });
-  }
-
-  async _rollItem(item, mode, modifier = 0) {
+  async _rollItem(item, mode, modifier = 0, useInspiration = false) {
     const formula = this._buildD20Formula(mode, [modifier]);
-    const roll = await (new Roll(formula)).evaluate();
+    const roll = await this._evaluateActorRoll(formula, { useInspiration });
+    if (!roll) return;
 
     const modeLabel = this._getRollModeLabel(mode);
 
     await roll.toMessage({
       speaker: ChatMessage.getSpeaker({ actor: this.document }),
-      flavor: `${modeLabel}: ${item.name}`
+      flavor: `${modeLabel}: ${item.name}${useInspiration ? " · Вдохновение" : ""}`
     });
   }
 
-  async _rollStatCheck(statKey, mode, modifier = 0) {
+  async _rollStatCheck(statKey, mode, modifier = 0, useInspiration = false) {
     const statConfig = this._getStatConfig(statKey);
     if (!statConfig) return;
 
     const statValue = Number(foundry.utils.getProperty(this.document.system, `stats.${statKey}`)) || 0;
     const formula = this._buildD20Formula(mode, [statValue, modifier]);
-    const roll = await (new Roll(formula)).evaluate();
+    const roll = await this._evaluateActorRoll(formula, { useInspiration });
+    if (!roll) return;
 
     const modeLabel = this._getRollModeLabel(mode);
 
     await roll.toMessage({
       speaker: ChatMessage.getSpeaker({ actor: this.document }),
-      flavor: `${modeLabel}: Проверка характеристики «${statConfig.label}»`
+      flavor: `${modeLabel}: Проверка характеристики «${statConfig.label}»${useInspiration ? " · Вдохновение" : ""}`
     });
+  }
+
+  async _evaluateActorRoll(formula, { useInspiration = false } = {}) {
+    if (useInspiration) {
+      const spent = await consumeActorInspiration(this.document);
+      if (!spent) return null;
+    }
+
+    const roll = game.parovgrad.dice.createRoll(formula, {}, {
+      addExtraDie: useInspiration
+    });
+
+    await roll.evaluate();
+    return roll;
   }
 
   _buildD20Formula(mode, numericModifiers = []) {
