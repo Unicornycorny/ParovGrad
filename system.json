@@ -20,7 +20,8 @@
         },
         "Item": {
             "item": {},
-            "weapon": {}
+            "weapon": {},
+            "skill": {}
         }
     },
     "socket": false,

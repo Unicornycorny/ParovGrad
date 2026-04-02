@@ -1,5 +1,5 @@
 import { openConfiguredD20RollDialog, consumeActorInspiration } from "../../dice/roll-dialog.js";
-import { startWeaponAttack } from "../../workflows/weapon-attack.js";
+import { startItemAttack } from "../../workflows/weapon-attack.js";
 
 export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.sheets.ActorSheetV2
@@ -113,8 +113,8 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
   }
 
   async _useItem(item) {
-    if (item.type === "weapon") {
-      await startWeaponAttack({ actor: this.document, item });
+    if (item.type === "weapon" || item.type === "skill") {
+      await startItemAttack({ actor: this.document, item });
       return;
     }
 

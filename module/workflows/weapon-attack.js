@@ -7,7 +7,7 @@ import {
 function getSingleTargetToken() {
   const targets = Array.from(game.user.targets ?? []);
   if (targets.length !== 1) {
-    ui.notifications?.warn("Для атаки оружием выберите ровно одну цель.");
+    ui.notifications?.warn("Для атаки выберите ровно одну цель.");
     return null;
   }
 
@@ -104,7 +104,34 @@ function getButtonStateText({ disabled, doneLabel, activeLabel }) {
   return activeLabel;
 }
 
+function getAttackSourceConfig(itemType) {
+  if (itemType === "skill") {
+    return {
+      type: "skill",
+      instrumental: "навыком",
+      attackTitle: "Атака навыком",
+      damageTitle: "Урон навыка"
+    };
+  }
+
+  return {
+    type: "weapon",
+    instrumental: "оружием",
+    attackTitle: "Атака оружием",
+    damageTitle: "Урон оружия"
+  };
+}
+
 export async function startWeaponAttack({ actor, item }) {
+  return startItemAttack({ actor, item, sourceType: "weapon" });
+}
+
+export async function startSkillAttack({ actor, item }) {
+  return startItemAttack({ actor, item, sourceType: "skill" });
+}
+
+export async function startItemAttack({ actor, item, sourceType = null }) {
+  const source = getAttackSourceConfig(sourceType ?? item?.type);
   const targetToken = getSingleTargetToken();
   if (!targetToken) return;
 
@@ -116,7 +143,7 @@ export async function startWeaponAttack({ actor, item }) {
   }
 
   const attackConfig = await openConfiguredD20RollDialog({
-    title: `Атака оружием: ${item.name}`,
+    title: `${source.attackTitle}: ${item.name}`,
     actor
   });
   if (!attackConfig) return;
@@ -139,8 +166,8 @@ export async function startWeaponAttack({ actor, item }) {
     speaker,
     content: `
       <div class="pg-chat-card__header">
-        <div class="pg-chat-card__title">Атака оружием</div>
-        <div class="pg-chat-card__subtitle">${actor.name} атакует ${targetDocument.name} оружием «${item.name}»</div>
+        <div class="pg-chat-card__title">${source.attackTitle}</div>
+        <div class="pg-chat-card__subtitle">${actor.name} атакует ${targetDocument.name} ${source.instrumental} «${item.name}»</div>
       </div>
       <div class="pg-chat-card__meta">Режим: ${getRollModeLabel(attackConfig.mode)}${attackConfig.modifier ? ` · Модификатор: ${attackConfig.modifier >= 0 ? "+" : "-"}${Math.abs(attackConfig.modifier)}` : ""}${attackConfig.useInspiration ? " · Вдохновение" : ""}</div>
       <div class="pg-chat-card__actions">
@@ -153,6 +180,7 @@ export async function startWeaponAttack({ actor, item }) {
         attackerActorUuid: actor.uuid,
         itemUuid: item.uuid,
         itemName: item.name,
+        sourceType: source.type,
         targetTokenUuid: targetDocument.uuid,
         targetName: targetDocument.name,
         total: roll.total,
@@ -294,21 +322,22 @@ export async function handleDefenseButtonClick(message) {
 
   if (!success) return;
 
-  const weapon = fromUuidSync(attackData.itemUuid);
-  if (!weapon) {
-    ui.notifications?.warn("Не удалось найти оружие для броска урона.");
+  const source = getAttackSourceConfig(attackData.sourceType);
+  const sourceItem = fromUuidSync(attackData.itemUuid);
+  if (!sourceItem) {
+    ui.notifications?.warn("Не удалось найти источник урона для броска урона.");
     return;
   }
 
-  const damageDie = weapon.system?.damageDie;
+  const damageDie = sourceItem.system?.damageDie;
   if (!damageDie) {
-    ui.notifications?.warn("У оружия не задана кость урона.");
+    ui.notifications?.warn("У источника урона не задана кость урона.");
     return;
   }
 
   const attackerActor = fromUuidSync(attackData.attackerActorUuid);
   const damageConfig = await openConfiguredDamageRollDialog({
-    title: `Урон оружия: ${attackData.itemName}`,
+    title: `${source.damageTitle}: ${attackData.itemName}`,
     actor: attackerActor,
     damageDie
   });
@@ -329,7 +358,7 @@ export async function handleDefenseButtonClick(message) {
     speaker,
     content: `
       <div class="pg-chat-card__header">
-        <div class="pg-chat-card__title">Урон оружия</div>
+        <div class="pg-chat-card__title">${source.damageTitle}</div>
         <div class="pg-chat-card__subtitle">${attackData.itemName} наносит урон цели ${attackData.targetName}</div>
       </div>
       <div class="pg-chat-card__meta">Кость урона: ${String(damageDie).toUpperCase()}${damageConfig.useInspiration ? " · Вдохновение" : ""}</div>
@@ -343,6 +372,8 @@ export async function handleDefenseButtonClick(message) {
         targetTokenUuid: attackData.targetTokenUuid,
         targetName: attackData.targetName,
         amount: damageRoll.total,
+        sourceType: source.type,
+        sourceName: attackData.itemName,
         weaponName: attackData.itemName,
         sourceAttackMessageId: message.id,
         usedInspiration: damageConfig.useInspiration,
@@ -382,6 +413,8 @@ export async function handleApplyDamageButtonClick(message) {
 
   await setDamageApplied(message, true);
 
+  const sourceName = damageData.sourceName ?? damageData.weaponName ?? "источника";
+
   await ChatMessage.create({
     user: game.user.id,
     speaker: ChatMessage.getSpeaker({ actor: targetActor }),
@@ -389,7 +422,7 @@ export async function handleApplyDamageButtonClick(message) {
       <div class="pg-chat-card">
         <div class="pg-chat-card__header">
           <div class="pg-chat-card__title">Урон применён</div>
-          <div class="pg-chat-card__subtitle">${damageData.targetName} получает ${damageAmount} урона от «${damageData.weaponName}»</div>
+          <div class="pg-chat-card__subtitle">${damageData.targetName} получает ${damageAmount} урона от «${sourceName}»</div>
         </div>
         <div class="pg-chat-card__comparison">
           <div>Было здоровья: <strong>${currentHealth}</strong></div>

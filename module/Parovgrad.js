@@ -2,11 +2,13 @@ import { PlayerDataModel } from "./data/actor/player-data.js";
 import { NpcDataModel } from "./data/actor/npc-data.js";
 import { ItemDataModel } from "./data/item/item-data.js";
 import { WeaponDataModel } from "./data/item/weapon-data.js";
+import { SkillDataModel } from "./data/item/skill-data.js";
 
 import { ParovGradPlayerSheet } from "./apps/sheets/actor-player-sheet.js";
 import { ParovGradNpcSheet } from "./apps/sheets/actor-npc-sheet.js";
 import { ParovGradItemSheet } from "./apps/sheets/item-sheet.js";
 import { ParovGradWeaponSheet } from "./apps/sheets/weapon-sheet.js";
+import { ParovGradSkillSheet } from "./apps/sheets/skill-sheet.js";
 import { createParovgradRoll, rollToMessage } from "./dice/parovgrad-roll.js";
 import { renderAttackChatButtons } from "./workflows/weapon-attack.js";
 
@@ -15,6 +17,7 @@ Hooks.once("init", () => {
   CONFIG.Actor.dataModels.NPC = NpcDataModel;
   CONFIG.Item.dataModels.item = ItemDataModel;
   CONFIG.Item.dataModels.weapon = WeaponDataModel;
+  CONFIG.Item.dataModels.skill = SkillDataModel;
 
   foundry.applications.apps.DocumentSheetConfig.registerSheet(Actor, "ParovGrad", ParovGradPlayerSheet, {
     types: ["Player"],
@@ -33,6 +36,11 @@ Hooks.once("init", () => {
 
   foundry.applications.apps.DocumentSheetConfig.registerSheet(Item, "ParovGrad", ParovGradWeaponSheet, {
     types: ["weapon"],
+    makeDefault: true
+  });
+
+  foundry.applications.apps.DocumentSheetConfig.registerSheet(Item, "ParovGrad", ParovGradSkillSheet, {
+    types: ["skill"],
     makeDefault: true
   });
 });
