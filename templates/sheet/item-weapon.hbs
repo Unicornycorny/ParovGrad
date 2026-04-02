@@ -1,0 +1,52 @@
+<section class="pg-sheet">
+  <div class="sheet-body">
+    <header class="pg-sheet-header">
+      <h1>{{document.name}}</h1>
+      <div class="pg-item-sheet-mode">
+        {{#if isEditMode}}
+          Режим: редактирование
+        {{else}}
+          Режим: просмотр
+        {{/if}}
+      </div>
+    </header>
+
+    {{#if isEditMode}}
+      <div class="pg-form-field">
+        <label>Название</label>
+        <input type="text" name="name" value="{{document.name}}" />
+      </div>
+
+      <div class="pg-form-field">
+        <label>Кость урона</label>
+        <select name="system.damageDie">
+          {{#each damageDieOptions}}
+          <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+          {{/each}}
+        </select>
+      </div>
+
+      <div class="pg-form-field">
+        <label>Описание</label>
+        <textarea name="system.description">{{system.description}}</textarea>
+      </div>
+    {{else}}
+      <div class="pg-weapon-stat-grid">
+        <article class="pg-weapon-stat">
+          <div class="pg-weapon-stat__label">Название</div>
+          <div class="pg-weapon-stat__value">{{weaponView.name}}</div>
+        </article>
+
+        <article class="pg-weapon-stat">
+          <div class="pg-weapon-stat__label">Кость урона</div>
+          <div class="pg-weapon-stat__value">{{weaponView.damageDie}}</div>
+        </article>
+
+        <article class="pg-weapon-stat pg-weapon-stat--full">
+          <div class="pg-weapon-stat__label">Описание</div>
+          <div class="pg-weapon-stat__value">{{weaponView.description}}</div>
+        </article>
+      </div>
+    {{/if}}
+  </div>
+</section>

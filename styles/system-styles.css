@@ -94,6 +94,35 @@
   margin-top: 12px;
 }
 
+.pg-weapon-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.pg-weapon-stat {
+  border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.2));
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.pg-weapon-stat--full {
+  grid-column: 1 / -1;
+}
+
+.pg-weapon-stat__label {
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  opacity: 0.8;
+}
+
+.pg-weapon-stat__value {
+  margin-top: 6px;
+  font-weight: 600;
+  white-space: pre-wrap;
+}
+
 .pg-chat-card {
   display: flex;
   flex-direction: column;

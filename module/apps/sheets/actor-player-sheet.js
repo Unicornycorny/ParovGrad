@@ -5,7 +5,6 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
   foundry.applications.sheets.ActorSheetV2
 ) {
   static DEFAULT_OPTIONS = {
-    id: "parovgrad-player-sheet",
     classes: ["parovgrad", "sheet", "actor", "player"],
     position: { width: 700, height: 650 },
     window: { title: "ParovGrad: Player", resizable: true },

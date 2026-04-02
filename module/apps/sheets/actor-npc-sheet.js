@@ -2,7 +2,6 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
     foundry.applications.sheets.ActorSheetV2
 ) {
     static DEFAULT_OPTIONS = {
-        id: "parovgrad-npc-sheet",
         classes: ["ParovGrad", "sheet", "actor", "NPC"],
         position: { width: 720, height: 600 },
         window: { title: "ParovGrad: NPC", resizable: true },

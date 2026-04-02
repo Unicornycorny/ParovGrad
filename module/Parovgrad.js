@@ -6,6 +6,7 @@ import { WeaponDataModel } from "./data/item/weapon-data.js";
 import { ParovGradPlayerSheet } from "./apps/sheets/actor-player-sheet.js";
 import { ParovGradNpcSheet } from "./apps/sheets/actor-npc-sheet.js";
 import { ParovGradItemSheet } from "./apps/sheets/item-sheet.js";
+import { ParovGradWeaponSheet } from "./apps/sheets/weapon-sheet.js";
 import { createParovgradRoll, rollToMessage } from "./dice/parovgrad-roll.js";
 import { renderAttackChatButtons } from "./workflows/weapon-attack.js";
 
@@ -26,7 +27,12 @@ Hooks.once("init", () => {
   });
 
   foundry.applications.apps.DocumentSheetConfig.registerSheet(Item, "ParovGrad", ParovGradItemSheet, {
-    types: ["item", "weapon"],
+    types: ["item"],
+    makeDefault: true
+  });
+
+  foundry.applications.apps.DocumentSheetConfig.registerSheet(Item, "ParovGrad", ParovGradWeaponSheet, {
+    types: ["weapon"],
     makeDefault: true
   });
 });

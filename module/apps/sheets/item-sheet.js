@@ -4,7 +4,6 @@ export class ParovGradItemSheet extends foundry.applications.api.HandlebarsAppli
   _isEditMode = false;
 
   static DEFAULT_OPTIONS = {
-    id: "parovgrad-item-sheet",
     classes: ["ParovGrad", "sheet", "item"],
     position: { width: 650, height: 500 },
     window: { title: "ParovGrad: Item", resizable: true },
@@ -22,23 +21,13 @@ export class ParovGradItemSheet extends foundry.applications.api.HandlebarsAppli
   };
 
   get title() {
-    const typeLabel = this.document.type === "weapon" ? "Оружие" : "Предмет";
-    return `${typeLabel}: ${this.document.name}`;
+    return `Предмет: ${this.document.name}`;
   }
 
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.system = this.document.system;
     context.isEditMode = this._isEditMode;
-    context.isWeapon = this.document.type === "weapon";
-
-    const currentDamageDie = this.document.system.damageDie || "d4";
-    context.damageDieOptions = ["d4", "d6", "d8", "d12"].map(value => ({
-      value,
-      label: value.toUpperCase(),
-      selected: value === currentDamageDie
-    }));
-
     return context;
   }
 
