@@ -21,7 +21,8 @@
         "Item": {
             "item": {},
             "weapon": {},
-            "skill": {}
+            "skill": {},
+            "effect": {}
         }
     },
     "socket": false,

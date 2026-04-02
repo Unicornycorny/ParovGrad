@@ -1,0 +1,91 @@
+<section class="pg-sheet">
+  <div class="sheet-body">
+    <header class="pg-sheet-header">
+      <h1>{{document.name}}</h1>
+      <div class="pg-item-sheet-mode">
+        {{#if isEditMode}}
+          Режим: редактирование
+        {{else}}
+          Режим: просмотр
+        {{/if}}
+      </div>
+    </header>
+
+    {{#if isEditMode}}
+      <div class="pg-form-field">
+        <label>Название</label>
+        <input type="text" name="name" value="{{document.name}}" />
+      </div>
+
+      <div class="pg-form-grid pg-form-grid--two-columns">
+        <div class="pg-form-field">
+          <label>Уровень</label>
+          <input type="number" name="system.level" min="0" step="1" value="{{system.level}}" />
+        </div>
+
+        <div class="pg-form-field">
+          <label>Тип</label>
+          <input type="text" name="system.effectType" value="{{system.effectType}}" />
+        </div>
+      </div>
+
+      <div class="pg-form-field">
+        <label>Воздействие эффекта</label>
+        <textarea name="system.impact" rows="3">{{system.impact}}</textarea>
+      </div>
+
+      <div class="pg-form-field">
+        <label>Снятие эффекта</label>
+        <textarea name="system.removal" rows="3">{{system.removal}}</textarea>
+      </div>
+
+      <div class="pg-form-field">
+        <label>Описание</label>
+        <textarea name="system.description" rows="3">{{system.description}}</textarea>
+      </div>
+
+      <div class="pg-form-field">
+        <label>Механические изменения (JSON)</label>
+        <textarea name="system.changes" rows="10">{{system.changes}}</textarea>
+        <p class="pg-form-hint">Шаблон для ActiveEffect.changes. Например: [{"key":"system.stats.constitution","mode":2,"value":"1"}]</p>
+      </div>
+    {{else}}
+      <div class="pg-weapon-stat-grid">
+        <article class="pg-weapon-stat">
+          <div class="pg-weapon-stat__label">Название</div>
+          <div class="pg-weapon-stat__value">{{effectView.name}}</div>
+        </article>
+
+        <article class="pg-weapon-stat">
+          <div class="pg-weapon-stat__label">Уровень</div>
+          <div class="pg-weapon-stat__value">{{effectView.level}}</div>
+        </article>
+
+        <article class="pg-weapon-stat">
+          <div class="pg-weapon-stat__label">Тип</div>
+          <div class="pg-weapon-stat__value">{{effectView.effectType}}</div>
+        </article>
+
+        <article class="pg-weapon-stat pg-weapon-stat--full">
+          <div class="pg-weapon-stat__label">Воздействие</div>
+          <div class="pg-weapon-stat__value">{{effectView.impact}}</div>
+        </article>
+
+        <article class="pg-weapon-stat pg-weapon-stat--full">
+          <div class="pg-weapon-stat__label">Снятие</div>
+          <div class="pg-weapon-stat__value">{{effectView.removal}}</div>
+        </article>
+
+        <article class="pg-weapon-stat pg-weapon-stat--full">
+          <div class="pg-weapon-stat__label">Описание</div>
+          <div class="pg-weapon-stat__value">{{effectView.description}}</div>
+        </article>
+
+        <article class="pg-weapon-stat pg-weapon-stat--full">
+          <div class="pg-weapon-stat__label">Механические изменения</div>
+          <div class="pg-weapon-stat__value"><pre class="pg-code-block">{{effectView.changes}}</pre></div>
+        </article>
+      </div>
+    {{/if}}
+  </div>
+</section>

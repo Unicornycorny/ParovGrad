@@ -10,13 +10,15 @@
   box-sizing: border-box;
 }
 
-.pg-item-list {
+.pg-item-list,
+.pg-effect-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.pg-item-row + .pg-item-row {
+.pg-item-row + .pg-item-row,
+.pg-effect-row + .pg-effect-row {
   margin-top: 6px;
 }
 
@@ -53,7 +55,8 @@
   pointer-events: none;
 }
 
-.pg-roll-dialog {
+.pg-roll-dialog,
+.pg-effect-dialog {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -70,14 +73,16 @@
   opacity: 0.8;
 }
 
-.pg-sheet-header {
+.pg-sheet-header,
+.pg-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.pg-sheet-header h1 {
+.pg-sheet-header h1,
+.pg-section-header h2 {
   margin: 0;
 }
 
@@ -92,6 +97,21 @@
   flex-direction: column;
   gap: 6px;
   margin-top: 12px;
+}
+
+.pg-form-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.pg-form-grid--two-columns {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.pg-form-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  opacity: 0.8;
 }
 
 .pg-weapon-stat-grid {
@@ -228,4 +248,88 @@
 
 .pg-roll-dialog__value {
   font-weight: 700;
+}
+
+.pg-effect-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.2));
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.pg-effect-row.is-disabled {
+  opacity: 0.72;
+}
+
+.pg-effect-row__icon {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.pg-effect-row__content {
+  min-width: 0;
+}
+
+.pg-effect-row__title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pg-effect-row__name {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pg-effect-row__meta,
+.pg-effect-row__source {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  opacity: 0.85;
+  margin-top: 4px;
+}
+
+.pg-effect-row__text {
+  margin-top: 6px;
+  white-space: pre-wrap;
+}
+
+.pg-effect-row__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pg-effect-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  font-size: 11px;
+}
+
+.pg-effect-dialog__source {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.pg-code-block {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
 }

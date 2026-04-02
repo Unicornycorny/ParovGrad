@@ -153,6 +153,58 @@
     </section>
 
     <section>
+      <div class="pg-section-header">
+        <h2>Эффекты</h2>
+        <button type="button" class="pg-effect-create">+ Добавить эффект</button>
+      </div>
+
+      <p class="pg-form-hint">Можно добавить эффект кнопкой или перетащить на лист/токен шаблон эффекта либо уже существующий активный эффект.</p>
+
+      {{#if effects.length}}
+      <ul class="pg-effect-list">
+        {{#each effects}}
+        <li class="pg-effect-row {{#if this.disabled}}is-disabled{{/if}}" data-effect-id="{{this.id}}" draggable="true">
+          <img class="pg-effect-row__icon" src="{{this.img}}" alt="{{this.name}}">
+
+          <div class="pg-effect-row__content">
+            <div class="pg-effect-row__title-line">
+              <button type="button" class="pg-effect-edit pg-effect-row__name" data-effect-id="{{this.id}}">{{this.name}}</button>
+              {{#if this.disabled}}<span class="pg-effect-badge">Выключен</span>{{/if}}
+            </div>
+
+            <div class="pg-effect-row__meta">
+              <span>Уровень: {{this.level}}</span>
+              <span>Тип: {{#if this.effectType}}{{this.effectType}}{{else}}—{{/if}}</span>
+              <span>Изменений: {{this.changesCount}}</span>
+            </div>
+
+            {{#if this.impact}}
+            <div class="pg-effect-row__text"><strong>Воздействие:</strong> {{this.impact}}</div>
+            {{/if}}
+
+            {{#if this.removal}}
+            <div class="pg-effect-row__text"><strong>Снятие:</strong> {{this.removal}}</div>
+            {{/if}}
+
+            {{#if this.sourceLabel}}
+            <div class="pg-effect-row__source">Шаблон: {{this.sourceLabel}}</div>
+            {{/if}}
+          </div>
+
+          <div class="pg-effect-row__actions">
+            <button type="button" class="pg-effect-toggle" data-effect-id="{{this.id}}">{{#if this.disabled}}Включить{{else}}Выключить{{/if}}</button>
+            <button type="button" class="pg-effect-edit" data-effect-id="{{this.id}}">Изменить</button>
+            <button type="button" class="pg-effect-delete" data-effect-id="{{this.id}}">Удалить</button>
+          </div>
+        </li>
+        {{/each}}
+      </ul>
+      {{else}}
+      <p>Нет активных эффектов</p>
+      {{/if}}
+    </section>
+
+    <section>
       <h2>Предметы</h2>
 
       {{#if items.length}}
