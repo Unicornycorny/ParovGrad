@@ -9,31 +9,13 @@
       <div class="pg-stat-row">
         <label for="pg-stat-{{this.key}}">{{this.label}}</label>
         <div class="pg-stat-controls pg-stat-controls--with-influence">
-          <input
-            id="pg-stat-{{this.key}}"
-            type="number"
-            name="system.stats.{{this.key}}"
-            min="1"
-            max="20"
-            value="{{this.value}}"
-          >
-          <input
-            type="text"
-            class="pg-stat-influence"
-            value="{{this.influenceDisplay}}"
-            readonly
-            disabled
-            tabindex="-1"
-            title="{{this.influenceTooltip}}"
-            aria-label="Сумма внешних влияний: {{this.influenceDisplay}}"
-          >
-          <button
-            type="button"
-            class="pg-stat-roll"
-            data-stat-key="{{this.key}}"
+          <input id="pg-stat-{{this.key}}" type="number" name="system.stats.{{this.key}}" min="1" max="20"
+            value="{{this.value}}">
+          <input type="text" class="pg-stat-influence" value="{{this.influenceDisplay}}" readonly disabled tabindex="-1"
+            title="{{this.influenceTooltip}}" aria-label="Сумма внешних влияний: {{this.influenceDisplay}}">
+          <button type="button" class="pg-stat-roll" data-stat-key="{{this.key}}"
             aria-label="Проверка характеристики {{this.label}}"
-            title="Проверка характеристики {{this.label}} (итог: {{this.effectiveValue}})"
-          >
+            title="Проверка характеристики {{this.label}} (итог: {{this.effectiveValue}})">
             D20
           </button>
         </div>
@@ -66,25 +48,22 @@
 
       <div>
         <label>Уровень</label>
-        <input type="number" name="system.level" min="0" value="{{system.level}}">
+        <div class="pg-level-up-controls">
+          <input type="number" name="system.level" min="0" value="{{system.level}}">
+          <button type="button" class="pg-level-up-button">Повысить уровень</button>
+        </div>
       </div>
 
       <div>
         <label>Внешнее влияние на макс. здоровье</label>
-        <input
-          type="text"
-          class="pg-stat-influence"
-          value="{{healthInfluenceView.influenceDisplay}}"
-          readonly
-          disabled
-          tabindex="-1"
-          title="{{healthInfluenceView.influenceTooltip}}"
-        >
+        <input type="text" class="pg-stat-influence" value="{{healthInfluenceView.influenceDisplay}}" readonly disabled
+          tabindex="-1" title="{{healthInfluenceView.influenceTooltip}}">
       </div>
 
       <div>
         <label>Здоровье</label>
-        <input type="number" name="system.health.value" min="0" max="{{derivedHealthMax}}" value="{{system.health.value}}">
+        <input type="number" name="system.health.value" min="0" max="{{derivedHealthMax}}"
+          value="{{system.health.value}}">
         /
         <input type="number" value="{{derivedHealthMax}}" disabled>
       </div>
@@ -96,7 +75,8 @@
         <button type="button" class="pg-effect-create">+ Добавить эффект</button>
       </div>
 
-      <p class="pg-form-hint">Можно добавить эффект кнопкой или перетащить на лист/токен шаблон эффекта либо уже существующий активный эффект.</p>
+      <p class="pg-form-hint">Можно добавить эффект кнопкой или перетащить на лист/токен шаблон эффекта либо уже
+        существующий активный эффект.</p>
 
       {{#if effects.length}}
       <ul class="pg-effect-list">
@@ -106,7 +86,8 @@
 
           <div class="pg-effect-row__content">
             <div class="pg-effect-row__title-line">
-              <button type="button" class="pg-effect-edit pg-effect-row__name" data-effect-id="{{this.id}}">{{this.name}}</button>
+              <button type="button" class="pg-effect-edit pg-effect-row__name"
+                data-effect-id="{{this.id}}">{{this.name}}</button>
               {{#if this.disabled}}<span class="pg-effect-badge">Выключен</span>{{/if}}
             </div>
 
@@ -134,7 +115,8 @@
           </div>
 
           <div class="pg-effect-row__actions">
-            <button type="button" class="pg-effect-toggle" data-effect-id="{{this.id}}">{{#if this.disabled}}Включить{{else}}Выключить{{/if}}</button>
+            <button type="button" class="pg-effect-toggle" data-effect-id="{{this.id}}">{{#if
+              this.disabled}}Включить{{else}}Выключить{{/if}}</button>
             <button type="button" class="pg-effect-edit" data-effect-id="{{this.id}}">Изменить</button>
             <button type="button" class="pg-effect-delete" data-effect-id="{{this.id}}">Удалить</button>
           </div>
@@ -157,27 +139,19 @@
             {{this.name}}
           </button>
 
-          <button
-            type="button"
-            class="pg-item-roll"
-            data-item-id="{{this.id}}"
-            aria-label="Использовать предмет"
-            title="Использовать предмет"
-          >
+          <button type="button" class="pg-item-roll" data-item-id="{{this.id}}" aria-label="Использовать предмет"
+            title="Использовать предмет">
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <path d="M11.2 2.3a2 2 0 0 1 1.6 0l7 3.1A2 2 0 0 1 21 7.2v9.6a2 2 0 0 1-1.2 1.8l-7 3.1a2 2 0 0 1-1.6 0l-7-3.1A2 2 0 0 1 3 16.8V7.2a2 2 0 0 1 1.2-1.8l7-3.1ZM8.1 5.1l3.9 1.7 3.9-1.7L12 3.4 8.1 5.1Zm9.9 2.3-4 1.8v4.1l4-1.8V7.4Zm-12 0v4.1l4 1.8V9.2l-4-1.8Zm4 13.1v-4.1l-4-1.8v4.1l4 1.8Zm4 0 4-1.8v-4.1l-4 1.8v4.1Z" />
+              <path
+                d="M11.2 2.3a2 2 0 0 1 1.6 0l7 3.1A2 2 0 0 1 21 7.2v9.6a2 2 0 0 1-1.2 1.8l-7 3.1a2 2 0 0 1-1.6 0l-7-3.1A2 2 0 0 1 3 16.8V7.2a2 2 0 0 1 1.2-1.8l7-3.1ZM8.1 5.1l3.9 1.7 3.9-1.7L12 3.4 8.1 5.1Zm9.9 2.3-4 1.8v4.1l4-1.8V7.4Zm-12 0v4.1l4 1.8V9.2l-4-1.8Zm4 13.1v-4.1l-4-1.8v4.1l4 1.8Zm4 0 4-1.8v-4.1l-4 1.8v4.1Z" />
             </svg>
           </button>
 
-          <button
-            type="button"
-            class="pg-item-delete"
-            data-item-id="{{this.id}}"
-            aria-label="Удалить предмет"
-            title="Удалить предмет"
-          >
+          <button type="button" class="pg-item-delete" data-item-id="{{this.id}}" aria-label="Удалить предмет"
+            title="Удалить предмет">
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v8h-2V9zm4 0h2v8h-2V9zM7 9h2v8H7V9zm-1 12h12a2 2 0 0 0 2-2V7H4v12a2 2 0 0 0 2 2z" />
+              <path
+                d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v8h-2V9zm4 0h2v8h-2V9zM7 9h2v8H7V9zm-1 12h12a2 2 0 0 0 2-2V7H4v12a2 2 0 0 0 2 2z" />
             </svg>
           </button>
         </li>

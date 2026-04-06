@@ -17,8 +17,8 @@
   padding: 0;
 }
 
-.pg-item-row + .pg-item-row,
-.pg-effect-row + .pg-effect-row {
+.pg-item-row+.pg-item-row,
+.pg-effect-row+.pg-effect-row {
   margin-top: 6px;
 }
 
@@ -402,4 +402,113 @@
   border: 1px dashed var(--color-border-light-tertiary, rgba(0, 0, 0, 0.2));
   border-radius: 8px;
   opacity: 0.8;
+}
+
+.pg-level-up-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pg-level-up-controls input {
+  flex: 0 0 96px;
+}
+
+.pg-level-up-button {
+  white-space: nowrap;
+}
+
+.pg-level-up-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pg-level-up-dialog p {
+  margin: 0;
+}
+
+.pg-level-up-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.pg-level-up-summary-card {
+  border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.2));
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.pg-level-up-summary-card__label {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.pg-level-up-summary-card__value {
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.pg-level-up-toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+.pg-level-up-toolbar button {
+  width: 36px;
+  height: 32px;
+  padding: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.pg-level-up-row-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pg-level-up-purchase-row {
+  border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.2));
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.pg-level-up-purchase-row .pg-form-field {
+  margin-top: 0;
+}
+
+.pg-level-up-purchase-row .pg-form-field+.pg-form-field {
+  margin-top: 10px;
+}
+
+.pg-level-up-purchase-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.pg-level-up-purchase-warning {
+  color: #a33a3a;
+  font-weight: 700;
+}
+
+.pg-level-up-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pg-level-up-errors__item {
+  padding: 8px 10px;
+  border: 1px solid rgba(163, 58, 58, 0.4);
+  border-radius: 8px;
+  background: rgba(163, 58, 58, 0.08);
+  color: #7d2020;
 }

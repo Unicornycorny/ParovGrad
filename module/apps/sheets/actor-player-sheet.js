@@ -6,6 +6,7 @@ import {
   getActorEffectView,
   openActorEffectDialog
 } from "../../effects/effect-utils.js";
+import { openActorLevelUpDialog } from "../level-up-dialog.js";
 
 export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.sheets.ActorSheetV2
@@ -120,6 +121,14 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
         if (!statKey) return;
 
         await this._openStatRollDialog(statKey);
+      });
+    });
+
+    htmlElement.querySelectorAll(".pg-level-up-button").forEach((element) => {
+      element.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        await openActorLevelUpDialog(this.document);
       });
     });
 
