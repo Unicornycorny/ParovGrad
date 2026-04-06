@@ -20,6 +20,7 @@ export class PlayerDataModel extends foundry.abstract.TypeDataModel {
       // Прочие показатели
       lifePath: new NumberField({ required: true, integer: true, min: 1, max: 5, initial: 1 }),
       inspiration: new NumberField({ required: true, integer: true, min: 0, initial: 0 }),
+      skillPoints: new NumberField({ required: true, integer: true, min: 0, initial: 0 }),
       experience: new NumberField({ required: true, integer: true, min: 0, initial: 0 }),
       level: new NumberField({ required: true, integer: true, min: 0, initial: 1 }),
 

@@ -43,6 +43,7 @@ export class ParovGradSkillSheet extends foundry.applications.api.HandlebarsAppl
     context.skillView = {
       name: this.document.name || "-",
       damageDie: String(this.document.system?.damageDie || "-").toUpperCase(),
+      cost: Number(this.document.system?.cost) || 0,
       description: this.document.system?.description?.trim() || "-"
     };
 

@@ -27,6 +27,11 @@
       </div>
 
       <div class="pg-form-field">
+        <label>Стоимость</label>
+        <input type="number" name="system.cost" min="0" step="1" value="{{system.cost}}" />
+      </div>
+
+      <div class="pg-form-field">
         <label>Описание</label>
         <textarea name="system.description">{{system.description}}</textarea>
       </div>
@@ -40,6 +45,11 @@
         <article class="pg-weapon-stat">
           <div class="pg-weapon-stat__label">Кость урона</div>
           <div class="pg-weapon-stat__value">{{skillView.damageDie}}</div>
+        </article>
+
+        <article class="pg-weapon-stat">
+          <div class="pg-weapon-stat__label">Стоимость</div>
+          <div class="pg-weapon-stat__value">{{skillView.cost}}</div>
         </article>
 
         <article class="pg-weapon-stat pg-weapon-stat--full">
