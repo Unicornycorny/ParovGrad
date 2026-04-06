@@ -13,30 +13,31 @@
     <section>
       <h2>Характеристики</h2>
 
-      <div>
-        <label>Телосложение</label>
-        <input type="number" name="system.stats.constitution" min="1" max="20" value="{{system.stats.constitution}}">
+      {{#each statViews}}
+      <div class="pg-stat-row">
+        <label for="pg-stat-{{this.key}}">{{this.label}}</label>
+        <div class="pg-stat-controls pg-stat-controls--with-influence">
+          <input
+            id="pg-stat-{{this.key}}"
+            type="number"
+            name="system.stats.{{this.key}}"
+            min="1"
+            max="20"
+            value="{{this.value}}"
+          >
+          <input
+            type="text"
+            class="pg-stat-influence"
+            value="{{this.influenceDisplay}}"
+            readonly
+            disabled
+            tabindex="-1"
+            title="{{this.influenceTooltip}}"
+            aria-label="Сумма внешних влияний: {{this.influenceDisplay}}"
+          >
+        </div>
       </div>
-
-      <div>
-        <label>Внимание</label>
-        <input type="number" name="system.stats.awareness" min="1" max="20" value="{{system.stats.awareness}}">
-      </div>
-
-      <div>
-        <label>Движение</label>
-        <input type="number" name="system.stats.movement" min="1" max="20" value="{{system.stats.movement}}">
-      </div>
-
-      <div>
-        <label>Мышление</label>
-        <input type="number" name="system.stats.thinking" min="1" max="20" value="{{system.stats.thinking}}">
-      </div>
-
-      <div>
-        <label>Воля</label>
-        <input type="number" name="system.stats.will" min="1" max="20" value="{{system.stats.will}}">
-      </div>
+      {{/each}}
     </section>
 
     <section>
@@ -58,10 +59,27 @@
       </div>
 
       <div>
+        <label>Внешнее влияние на макс. здоровье</label>
+        <input
+          type="text"
+          class="pg-stat-influence"
+          value="{{healthInfluenceView.influenceDisplay}}"
+          readonly
+          disabled
+          tabindex="-1"
+          title="{{healthInfluenceView.influenceTooltip}}"
+        >
+      </div>
+
+      <div>
         <label>Здоровье</label>
-        <input type="number" name="system.health.value" min="0" value="{{system.health.value}}">
+        <input type="number" name="system.health.value" min="0" max="{{derivedHealthMax}}" value="{{system.health.value}}">
         /
         <input type="number" name="system.health.max" min="0" value="{{system.health.max}}">
+      </div>
+      <div>
+        <label>Итоговое макс. здоровье</label>
+        <input type="number" value="{{derivedHealthMax}}" disabled>
       </div>
     </section>
 
@@ -97,6 +115,10 @@
 
             {{#if this.removal}}
             <div class="pg-effect-row__text"><strong>Снятие:</strong> {{this.removal}}</div>
+            {{/if}}
+
+            {{#if this.modifierSummary}}
+            <div class="pg-effect-row__text"><strong>Влияния:</strong> {{this.modifierSummary}}</div>
             {{/if}}
 
             {{#if this.sourceLabel}}

@@ -5,120 +5,40 @@
     <section>
       <h2>Характеристики</h2>
 
+      {{#each statViews}}
       <div class="pg-stat-row">
-        <label for="pg-stat-constitution">Телосложение</label>
-        <div class="pg-stat-controls">
+        <label for="pg-stat-{{this.key}}">{{this.label}}</label>
+        <div class="pg-stat-controls pg-stat-controls--with-influence">
           <input
-            id="pg-stat-constitution"
+            id="pg-stat-{{this.key}}"
             type="number"
-            name="system.stats.constitution"
+            name="system.stats.{{this.key}}"
             min="1"
             max="20"
-            value="{{system.stats.constitution}}"
+            value="{{this.value}}"
+          >
+          <input
+            type="text"
+            class="pg-stat-influence"
+            value="{{this.influenceDisplay}}"
+            readonly
+            disabled
+            tabindex="-1"
+            title="{{this.influenceTooltip}}"
+            aria-label="Сумма внешних влияний: {{this.influenceDisplay}}"
           >
           <button
             type="button"
             class="pg-stat-roll"
-            data-stat-key="constitution"
-            aria-label="Проверка характеристики Телосложение"
-            title="Проверка характеристики Телосложение"
+            data-stat-key="{{this.key}}"
+            aria-label="Проверка характеристики {{this.label}}"
+            title="Проверка характеристики {{this.label}} (итог: {{this.effectiveValue}})"
           >
             D20
           </button>
         </div>
       </div>
-
-      <div class="pg-stat-row">
-        <label for="pg-stat-awareness">Внимание</label>
-        <div class="pg-stat-controls">
-          <input
-            id="pg-stat-awareness"
-            type="number"
-            name="system.stats.awareness"
-            min="1"
-            max="20"
-            value="{{system.stats.awareness}}"
-          >
-          <button
-            type="button"
-            class="pg-stat-roll"
-            data-stat-key="awareness"
-            aria-label="Проверка характеристики Внимание"
-            title="Проверка характеристики Внимание"
-          >
-            D20
-          </button>
-        </div>
-      </div>
-
-      <div class="pg-stat-row">
-        <label for="pg-stat-movement">Движение</label>
-        <div class="pg-stat-controls">
-          <input
-            id="pg-stat-movement"
-            type="number"
-            name="system.stats.movement"
-            min="1"
-            max="20"
-            value="{{system.stats.movement}}"
-          >
-          <button
-            type="button"
-            class="pg-stat-roll"
-            data-stat-key="movement"
-            aria-label="Проверка характеристики Движение"
-            title="Проверка характеристики Движение"
-          >
-            D20
-          </button>
-        </div>
-      </div>
-
-      <div class="pg-stat-row">
-        <label for="pg-stat-thinking">Мышление</label>
-        <div class="pg-stat-controls">
-          <input
-            id="pg-stat-thinking"
-            type="number"
-            name="system.stats.thinking"
-            min="1"
-            max="20"
-            value="{{system.stats.thinking}}"
-          >
-          <button
-            type="button"
-            class="pg-stat-roll"
-            data-stat-key="thinking"
-            aria-label="Проверка характеристики Мышление"
-            title="Проверка характеристики Мышление"
-          >
-            D20
-          </button>
-        </div>
-      </div>
-
-      <div class="pg-stat-row">
-        <label for="pg-stat-will">Воля</label>
-        <div class="pg-stat-controls">
-          <input
-            id="pg-stat-will"
-            type="number"
-            name="system.stats.will"
-            min="1"
-            max="20"
-            value="{{system.stats.will}}"
-          >
-          <button
-            type="button"
-            class="pg-stat-roll"
-            data-stat-key="will"
-            aria-label="Проверка характеристики Воля"
-            title="Проверка характеристики Воля"
-          >
-            D20
-          </button>
-        </div>
-      </div>
+      {{/each}}
     </section>
 
     <section>
@@ -142,6 +62,19 @@
       <div>
         <label>Уровень</label>
         <input type="number" name="system.level" min="0" value="{{system.level}}">
+      </div>
+
+      <div>
+        <label>Внешнее влияние на макс. здоровье</label>
+        <input
+          type="text"
+          class="pg-stat-influence"
+          value="{{healthInfluenceView.influenceDisplay}}"
+          readonly
+          disabled
+          tabindex="-1"
+          title="{{healthInfluenceView.influenceTooltip}}"
+        >
       </div>
 
       <div>
@@ -184,6 +117,10 @@
 
             {{#if this.removal}}
             <div class="pg-effect-row__text"><strong>Снятие:</strong> {{this.removal}}</div>
+            {{/if}}
+
+            {{#if this.modifierSummary}}
+            <div class="pg-effect-row__text"><strong>Влияния:</strong> {{this.modifierSummary}}</div>
             {{/if}}
 
             {{#if this.sourceLabel}}

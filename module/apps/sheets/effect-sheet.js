@@ -1,3 +1,9 @@
+import {
+  getEffectItemTemplateData,
+  getEffectModifierOptions,
+  getEffectModifierLabel
+} from "../../effects/effect-utils.js";
+
 export class ParovGradEffectSheet extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.DocumentSheetV2
 ) {
@@ -26,17 +32,30 @@ export class ParovGradEffectSheet extends foundry.applications.api.HandlebarsApp
 
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
+    const effectData = getEffectItemTemplateData(this.document);
+
     context.system = this.document.system;
     context.isEditMode = this._isEditMode;
+    context.modifierTargetOptions = getEffectModifierOptions();
+    context.modifierList = effectData.modifiers.map((modifier, index) => ({
+      index,
+      target: modifier.target,
+      label: getEffectModifierLabel(modifier.target),
+      value: modifier.value,
+      signedValue: modifier.value >= 0 ? `+${modifier.value}` : String(modifier.value)
+    }));
+
     context.effectView = {
-      name: this.document.name || "—",
-      level: Number.isFinite(Number(this.document.system?.level)) ? Number(this.document.system.level) : 1,
-      effectType: this.document.system?.effectType?.trim() || "—",
-      impact: this.document.system?.impact?.trim() || "—",
-      removal: this.document.system?.removal?.trim() || "—",
-      description: this.document.system?.description?.trim() || "—",
-      changes: this.document.system?.changes?.trim() || "[]"
+      name: effectData.name,
+      level: effectData.level,
+      effectType: effectData.effectType || "—",
+      impact: effectData.impact || "—",
+      removal: effectData.removal || "—",
+      description: effectData.description || "—",
+      modifierSummary: effectData.modifierSummary || "—",
+      modifierList: context.modifierList
     };
+
     return context;
   }
 
@@ -55,5 +74,74 @@ export class ParovGradEffectSheet extends foundry.applications.api.HandlebarsApp
     });
 
     return controls;
+  }
+
+  _attachPartListeners(partId, htmlElement, options) {
+    super._attachPartListeners(partId, htmlElement, options);
+    if (!this._isEditMode) return;
+
+    const addButton = htmlElement.querySelector(".pg-effect-modifier-add");
+    const targetSelect = htmlElement.querySelector(".pg-effect-modifier-target");
+    const valueInput = htmlElement.querySelector(".pg-effect-modifier-value-input");
+
+    if (addButton instanceof HTMLButtonElement && targetSelect instanceof HTMLSelectElement && valueInput instanceof HTMLInputElement) {
+      addButton.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const effectData = getEffectItemTemplateData(this.document);
+        const modifiers = [...effectData.modifiers, {
+          target: targetSelect.value,
+          value: Math.trunc(Number(valueInput.value) || 0)
+        }];
+
+        valueInput.value = "0";
+        await this.document.update({
+          "system.modifiers": modifiers,
+          "system.changes": "[]"
+        });
+      });
+    }
+
+    htmlElement.querySelectorAll(".pg-effect-modifier-row__value").forEach((input) => {
+      input.addEventListener("change", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const index = Number(input.dataset.modifierIndex);
+        if (!Number.isInteger(index)) return;
+
+        const effectData = getEffectItemTemplateData(this.document);
+        if (!effectData.modifiers[index]) return;
+
+        const modifiers = effectData.modifiers.map((modifier, modifierIndex) => modifierIndex === index ? {
+          ...modifier,
+          value: Math.trunc(Number(input.value) || 0)
+        } : modifier);
+
+        await this.document.update({
+          "system.modifiers": modifiers,
+          "system.changes": "[]"
+        });
+      });
+    });
+
+    htmlElement.querySelectorAll(".pg-effect-modifier-delete").forEach((button) => {
+      button.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const index = Number(button.dataset.modifierIndex);
+        if (!Number.isInteger(index)) return;
+
+        const effectData = getEffectItemTemplateData(this.document);
+        const modifiers = effectData.modifiers.filter((_modifier, modifierIndex) => modifierIndex !== index);
+
+        await this.document.update({
+          "system.modifiers": modifiers,
+          "system.changes": "[]"
+        });
+      });
+    });
   }
 }

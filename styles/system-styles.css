@@ -224,6 +224,21 @@
   text-align: right;
 }
 
+.pg-stat-controls--with-influence {
+  gap: 6px;
+}
+
+.pg-stat-influence {
+  width: 72px;
+  text-align: right;
+  font-weight: 700;
+  cursor: help;
+}
+
+.pg-stat-influence[disabled] {
+  opacity: 1;
+}
+
 .pg-stat-roll {
   display: inline-flex;
   align-items: center;
@@ -332,4 +347,59 @@
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.pg-effect-modifier-add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.pg-effect-modifier-list,
+.pg-effect-modifier-readonly-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.pg-effect-modifier-row,
+.pg-effect-modifier-readonly-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.2));
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.pg-effect-modifier-readonly-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.pg-effect-modifier-row__label {
+  min-width: 0;
+  font-weight: 600;
+}
+
+.pg-effect-modifier-row__value,
+.pg-effect-modifier-value-input {
+  width: 100%;
+  text-align: right;
+}
+
+.pg-effect-modifier-delete,
+.pg-effect-modifier-add {
+  white-space: nowrap;
+}
+
+.pg-effect-modifier-empty {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px dashed var(--color-border-light-tertiary, rgba(0, 0, 0, 0.2));
+  border-radius: 8px;
+  opacity: 0.8;
 }

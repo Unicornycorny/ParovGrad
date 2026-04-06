@@ -1,4 +1,4 @@
-const { StringField, NumberField } = foundry.data.fields;
+const { StringField, NumberField, ArrayField, SchemaField } = foundry.data.fields;
 
 export class EffectDataModel extends foundry.abstract.TypeDataModel {
   static defineSchema() {
@@ -8,6 +8,14 @@ export class EffectDataModel extends foundry.abstract.TypeDataModel {
       effectType: new StringField({ required: false, initial: "" }),
       impact: new StringField({ required: false, initial: "" }),
       removal: new StringField({ required: false, initial: "" }),
+      modifiers: new ArrayField(
+        new SchemaField({
+          target: new StringField({ required: true, initial: "constitution" }),
+          value: new NumberField({ required: true, integer: true, initial: 0 })
+        }),
+        { required: true, initial: [] }
+      ),
+      // Legacy JSON field kept for backward compatibility with older effect items.
       changes: new StringField({ required: false, initial: "[]" })
     };
   }

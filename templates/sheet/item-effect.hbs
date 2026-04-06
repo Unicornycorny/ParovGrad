@@ -45,9 +45,40 @@
       </div>
 
       <div class="pg-form-field">
-        <label>Механические изменения (JSON)</label>
-        <textarea name="system.changes" rows="10">{{system.changes}}</textarea>
-        <p class="pg-form-hint">Шаблон для ActiveEffect.changes. Например: [{"key":"system.stats.constitution","mode":2,"value":"1"}]</p>
+        <label>Влияния эффекта</label>
+
+        <div class="pg-effect-modifier-add-row">
+          <select class="pg-effect-modifier-target">
+            {{#each modifierTargetOptions}}
+              <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+            {{/each}}
+          </select>
+
+          <input type="number" class="pg-effect-modifier-value-input" step="1" value="0">
+          <button type="button" class="pg-effect-modifier-add">+</button>
+        </div>
+
+        <p class="pg-form-hint">Положительное число усиливает показатель, отрицательное — уменьшает.</p>
+
+        {{#if modifierList.length}}
+          <div class="pg-effect-modifier-list">
+            {{#each modifierList}}
+              <div class="pg-effect-modifier-row" data-modifier-index="{{this.index}}">
+                <div class="pg-effect-modifier-row__label">{{this.label}}</div>
+                <input
+                  type="number"
+                  class="pg-effect-modifier-row__value"
+                  data-modifier-index="{{this.index}}"
+                  step="1"
+                  value="{{this.value}}"
+                >
+                <button type="button" class="pg-effect-modifier-delete" data-modifier-index="{{this.index}}">Удалить</button>
+              </div>
+            {{/each}}
+          </div>
+        {{else}}
+          <div class="pg-effect-modifier-empty">Влияния не добавлены</div>
+        {{/if}}
       </div>
     {{else}}
       <div class="pg-weapon-stat-grid">
@@ -82,8 +113,21 @@
         </article>
 
         <article class="pg-weapon-stat pg-weapon-stat--full">
-          <div class="pg-weapon-stat__label">Механические изменения</div>
-          <div class="pg-weapon-stat__value"><pre class="pg-code-block">{{effectView.changes}}</pre></div>
+          <div class="pg-weapon-stat__label">Влияния</div>
+          <div class="pg-weapon-stat__value">
+            {{#if effectView.modifierList.length}}
+              <div class="pg-effect-modifier-readonly-list">
+                {{#each effectView.modifierList}}
+                  <div class="pg-effect-modifier-readonly-row">
+                    <span>{{this.label}}</span>
+                    <strong>{{this.signedValue}}</strong>
+                  </div>
+                {{/each}}
+              </div>
+            {{else}}
+              —
+            {{/if}}
+          </div>
         </article>
       </div>
     {{/if}}

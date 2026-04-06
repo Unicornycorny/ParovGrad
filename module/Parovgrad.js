@@ -13,7 +13,7 @@ import { ParovGradSkillSheet } from "./apps/sheets/skill-sheet.js";
 import { ParovGradEffectSheet } from "./apps/sheets/effect-sheet.js";
 import { createParovgradRoll, rollToMessage } from "./dice/parovgrad-roll.js";
 import { renderAttackChatButtons } from "./workflows/weapon-attack.js";
-import { handleCanvasEffectDrop } from "./effects/effect-utils.js";
+import { handleCanvasEffectDrop, buildActorInfluenceState, migrateLegacyActorEffects } from "./effects/effect-utils.js";
 
 Hooks.once("init", () => {
   CONFIG.Actor.dataModels.Player = PlayerDataModel;
@@ -77,6 +77,19 @@ Hooks.on("preUpdateActor", (actor, changed) => {
   applyDerivedHealthToUpdate(actor, changed);
 });
 
+
+Hooks.once("ready", async () => {
+  if (!game.user?.isGM) return;
+
+  for (const actor of game.actors.contents) {
+    try {
+      await migrateLegacyActorEffects(actor);
+    } catch (error) {
+      console.error(`ParovGrad | Failed to migrate legacy effects for actor ${actor.name}`, error);
+    }
+  }
+});
+
 Hooks.on("renderChatMessageHTML", (message, html) => {
   renderAttackChatButtons(message, html);
 });
@@ -90,10 +103,13 @@ Hooks.on("dropCanvasData", async (canvas, data, event) => {
   }
 });
 
-function getDerivedHealthMax(source) {
+function getDerivedHealthMax(source, influenceTotals = {}) {
   const constitution = Number(foundry.utils.getProperty(source, "system.stats.constitution")) || 0;
   const lifePath = Number(foundry.utils.getProperty(source, "system.lifePath")) || 0;
-  return Math.max(0, constitution * lifePath);
+  const constitutionInfluence = Number(influenceTotals.constitution) || 0;
+  const healthMaxInfluence = Number(influenceTotals.healthMax) || 0;
+  const effectiveConstitution = constitution + constitutionInfluence;
+  return Math.max(0, effectiveConstitution * lifePath + healthMaxInfluence);
 }
 
 function applyDerivedHealthToSource(source) {
@@ -107,7 +123,8 @@ function applyDerivedHealthToSource(source) {
 
 function applyDerivedHealthToUpdate(actor, changed) {
   const merged = foundry.utils.mergeObject(actor.toObject(), changed, { inplace: false });
-  const derivedMax = getDerivedHealthMax(merged);
+  const influenceTotals = buildActorInfluenceState(actor).totalsByTarget;
+  const derivedMax = getDerivedHealthMax(merged, influenceTotals);
 
   foundry.utils.setProperty(changed, "system.health.max", derivedMax);
 

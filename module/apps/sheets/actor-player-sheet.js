@@ -29,10 +29,10 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
 
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
-    const derivedHealthMax = this._getDerivedHealthMax();
-
     context.system = this.document.system;
-    context.derivedHealthMax = derivedHealthMax;
+    context.statViews = this._buildStatViews();
+    context.healthInfluenceView = this._buildHealthInfluenceView();
+    context.derivedHealthMax = Number(this.document.system.derivedHealthMax) || 0;
 
     context.items = Array.from(this.document.items)
       .filter((item) => item.type !== "effect")
@@ -258,7 +258,9 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
     const statConfig = this._getStatConfig(statKey);
     if (!statConfig) return;
 
-    const statValue = Number(foundry.utils.getProperty(this.document.system, `stats.${statKey}`)) || 0;
+    const statValue = Number(foundry.utils.getProperty(this.document.system, `effectiveStats.${statKey}`))
+      || Number(foundry.utils.getProperty(this.document.system, `stats.${statKey}`))
+      || 0;
     const formula = this._buildD20Formula(mode, [statValue, modifier]);
     const roll = await this._evaluateActorRoll(formula, { useInspiration });
     if (!roll) return;
@@ -329,9 +331,35 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
     return stats[statKey] ?? null;
   }
 
-  _getDerivedHealthMax() {
-    const constitution = Number(foundry.utils.getProperty(this.document.system, "stats.constitution")) || 0;
-    const lifePath = Number(foundry.utils.getProperty(this.document.system, "lifePath")) || 0;
-    return Math.max(0, constitution * lifePath);
+  _buildStatViews() {
+    const statDefinitions = [
+      ["constitution", "Телосложение"],
+      ["awareness", "Внимание"],
+      ["movement", "Движение"],
+      ["thinking", "Мышление"],
+      ["will", "Воля"]
+    ];
+
+    return statDefinitions.map(([key, label]) => {
+      const total = Number(foundry.utils.getProperty(this.document.system, `externalInfluenceTotals.${key}`)) || 0;
+      return {
+        key,
+        label,
+        value: Number(foundry.utils.getProperty(this.document.system, `stats.${key}`)) || 0,
+        influenceTotal: total,
+        influenceDisplay: total >= 0 ? `+${total}` : String(total),
+        influenceTooltip: String(foundry.utils.getProperty(this.document.system, `externalInfluenceTooltips.${key}`) ?? "Нет внешних влияний"),
+        effectiveValue: Number(foundry.utils.getProperty(this.document.system, `effectiveStats.${key}`)) || 0
+      };
+    });
+  }
+
+  _buildHealthInfluenceView() {
+    const total = Number(foundry.utils.getProperty(this.document.system, "externalInfluenceTotals.healthMax")) || 0;
+    return {
+      influenceTotal: total,
+      influenceDisplay: total >= 0 ? `+${total}` : String(total),
+      influenceTooltip: String(foundry.utils.getProperty(this.document.system, "derivedHealthInfluenceTooltip") ?? "Нет внешних влияний")
+    };
   }
 }

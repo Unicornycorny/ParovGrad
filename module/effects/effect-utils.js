@@ -1,6 +1,18 @@
 const EFFECT_FLAG_SCOPE = "ParovGrad";
 const DEFAULT_EFFECT_ICON = "icons/svg/aura.svg";
-const DEFAULT_CHANGES_TEXT = "[]";
+const DEFAULT_EFFECT_TARGET = "constitution";
+
+const EFFECT_MODIFIER_TARGETS = [
+  { key: "constitution", label: "Телосложение", path: "system.stats.constitution" },
+  { key: "awareness", label: "Внимание", path: "system.stats.awareness" },
+  { key: "movement", label: "Движение", path: "system.stats.movement" },
+  { key: "thinking", label: "Мышление", path: "system.stats.thinking" },
+  { key: "will", label: "Воля", path: "system.stats.will" },
+  { key: "healthMax", label: "Максимальное здоровье", path: "system.health.max" }
+];
+
+const CHANGE_KEY_TO_TARGET = Object.fromEntries(EFFECT_MODIFIER_TARGETS.map((target) => [target.path, target.key]));
+const EMPTY_INFLUENCE_STATE = Object.freeze(Object.fromEntries(EFFECT_MODIFIER_TARGETS.map((target) => [target.key, 0])));
 
 export function getEffectFlagScope() {
   return EFFECT_FLAG_SCOPE;
@@ -10,45 +22,20 @@ export function getDefaultEffectIcon() {
   return DEFAULT_EFFECT_ICON;
 }
 
-export function getDefaultEffectChangesText() {
-  return DEFAULT_CHANGES_TEXT;
+export function getEffectModifierOptions(selectedTarget = DEFAULT_EFFECT_TARGET) {
+  return EFFECT_MODIFIER_TARGETS.map((target) => ({
+    value: target.key,
+    label: target.label,
+    selected: target.key === selectedTarget
+  }));
 }
 
-export function getExampleEffectChangesText() {
-  return JSON.stringify(
-    [
-      {
-        key: "system.stats.constitution",
-        mode: CONST.ACTIVE_EFFECT_MODES.ADD,
-        value: "1"
-      }
-    ],
-    null,
-    2
-  );
-}
-
-export function parseEffectChanges(rawChanges) {
-  const source = String(rawChanges ?? "").trim();
-  if (!source) return [];
-
-  let parsed;
-  try {
-    parsed = JSON.parse(source);
-  } catch (error) {
-    throw new Error("Поле механических изменений должно содержать корректный JSON-массив.");
-  }
-
-  if (!Array.isArray(parsed)) {
-    throw new Error("Поле механических изменений должно содержать JSON-массив объектов изменений.");
-  }
-
-  return parsed.map((entry, index) => normalizeEffectChange(entry, index));
+export function getEffectModifierLabel(targetKey) {
+  return EFFECT_MODIFIER_TARGETS.find((target) => target.key === targetKey)?.label ?? targetKey;
 }
 
 export function getActorEffectView(effect) {
   const flagData = getParovgradEffectFlagData(effect);
-  const changes = Array.isArray(effect.changes) ? effect.changes : [];
 
   return {
     id: effect.id,
@@ -61,26 +48,35 @@ export function getActorEffectView(effect) {
     effectType: flagData.effectType,
     impact: flagData.impact,
     removal: flagData.removal,
-    changesCount: changes.length,
-    changesText: flagData.changesText,
+    changesCount: flagData.modifiers.length,
+    modifiers: flagData.modifiers,
+    modifierSummary: getEffectModifierSummary(flagData.modifiers),
     sourceLabel: flagData.sourceItemName || ""
   };
 }
 
 export function getParovgradEffectFlagData(effect) {
   const stored = effect?.flags?.[EFFECT_FLAG_SCOPE] ?? {};
+  const modifiers = getSupportedModifiers(
+    Array.isArray(stored.modifiers) ? stored.modifiers : null,
+    stored.changesText,
+    effect?.changes
+  );
+
   return {
     level: Number.isFinite(Number(stored.level)) ? Number(stored.level) : 1,
     effectType: String(stored.effectType ?? "").trim(),
     impact: String(stored.impact ?? "").trim(),
     removal: String(stored.removal ?? "").trim(),
-    changesText: String(stored.changesText ?? DEFAULT_CHANGES_TEXT),
+    modifiers,
     sourceItemUuid: stored.sourceItemUuid ?? "",
     sourceItemName: stored.sourceItemName ?? ""
   };
 }
 
 export function getEffectItemTemplateData(item) {
+  const modifiers = getSupportedModifiers(item.system?.modifiers, item.system?.changes, null);
+
   return {
     name: item.name || "Новый эффект",
     img: item.img || DEFAULT_EFFECT_ICON,
@@ -89,10 +85,59 @@ export function getEffectItemTemplateData(item) {
     effectType: String(item.system?.effectType ?? "").trim(),
     impact: String(item.system?.impact ?? "").trim(),
     removal: String(item.system?.removal ?? "").trim(),
-    changesText: String(item.system?.changes ?? DEFAULT_CHANGES_TEXT),
+    modifiers,
+    modifierSummary: getEffectModifierSummary(modifiers),
     sourceItemUuid: item.uuid,
     sourceItemName: item.name || ""
   };
+}
+
+export function buildActorInfluenceState(actor) {
+  const entriesByTarget = Object.fromEntries(EFFECT_MODIFIER_TARGETS.map((target) => [target.key, []]));
+  const totalsByTarget = { ...EMPTY_INFLUENCE_STATE };
+  const tooltipsByTarget = Object.fromEntries(EFFECT_MODIFIER_TARGETS.map((target) => [target.key, "Нет внешних влияний"]));
+
+  const effects = Array.from(actor?.effects ?? []);
+  for (const effect of effects) {
+    if (!effect || effect.disabled || effect.isSuppressed) continue;
+
+    const flagData = getParovgradEffectFlagData(effect);
+    if (!flagData.modifiers.length) continue;
+
+    for (const modifier of flagData.modifiers) {
+      if (!(modifier.target in entriesByTarget)) continue;
+
+      const entry = {
+        effectId: effect.id,
+        effectName: effect.name || "Безымянный эффект",
+        sourceItemName: flagData.sourceItemName || "",
+        target: modifier.target,
+        value: modifier.value,
+        signedValue: formatSignedValue(modifier.value),
+        summary: `${effect.name || "Безымянный эффект"}: ${formatSignedValue(modifier.value)}`
+      };
+
+      entriesByTarget[modifier.target].push(entry);
+      totalsByTarget[modifier.target] += modifier.value;
+    }
+  }
+
+  for (const target of EFFECT_MODIFIER_TARGETS) {
+    const entries = entriesByTarget[target.key];
+    if (!entries.length) continue;
+
+    tooltipsByTarget[target.key] = entries.map((entry) => entry.summary).join("\n");
+  }
+
+  return { entriesByTarget, totalsByTarget, tooltipsByTarget };
+}
+
+export function getModifierTotalForTargetFromEffect(effect, target) {
+  const flagData = getParovgradEffectFlagData(effect);
+  return flagData.modifiers.reduce((total, modifier) => {
+    if (modifier.target !== target) return total;
+    return total + modifier.value;
+  }, 0);
 }
 
 export async function openActorEffectDialog({ actor, effect = null, seed = null } = {}) {
@@ -103,15 +148,15 @@ export async function openActorEffectDialog({ actor, effect = null, seed = null 
   const escapedDescription = foundry.utils.escapeHTML(initial.description);
   const escapedImpact = foundry.utils.escapeHTML(initial.impact);
   const escapedRemoval = foundry.utils.escapeHTML(initial.removal);
-  const escapedChanges = foundry.utils.escapeHTML(initial.changesText);
   const escapedSource = foundry.utils.escapeHTML(initial.sourceItemName || "");
+  const modifierOptionsHtml = renderModifierTargetOptionsHtml(DEFAULT_EFFECT_TARGET);
 
   const result = await foundry.applications.api.DialogV2.wait({
     window: { title: effect ? `Редактирование эффекта: ${effect.name}` : `Новый эффект: ${actor.name}` },
     modal: true,
     rejectClose: false,
     content: `
-      <form class="pg-effect-dialog">
+      <div class="pg-effect-dialog">
         ${escapedSource ? `<p class="pg-effect-dialog__source">Шаблон: <strong>${escapedSource}</strong></p>` : ""}
 
         <div class="pg-form-field">
@@ -152,28 +197,44 @@ export async function openActorEffectDialog({ actor, effect = null, seed = null 
         </div>
 
         <div class="pg-form-field">
-          <label for="pg-effect-changes">Механические изменения (JSON)</label>
-          <textarea id="pg-effect-changes" name="changesText" rows="8" placeholder='${foundry.utils.escapeHTML(getExampleEffectChangesText())}'>${escapedChanges}</textarea>
-          <p class="pg-form-hint">Укажи JSON-массив объектов вида {"key":"system.stats.constitution","mode":2,"value":"1"}. Режимы — CONST.ACTIVE_EFFECT_MODES.</p>
+          <label>Влияния эффекта</label>
+          <input type="hidden" name="modifiersData" value="[]">
+          <div class="pg-effect-modifier-add-row">
+            <select name="newModifierTarget" class="pg-effect-modifier-target">
+              ${modifierOptionsHtml}
+            </select>
+            <input type="number" name="newModifierValue" class="pg-effect-modifier-value-input" step="1" value="0">
+            <button type="button" class="pg-effect-modifier-add" data-action="add-modifier">+</button>
+          </div>
+          <p class="pg-form-hint">Положительное число усиливает показатель, отрицательное — уменьшает.</p>
+          <div class="pg-effect-modifier-list" data-effect-modifier-list></div>
         </div>
-      </form>
+      </div>
     `,
+    render: (_event, dialog) => {
+      initializeEffectModifierEditor(dialog, initial.modifiers);
+    },
     buttons: [
       {
         action: "save",
         label: effect ? "Сохранить" : "Создать",
-        callback: (event, button) => ({
-          name: String(button.form?.elements?.name?.value ?? "").trim(),
-          img: String(button.form?.elements?.img?.value ?? "").trim(),
-          description: String(button.form?.elements?.description?.value ?? "").trim(),
-          level: Number(button.form?.elements?.level?.value) || 0,
-          effectType: String(button.form?.elements?.effectType?.value ?? "").trim(),
-          impact: String(button.form?.elements?.impact?.value ?? "").trim(),
-          removal: String(button.form?.elements?.removal?.value ?? "").trim(),
-          changesText: String(button.form?.elements?.changesText?.value ?? DEFAULT_CHANGES_TEXT),
-          sourceItemUuid: initial.sourceItemUuid || "",
-          sourceItemName: initial.sourceItemName || ""
-        })
+        callback: (_event, button, _dialog) => {
+          const form = button?.form;
+          if (!(form instanceof HTMLFormElement)) return null;
+
+          return {
+            name: readDialogControlValue(form, "name").trim(),
+            img: readDialogControlValue(form, "img").trim(),
+            description: readDialogControlValue(form, "description").trim(),
+            level: Number(readDialogControlValue(form, "level")) || 0,
+            effectType: readDialogControlValue(form, "effectType").trim(),
+            impact: readDialogControlValue(form, "impact").trim(),
+            removal: readDialogControlValue(form, "removal").trim(),
+            modifiers: parseModifiersFieldValue(readDialogControlValue(form, "modifiersData", "[]")),
+            sourceItemUuid: initial.sourceItemUuid || "",
+            sourceItemName: initial.sourceItemName || ""
+          };
+        }
       },
       {
         action: "cancel",
@@ -218,13 +279,40 @@ export async function applyEffectItemToActor(actor, item) {
 }
 
 export async function cloneActiveEffectToActor(actor, effect) {
-  const data = effect.toObject();
-  delete data._id;
-  data.origin = effect.uuid;
+  const seed = getEffectDialogSeedFromActiveEffect(effect);
+  const data = buildActiveEffectCreateData(seed, {
+    origin: effect.uuid,
+    disabled: Boolean(effect.disabled),
+    baseFlags: effect.flags ?? {}
+  });
 
   const created = await actor.createEmbeddedDocuments("ActiveEffect", [data]);
   ui.notifications?.info(`Эффект «${effect.name}» добавлен к ${actor.name}.`);
   return created[0] ?? null;
+}
+
+export async function migrateLegacyActorEffects(actor) {
+  const legacyEffects = Array.from(actor?.effects ?? []).filter((effect) => {
+    const hasLegacyChanges = Array.isArray(effect.changes) && effect.changes.length > 0;
+    const storedModifiers = effect?.flags?.[EFFECT_FLAG_SCOPE]?.modifiers;
+    return hasLegacyChanges && !Array.isArray(storedModifiers);
+  });
+
+  for (const effect of legacyEffects) {
+    const seed = getEffectDialogSeedFromActiveEffect(effect);
+    const update = buildActiveEffectCreateData(seed, {
+      origin: effect.origin || seed.sourceItemUuid || "",
+      disabled: Boolean(effect.disabled),
+      baseFlags: effect.flags ?? {}
+    });
+
+    await effect.update({
+      changes: [],
+      flags: update.flags
+    });
+  }
+
+  return legacyEffects.length;
 }
 
 export async function resolveEffectSourceFromDropData(data) {
@@ -281,7 +369,7 @@ function getEffectDialogSeedFromActiveEffect(effect) {
     effectType: flagData.effectType,
     impact: flagData.impact,
     removal: flagData.removal,
-    changesText: flagData.changesText,
+    modifiers: flagData.modifiers,
     sourceItemUuid: flagData.sourceItemUuid,
     sourceItemName: flagData.sourceItemName
   };
@@ -296,7 +384,7 @@ function getBlankEffectDialogSeed() {
     effectType: "",
     impact: "",
     removal: "",
-    changesText: DEFAULT_CHANGES_TEXT,
+    modifiers: [],
     sourceItemUuid: "",
     sourceItemName: ""
   };
@@ -311,15 +399,15 @@ function buildActiveEffectUpdateData(formData, existingEffect) {
 }
 
 function buildActiveEffectCreateData(source, { origin = "", disabled = false, baseFlags = {} } = {}) {
-  const changesText = String(source.changesText ?? DEFAULT_CHANGES_TEXT).trim() || DEFAULT_CHANGES_TEXT;
-  const changes = parseEffectChanges(changesText);
+  const modifiers = getSupportedModifiers(source.modifiers, source.changesText, source.changes);
+  const changes = buildEffectChangesFromModifiers(modifiers);
 
   const parovgradFlags = {
     level: Math.max(Number(source.level) || 0, 0),
     effectType: String(source.effectType ?? "").trim(),
     impact: String(source.impact ?? "").trim(),
     removal: String(source.removal ?? "").trim(),
-    changesText,
+    modifiers,
     sourceItemUuid: String(source.sourceItemUuid ?? "").trim(),
     sourceItemName: String(source.sourceItemName ?? "").trim()
   };
@@ -338,7 +426,209 @@ function buildActiveEffectCreateData(source, { origin = "", disabled = false, ba
   };
 }
 
-async function resolveDroppedDocument(data) {
+function buildEffectChangesFromModifiers(modifiers) {
+  // Влияния ParovGrad больше не применяются напрямую через ActiveEffect.changes.
+  // Вместо этого они хранятся в flags и вычисляются системой как внешние влияния.
+  return [];
+}
+
+function getSupportedModifiers(modifiers, legacyChangesText = null, legacyChanges = null) {
+  if (Array.isArray(modifiers) && modifiers.length) {
+    return modifiers.map((modifier, index) => normalizeEffectModifier(modifier, index));
+  }
+
+  const legacy = parseLegacySupportedModifiers(legacyChangesText, legacyChanges);
+  return legacy;
+}
+
+function parseLegacySupportedModifiers(legacyChangesText = null, legacyChanges = null) {
+  if (Array.isArray(legacyChanges) && legacyChanges.length) {
+    return extractSupportedModifiersFromChanges(legacyChanges);
+  }
+
+  const source = String(legacyChangesText ?? "").trim();
+  if (!source) return [];
+
+  let parsed;
+  try {
+    parsed = JSON.parse(source);
+  } catch (_error) {
+    return [];
+  }
+
+  if (!Array.isArray(parsed)) return [];
+  return extractSupportedModifiersFromChanges(parsed);
+}
+
+function extractSupportedModifiersFromChanges(changes) {
+  return changes.reduce((result, change) => {
+    const key = String(change?.key ?? "").trim();
+    const target = CHANGE_KEY_TO_TARGET[key];
+    if (!target) return result;
+
+    const mode = Number(change?.mode);
+    if (mode !== CONST.ACTIVE_EFFECT_MODES.ADD) return result;
+
+    const value = Number(change?.value);
+    if (!Number.isFinite(value)) return result;
+
+    result.push({ target, value });
+    return result;
+  }, []);
+}
+
+function normalizeEffectModifier(modifier, index) {
+  if (!modifier || typeof modifier !== "object") {
+    throw new Error(`Влияние #${index + 1} должно быть объектом.`);
+  }
+
+  const target = String(modifier.target ?? "").trim();
+  if (!EFFECT_MODIFIER_TARGETS.some((definition) => definition.key === target)) {
+    throw new Error(`Влияние #${index + 1} содержит неизвестный показатель.`);
+  }
+
+  const value = Number(modifier.value);
+  if (!Number.isFinite(value)) {
+    throw new Error(`Влияние #${index + 1} должно содержать числовое значение.`);
+  }
+
+  return {
+    target,
+    value: Math.trunc(value)
+  };
+}
+
+function getEffectModifierSummary(modifiers) {
+  if (!Array.isArray(modifiers) || !modifiers.length) return "";
+
+  return modifiers
+    .map((modifier) => `${getEffectModifierLabel(modifier.target)} ${formatSignedValue(modifier.value)}`)
+    .join(", ");
+}
+
+function renderModifierTargetOptionsHtml(selectedTarget = DEFAULT_EFFECT_TARGET) {
+  return getEffectModifierOptions(selectedTarget)
+    .map((option) => `<option value="${foundry.utils.escapeHTML(option.value)}" ${option.selected ? "selected" : ""}>${foundry.utils.escapeHTML(option.label)}</option>`)
+    .join("");
+}
+
+function initializeEffectModifierEditor(dialog, initialModifiers = []) {
+  const root = dialog.element ?? dialog.window?.content;
+  if (!(root instanceof HTMLElement)) return;
+
+  const form = dialog.form instanceof HTMLFormElement
+    ? dialog.form
+    : root.querySelector("form");
+  if (!(form instanceof HTMLFormElement)) return;
+
+  const hiddenInput = form.querySelector("input[name='modifiersData']");
+  const listElement = form.querySelector("[data-effect-modifier-list]");
+  const addButton = form.querySelector("[data-action='add-modifier']");
+  const targetSelect = form.querySelector("select[name='newModifierTarget']");
+  const valueInput = form.querySelector("input[name='newModifierValue']");
+
+  if (!(hiddenInput instanceof HTMLInputElement)
+    || !(listElement instanceof HTMLElement)
+    || !(addButton instanceof HTMLButtonElement)
+    || !(targetSelect instanceof HTMLSelectElement)
+    || !(valueInput instanceof HTMLInputElement)) {
+    return;
+  }
+
+  let modifiers = getSupportedModifiers(initialModifiers);
+
+  const render = () => {
+    hiddenInput.value = JSON.stringify(modifiers);
+
+    if (!modifiers.length) {
+      listElement.innerHTML = '<div class="pg-effect-modifier-empty">Влияния не добавлены</div>';
+      return;
+    }
+
+    listElement.innerHTML = modifiers.map((modifier, index) => `
+      <div class="pg-effect-modifier-row" data-modifier-index="${index}">
+        <div class="pg-effect-modifier-row__label">${foundry.utils.escapeHTML(getEffectModifierLabel(modifier.target))}</div>
+        <input type="number" class="pg-effect-modifier-row__value" data-modifier-index="${index}" step="1" value="${modifier.value}">
+        <button type="button" class="pg-effect-modifier-delete" data-modifier-index="${index}">Удалить</button>
+      </div>
+    `).join("");
+  };
+
+  addButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    modifiers = [
+      ...modifiers,
+      normalizeEffectModifier({ target: targetSelect.value, value: Number(valueInput.value) || 0 }, modifiers.length)
+    ];
+    valueInput.value = "0";
+    render();
+  });
+
+  listElement.addEventListener("click", (event) => {
+    const deleteButton = event.target instanceof HTMLElement ? event.target.closest(".pg-effect-modifier-delete") : null;
+    if (!(deleteButton instanceof HTMLButtonElement)) return;
+
+    event.preventDefault();
+    const index = Number(deleteButton.dataset.modifierIndex);
+    if (!Number.isInteger(index) || index < 0 || index >= modifiers.length) return;
+
+    modifiers = modifiers.filter((_modifier, modifierIndex) => modifierIndex !== index);
+    render();
+  });
+
+  listElement.addEventListener("change", (event) => {
+    const valueField = event.target instanceof HTMLElement ? event.target.closest(".pg-effect-modifier-row__value") : null;
+    if (!(valueField instanceof HTMLInputElement)) return;
+
+    const index = Number(valueField.dataset.modifierIndex);
+    if (!Number.isInteger(index) || index < 0 || index >= modifiers.length) return;
+
+    modifiers[index] = normalizeEffectModifier({
+      target: modifiers[index].target,
+      value: Number(valueField.value) || 0
+    }, index);
+
+    render();
+  });
+
+  render();
+}
+
+function readDialogControlValue(form, fieldName, fallback = "") {
+  if (!(form instanceof HTMLFormElement)) return fallback;
+
+  const control = form.elements?.namedItem?.(fieldName);
+  if (!control) return fallback;
+
+  if (control instanceof RadioNodeList) {
+    return String(control.value ?? fallback);
+  }
+
+  if ("value" in control) {
+    return String(control.value ?? fallback);
+  }
+
+  return fallback;
+}
+
+function parseModifiersFieldValue(rawValue) {
+  const source = String(rawValue ?? "[]").trim() || "[]";
+
+  let parsed;
+  try {
+    parsed = JSON.parse(source);
+  } catch (error) {
+    throw new Error("Не удалось прочитать список влияний эффекта.");
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new Error("Список влияний эффекта имеет неверный формат.");
+  }
+
+  return parsed.map((modifier, index) => normalizeEffectModifier(modifier, index));
+}
+
+function resolveDroppedDocument(data) {
   if (data.uuid) {
     return fromUuid(data.uuid);
   }
@@ -361,28 +651,8 @@ function findTokenAtCanvasPoint(canvas, x, y) {
   return candidates.find((token) => token.bounds?.contains(Number(x), Number(y))) ?? null;
 }
 
-function normalizeEffectChange(change, index) {
-  if (!change || typeof change !== "object") {
-    throw new Error(`Изменение #${index + 1} должно быть объектом.`);
-  }
-
-  const key = String(change.key ?? "").trim();
-  if (!key) {
-    throw new Error(`В изменении #${index + 1} отсутствует поле key.`);
-  }
-
-  const mode = Number(change.mode);
-  if (!Number.isFinite(mode)) {
-    throw new Error(`В изменении #${index + 1} отсутствует числовое поле mode.`);
-  }
-
-  const value = change.value == null ? "" : String(change.value);
-  const priority = Number(change.priority);
-
-  return {
-    key,
-    mode,
-    value,
-    ...(Number.isFinite(priority) ? { priority } : {})
-  };
+function formatSignedValue(value) {
+  if (!Number.isFinite(Number(value))) return "0";
+  const numericValue = Math.trunc(Number(value));
+  return numericValue >= 0 ? `+${numericValue}` : String(numericValue);
 }
