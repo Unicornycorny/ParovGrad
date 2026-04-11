@@ -58,6 +58,80 @@ function buildFormula(baseFormula, modifier = 0) {
   return `${baseFormula} ${normalizedModifier >= 0 ? "+" : "-"} ${Math.abs(normalizedModifier)}`;
 }
 
+function getEffectDieFaces(die) {
+  const match = String(die ?? "").trim().toLowerCase().match(/^d(2|4|6|8|12|20|100)$/);
+  return match ? Number(match[1]) : null;
+}
+
+function normalizeEffectRanges(effectRanges, dieFaces = null) {
+  if (!Array.isArray(effectRanges)) return [];
+
+  return effectRanges.map((entry) => {
+    let from = Math.trunc(Number(entry?.from) || 1);
+    let to = Math.trunc(Number(entry?.to) || from);
+
+    from = Math.max(from, 1);
+    to = Math.max(to, 1);
+
+    if (dieFaces) {
+      from = Math.min(from, dieFaces);
+      to = Math.min(to, dieFaces);
+    }
+
+    if (from > to) [from, to] = [to, from];
+
+    return {
+      from,
+      to,
+      effect: String(entry?.effect ?? "").trim()
+    };
+  });
+}
+
+function findTriggeredWeaponEffects(effectRanges, rolledValue) {
+  return effectRanges.filter((entry) => rolledValue >= entry.from && rolledValue <= entry.to);
+}
+
+async function createWeaponEffectResultMessage({ actor, itemName, targetName, effectCheckDie, effectRoll, triggeredEffects = [] }) {
+  const speaker = ChatMessage.getSpeaker({ actor });
+  const hasTriggeredEffects = triggeredEffects.length > 0;
+  const effectListHtml = hasTriggeredEffects
+    ? `
+      <div class="pg-chat-card__comparison">
+        ${triggeredEffects.map((entry) => `
+          <div><strong>${entry.from}–${entry.to}</strong>: ${entry.effect || "—"}</div>
+        `).join("")}
+      </div>
+    `
+    : "";
+
+  await createRollCardMessage({
+    roll: effectRoll,
+    speaker,
+    content: `
+      <div class="pg-chat-card__header">
+        <div class="pg-chat-card__title">Дополнительный эффект оружия</div>
+        <div class="pg-chat-card__subtitle">${itemName} проверяет дополнительный эффект по цели ${targetName}</div>
+      </div>
+      <div class="pg-chat-card__meta">Куб эффекта: ${String(effectCheckDie).toUpperCase()}</div>
+      <div class="pg-chat-card__result ${hasTriggeredEffects ? "is-success" : "is-failure"}">
+        ${hasTriggeredEffects ? "Дополнительный эффект сработал" : "Дополнительный эффект не сработал"}
+      </div>
+      ${effectListHtml}
+    `,
+    flags: {
+      cardType: "weapon-effect",
+      weaponEffect: {
+        itemName,
+        targetName,
+        effectCheckDie,
+        total: effectRoll.total,
+        triggeredEffects
+      }
+    }
+  });
+}
+
 async function createRollCardMessage({ roll, speaker, content, flags = {} }) {
   const rollHtml = await roll.render();
   return ChatMessage.create({
@@ -89,6 +163,13 @@ function canApplyDamage(message) {
   const targetActor = getActorFromTokenUuid(data.targetTokenUuid);
   if (!targetActor) return false;
   return game.user.isGM || targetActor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
+}
+
+function canRollWeaponEffect(message) {
+  const data = message.getFlag("ParovGrad", "attack") ?? {};
+  const attackerActor = data.attackerActorUuid ? fromUuidSync(data.attackerActorUuid) : null;
+  if (!attackerActor) return false;
+  return game.user.isGM || attackerActor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
 }
 
 async function setAttackResolved(message, resolved = true) {
@@ -172,6 +253,9 @@ export async function startItemAttack({ actor, item, sourceType = null }) {
       <div class="pg-chat-card__meta">Режим: ${getRollModeLabel(attackConfig.mode)}${attackConfig.modifier ? ` · Модификатор: ${attackConfig.modifier >= 0 ? "+" : "-"}${Math.abs(attackConfig.modifier)}` : ""}${attackConfig.useInspiration ? " · Вдохновение" : ""}</div>
       <div class="pg-chat-card__actions">
         <button type="button" class="pg-chat-button" data-action="roll-defense">Защита от атаки</button>
+        ${source.type === "weapon" && getEffectDieFaces(item.system?.effectCheckDie) && normalizeEffectRanges(item.system?.effectRanges, getEffectDieFaces(item.system?.effectCheckDie)).length
+          ? '<button type="button" class="pg-chat-button" data-action="roll-weapon-effect">Проверить доп. эффект</button>'
+          : ""}
       </div>
     `,
     flags: {
@@ -188,7 +272,10 @@ export async function startItemAttack({ actor, item, sourceType = null }) {
         mode: attackConfig.mode,
         modifier: attackConfig.modifier,
         usedInspiration: attackConfig.useInspiration,
-        resolved: false
+        resolved: false,
+        success: null,
+        hasWeaponEffect: source.type === "weapon" && Boolean(getEffectDieFaces(item.system?.effectCheckDie) && normalizeEffectRanges(item.system?.effectRanges, getEffectDieFaces(item.system?.effectCheckDie)).length),
+        effectRolled: false
       }
     }
   });
@@ -199,28 +286,53 @@ export async function renderAttackChatButtons(message, html) {
   if (!cardType) return;
 
   if (cardType === "attack") {
-    const button = html.querySelector('[data-action="roll-defense"]');
-    if (!button) return;
-
+    const defenseButton = html.querySelector('[data-action="roll-defense"]');
+    const effectButton = html.querySelector('[data-action="roll-weapon-effect"]');
     const attackData = message.getFlag("ParovGrad", "attack") ?? {};
-    const allowed = canControlDefense(message);
-    const disabled = !allowed || attackData.resolved;
 
-    button.disabled = disabled;
-    button.textContent = getButtonStateText({
-      disabled: attackData.resolved,
-      doneLabel: "Защита выполнена",
-      activeLabel: "Защита от атаки"
-    });
+    if (defenseButton) {
+      const allowed = canControlDefense(message);
+      const disabled = !allowed || attackData.resolved;
 
-    if (!allowed && !attackData.resolved) {
-      button.title = "Кнопка доступна только GM или владельцу цели.";
+      defenseButton.disabled = disabled;
+      defenseButton.textContent = getButtonStateText({
+        disabled: attackData.resolved,
+        doneLabel: "Защита выполнена",
+        activeLabel: "Защита от атаки"
+      });
+
+      if (!allowed && !attackData.resolved) {
+        defenseButton.title = "Кнопка доступна только GM или владельцу цели.";
+      }
+
+      defenseButton.addEventListener("click", async (event) => {
+        event.preventDefault();
+        await handleDefenseButtonClick(message);
+      });
     }
 
-    button.addEventListener("click", async (event) => {
-      event.preventDefault();
-      await handleDefenseButtonClick(message);
-    });
+    if (effectButton) {
+      const allowed = canRollWeaponEffect(message);
+      const disabled = !allowed || attackData.effectRolled;
+
+      effectButton.disabled = disabled;
+      effectButton.textContent = getButtonStateText({
+        disabled: attackData.effectRolled,
+        doneLabel: "Доп. эффект проверен",
+        activeLabel: "Проверить доп. эффект"
+      });
+
+      if (!allowed && !attackData.effectRolled) {
+        effectButton.title = "Кнопка доступна только GM или владельцу атакующего.";
+      }
+
+      effectButton.addEventListener("click", async (event) => {
+        event.preventDefault();
+        await handleWeaponEffectButtonClick(message);
+      });
+    }
+
+    return;
   }
 
   if (cardType === "damage") {
@@ -319,6 +431,7 @@ export async function handleDefenseButtonClick(message) {
   });
 
   await setAttackResolved(message, true);
+  await message.setFlag("ParovGrad", "attack.success", success);
 
   if (!success) return;
 
@@ -381,6 +494,60 @@ export async function handleDefenseButtonClick(message) {
       }
     }
   });
+
+}
+
+export async function handleWeaponEffectButtonClick(message) {
+  const attackData = foundry.utils.deepClone(message.getFlag("ParovGrad", "attack") ?? {});
+  if (!attackData || !attackData.itemUuid) return;
+
+  if (!attackData.hasWeaponEffect) {
+    ui.notifications?.info("У этого оружия не настроен дополнительный эффект.");
+    return;
+  }
+
+  if (attackData.effectRolled) {
+    ui.notifications?.info("Дополнительный эффект по этой атаке уже был проверен.");
+    return;
+  }
+
+
+  if (!canRollWeaponEffect(message)) {
+    ui.notifications?.warn("У вас нет прав на бросок дополнительного эффекта этим оружием.");
+    return;
+  }
+
+  const sourceItem = fromUuidSync(attackData.itemUuid);
+  if (!sourceItem) {
+    ui.notifications?.warn("Не удалось найти оружие для проверки дополнительного эффекта.");
+    return;
+  }
+
+  const effectCheckDie = sourceItem.system?.effectCheckDie;
+  const effectDieFaces = getEffectDieFaces(effectCheckDie);
+  const effectRanges = normalizeEffectRanges(sourceItem.system?.effectRanges, effectDieFaces);
+
+  if (!effectCheckDie || !effectDieFaces || !effectRanges.length) {
+    ui.notifications?.warn("У оружия некорректно настроена проверка дополнительного эффекта.");
+    return;
+  }
+
+  const attackerActor = attackData.attackerActorUuid ? fromUuidSync(attackData.attackerActorUuid) : null;
+  const effectRoll = game.parovgrad.dice.createRoll(effectCheckDie, {}, { autoExplode: false });
+  await effectRoll.evaluate();
+
+  const triggeredEffects = findTriggeredWeaponEffects(effectRanges, Number(effectRoll.total) || 0);
+
+  await createWeaponEffectResultMessage({
+    actor: attackerActor ?? sourceItem.parent ?? null,
+    itemName: attackData.itemName,
+    targetName: attackData.targetName,
+    effectCheckDie,
+    effectRoll,
+    triggeredEffects
+  });
+
+  await message.setFlag("ParovGrad", "attack.effectRolled", true);
 }
 
 export async function handleApplyDamageButtonClick(message) {

@@ -3,7 +3,7 @@
  * и умеет добавлять 1 дополнительный куб к первому DiceTerm.
  */
 export function createParovgradRoll(formula, data = {}, options = {}) {
-  const { addExtraDie = false, ...rollOptions } = options;
+  const { addExtraDie = false, autoExplode = true, ...rollOptions } = options;
   const roll = new Roll(formula, data, rollOptions);
 
   // Не применяем авто-взрыв для служебных max/min вычислений,
@@ -13,7 +13,9 @@ export function createParovgradRoll(formula, data = {}, options = {}) {
       applyExtraDie(roll);
     }
 
-    applyAutoExplode(roll);
+    if (autoExplode) {
+      applyAutoExplode(roll);
+    }
     roll.resetFormula();
   }
 
@@ -27,8 +29,8 @@ export async function rollToMessage({
   messageData = {},
   chatOptions = {}
 } = {}) {
-  const { addExtraDie = false, ...rollOptions } = options;
-  const roll = createParovgradRoll(formula, data, { ...rollOptions, addExtraDie });
+  const { addExtraDie = false, autoExplode = true, ...rollOptions } = options;
+  const roll = createParovgradRoll(formula, data, { ...rollOptions, addExtraDie, autoExplode });
   await roll.evaluate(rollOptions);
   await roll.toMessage(messageData, chatOptions);
   return roll;
