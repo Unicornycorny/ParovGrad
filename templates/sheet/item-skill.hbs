@@ -32,6 +32,73 @@
       </div>
 
       <div class="pg-form-field">
+        <label>Куб проверки доп. эффекта</label>
+        <select name="system.effectCheckDie">
+          {{#each effectDieOptions}}
+          <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+          {{/each}}
+        </select>
+        <p class="pg-form-hint">После успешной атаки и броска урона можно отдельно проверить дополнительный эффект по диапазону.</p>
+      </div>
+
+      <div class="pg-form-field">
+        <label>Диапазоны дополнительных эффектов</label>
+
+        <div class="pg-form-grid pg-form-grid--two-columns">
+          <div class="pg-form-field">
+            <label>От</label>
+            <input type="number" class="pg-weapon-effect-add-from" min="1" step="1" value="1" />
+          </div>
+
+          <div class="pg-form-field">
+            <label>До</label>
+            <input type="number" class="pg-weapon-effect-add-to" min="1" step="1" value="1" />
+          </div>
+        </div>
+
+        <div class="pg-form-field">
+          <label>Эффект</label>
+          <textarea class="pg-weapon-effect-add-text" rows="3"></textarea>
+        </div>
+
+        <button type="button" class="pg-weapon-effect-add">+ Добавить диапазон</button>
+
+        {{#if effectRanges.length}}
+          <div class="pg-effect-modifier-list">
+            {{#each effectRanges}}
+              <div class="pg-effect-modifier-row" data-effect-range-index="{{this.index}}">
+                <div class="pg-effect-modifier-row__label">Диапазон</div>
+                <div class="pg-weapon-effect-row__range-fields">
+                  <input
+                    type="number"
+                    class="pg-weapon-effect-row__from"
+                    min="1"
+                    step="1"
+                    value="{{this.from}}"
+                  >
+                  <span>—</span>
+                  <input
+                    type="number"
+                    class="pg-weapon-effect-row__to"
+                    min="1"
+                    step="1"
+                    value="{{this.to}}"
+                  >
+                </div>
+                <textarea
+                  class="pg-weapon-effect-row__text"
+                  rows="2"
+                >{{this.effect}}</textarea>
+                <button type="button" class="pg-effect-modifier-delete pg-weapon-effect-delete" data-effect-range-index="{{this.index}}">Удалить</button>
+              </div>
+            {{/each}}
+          </div>
+        {{else}}
+          <div class="pg-effect-modifier-empty">Диапазоны дополнительных эффектов не добавлены</div>
+        {{/if}}
+      </div>
+
+      <div class="pg-form-field">
         <label>Описание</label>
         <textarea name="system.description">{{system.description}}</textarea>
       </div>
@@ -48,8 +115,31 @@
         </article>
 
         <article class="pg-weapon-stat">
+          <div class="pg-weapon-stat__label">Куб доп. эффекта</div>
+          <div class="pg-weapon-stat__value">{{skillView.effectCheckDie}}</div>
+        </article>
+
+        <article class="pg-weapon-stat">
           <div class="pg-weapon-stat__label">Стоимость</div>
           <div class="pg-weapon-stat__value">{{skillView.cost}}</div>
+        </article>
+
+        <article class="pg-weapon-stat pg-weapon-stat--full">
+          <div class="pg-weapon-stat__label">Диапазоны доп. эффектов</div>
+          <div class="pg-weapon-stat__value">
+            {{#if skillView.effectRanges.length}}
+              <div class="pg-effect-modifier-readonly-list">
+                {{#each skillView.effectRanges}}
+                  <div class="pg-effect-modifier-readonly-row">
+                    <span>{{this.from}}–{{this.to}}</span>
+                    <strong>{{#if this.hasText}}{{this.effect}}{{else}}—{{/if}}</strong>
+                  </div>
+                {{/each}}
+              </div>
+            {{else}}
+              —
+            {{/if}}
+          </div>
         </article>
 
         <article class="pg-weapon-stat pg-weapon-stat--full">

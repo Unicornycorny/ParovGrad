@@ -88,11 +88,25 @@ function normalizeEffectRanges(effectRanges, dieFaces = null) {
   });
 }
 
+function hasConfiguredEffect(item) {
+  const effectDieFaces = getEffectDieFaces(item?.system?.effectCheckDie);
+  if (!effectDieFaces) return false;
+  return normalizeEffectRanges(item?.system?.effectRanges, effectDieFaces).length > 0;
+}
+
 function findTriggeredWeaponEffects(effectRanges, rolledValue) {
   return effectRanges.filter((entry) => rolledValue >= entry.from && rolledValue <= entry.to);
 }
 
-async function createWeaponEffectResultMessage({ actor, itemName, targetName, effectCheckDie, effectRoll, triggeredEffects = [] }) {
+async function createAttackEffectResultMessage({
+  actor,
+  itemName,
+  targetName = "",
+  effectCheckDie,
+  effectRoll,
+  source,
+  triggeredEffects = []
+}) {
   const speaker = ChatMessage.getSpeaker({ actor });
   const hasTriggeredEffects = triggeredEffects.length > 0;
   const effectListHtml = hasTriggeredEffects
@@ -110,8 +124,8 @@ async function createWeaponEffectResultMessage({ actor, itemName, targetName, ef
     speaker,
     content: `
       <div class="pg-chat-card__header">
-        <div class="pg-chat-card__title">Дополнительный эффект оружия</div>
-        <div class="pg-chat-card__subtitle">${itemName} проверяет дополнительный эффект по цели ${targetName}</div>
+        <div class="pg-chat-card__title">${source.effectTitle}</div>
+        <div class="pg-chat-card__subtitle">${itemName} проверяет дополнительный эффект${targetName ? ` по цели ${targetName}` : ""}</div>
       </div>
       <div class="pg-chat-card__meta">Куб эффекта: ${String(effectCheckDie).toUpperCase()}</div>
       <div class="pg-chat-card__result ${hasTriggeredEffects ? "is-success" : "is-failure"}">
@@ -123,7 +137,8 @@ async function createWeaponEffectResultMessage({ actor, itemName, targetName, ef
       cardType: "weapon-effect",
       weaponEffect: {
         itemName,
-        targetName,
+        targetName: targetName || null,
+        sourceType: source.type,
         effectCheckDie,
         total: effectRoll.total,
         triggeredEffects
@@ -151,6 +166,22 @@ async function createRollCardMessage({ roll, speaker, content, flags = {} }) {
   });
 }
 
+async function createInfoCardMessage({ speaker, content, flags = {} }) {
+  return ChatMessage.create({
+    user: game.user.id,
+    speaker,
+    content: `
+      <div class="pg-chat-card">
+        ${content}
+      </div>
+    `,
+    style: CONST.CHAT_MESSAGE_STYLES.OTHER,
+    flags: {
+      ParovGrad: flags
+    }
+  });
+}
+
 function canControlDefense(message) {
   const data = message.getFlag("ParovGrad", "attack") ?? {};
   const targetActor = getActorFromTokenUuid(data.targetTokenUuid);
@@ -172,6 +203,13 @@ function canRollWeaponEffect(message) {
   return game.user.isGM || attackerActor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
 }
 
+function canRollItemEffect(message) {
+  const data = message.getFlag("ParovGrad", "itemUse") ?? {};
+  const ownerActor = data.actorUuid ? fromUuidSync(data.actorUuid) : null;
+  if (!ownerActor) return false;
+  return game.user.isGM || ownerActor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
+}
+
 async function setAttackResolved(message, resolved = true) {
   await message.setFlag("ParovGrad", "attack.resolved", resolved);
 }
@@ -190,16 +228,31 @@ function getAttackSourceConfig(itemType) {
     return {
       type: "skill",
       instrumental: "навыком",
+      genitive: "навыка",
       attackTitle: "Атака навыком",
-      damageTitle: "Урон навыка"
+      damageTitle: "Урон навыка",
+      effectTitle: "Дополнительный эффект навыка"
+    };
+  }
+
+  if (itemType === "item") {
+    return {
+      type: "item",
+      instrumental: "предметом",
+      genitive: "предмета",
+      attackTitle: "Атака предметом",
+      damageTitle: "Урон предмета",
+      effectTitle: "Дополнительный эффект предмета"
     };
   }
 
   return {
     type: "weapon",
     instrumental: "оружием",
+    genitive: "оружия",
     attackTitle: "Атака оружием",
-    damageTitle: "Урон оружия"
+    damageTitle: "Урон оружия",
+    effectTitle: "Дополнительный эффект оружия"
   };
 }
 
@@ -211,8 +264,49 @@ export async function startSkillAttack({ actor, item }) {
   return startItemAttack({ actor, item, sourceType: "skill" });
 }
 
+export async function startItemUse({ actor, item }) {
+  const hasSourceEffect = hasConfiguredEffect(item);
+  const description = String(item?.system?.description ?? "").trim();
+  const speaker = ChatMessage.getSpeaker({ actor });
+
+  await createInfoCardMessage({
+    speaker,
+    content: `
+      <div class="pg-chat-card__header">
+        <div class="pg-chat-card__title">Использование предмета</div>
+        <div class="pg-chat-card__subtitle">${actor.name} использует «${item.name}»</div>
+      </div>
+      <div class="pg-chat-card__meta">Описание: ${description || "—"}</div>
+      ${hasSourceEffect
+        ? `
+          <div class="pg-chat-card__actions">
+            <button type="button" class="pg-chat-button" data-action="roll-item-effect">Проверить доп. эффект</button>
+          </div>
+        `
+        : ""}
+    `,
+    flags: {
+      cardType: "item-use",
+      itemUse: {
+        actorUuid: actor.uuid,
+        itemUuid: item.uuid,
+        itemName: item.name,
+        sourceType: "item",
+        description,
+        hasSourceEffect,
+        effectRolled: false
+      }
+    }
+  });
+}
+
 export async function startItemAttack({ actor, item, sourceType = null }) {
+  if ((sourceType ?? item?.type) === "item") {
+    return startItemUse({ actor, item });
+  }
+
   const source = getAttackSourceConfig(sourceType ?? item?.type);
+  const hasSourceEffect = hasConfiguredEffect(item);
   const targetToken = getSingleTargetToken();
   if (!targetToken) return;
 
@@ -253,7 +347,7 @@ export async function startItemAttack({ actor, item, sourceType = null }) {
       <div class="pg-chat-card__meta">Режим: ${getRollModeLabel(attackConfig.mode)}${attackConfig.modifier ? ` · Модификатор: ${attackConfig.modifier >= 0 ? "+" : "-"}${Math.abs(attackConfig.modifier)}` : ""}${attackConfig.useInspiration ? " · Вдохновение" : ""}</div>
       <div class="pg-chat-card__actions">
         <button type="button" class="pg-chat-button" data-action="roll-defense">Защита от атаки</button>
-        ${source.type === "weapon" && getEffectDieFaces(item.system?.effectCheckDie) && normalizeEffectRanges(item.system?.effectRanges, getEffectDieFaces(item.system?.effectCheckDie)).length
+        ${hasSourceEffect
           ? '<button type="button" class="pg-chat-button" data-action="roll-weapon-effect">Проверить доп. эффект</button>'
           : ""}
       </div>
@@ -274,7 +368,8 @@ export async function startItemAttack({ actor, item, sourceType = null }) {
         usedInspiration: attackConfig.useInspiration,
         resolved: false,
         success: null,
-        hasWeaponEffect: source.type === "weapon" && Boolean(getEffectDieFaces(item.system?.effectCheckDie) && normalizeEffectRanges(item.system?.effectRanges, getEffectDieFaces(item.system?.effectCheckDie)).length),
+        hasSourceEffect,
+        hasWeaponEffect: hasSourceEffect,
         effectRolled: false
       }
     }
@@ -284,6 +379,33 @@ export async function startItemAttack({ actor, item, sourceType = null }) {
 export async function renderAttackChatButtons(message, html) {
   const cardType = message.getFlag("ParovGrad", "cardType");
   if (!cardType) return;
+
+  if (cardType === "item-use") {
+    const effectButton = html.querySelector('[data-action="roll-item-effect"]');
+    if (!effectButton) return;
+
+    const itemUseData = message.getFlag("ParovGrad", "itemUse") ?? {};
+    const allowed = canRollItemEffect(message);
+    const disabled = !allowed || itemUseData.effectRolled;
+
+    effectButton.disabled = disabled;
+    effectButton.textContent = getButtonStateText({
+      disabled: itemUseData.effectRolled,
+      doneLabel: "Доп. эффект проверен",
+      activeLabel: "Проверить доп. эффект"
+    });
+
+    if (!allowed && !itemUseData.effectRolled) {
+      effectButton.title = "Кнопка доступна только GM или владельцу использовавшего предмет.";
+    }
+
+    effectButton.addEventListener("click", async (event) => {
+      event.preventDefault();
+      await handleItemEffectButtonClick(message);
+    });
+
+    return;
+  }
 
   if (cardType === "attack") {
     const defenseButton = html.querySelector('[data-action="roll-defense"]');
@@ -500,9 +622,11 @@ export async function handleDefenseButtonClick(message) {
 export async function handleWeaponEffectButtonClick(message) {
   const attackData = foundry.utils.deepClone(message.getFlag("ParovGrad", "attack") ?? {});
   if (!attackData || !attackData.itemUuid) return;
+  const source = getAttackSourceConfig(attackData.sourceType);
+  const hasSourceEffect = attackData.hasSourceEffect ?? attackData.hasWeaponEffect;
 
-  if (!attackData.hasWeaponEffect) {
-    ui.notifications?.info("У этого оружия не настроен дополнительный эффект.");
+  if (!hasSourceEffect) {
+    ui.notifications?.info(`У этого ${source.genitive} не настроен дополнительный эффект.`);
     return;
   }
 
@@ -513,13 +637,13 @@ export async function handleWeaponEffectButtonClick(message) {
 
 
   if (!canRollWeaponEffect(message)) {
-    ui.notifications?.warn("У вас нет прав на бросок дополнительного эффекта этим оружием.");
+    ui.notifications?.warn(`У вас нет прав на бросок дополнительного эффекта этим ${source.instrumental}.`);
     return;
   }
 
   const sourceItem = fromUuidSync(attackData.itemUuid);
   if (!sourceItem) {
-    ui.notifications?.warn("Не удалось найти оружие для проверки дополнительного эффекта.");
+    ui.notifications?.warn(`Не удалось найти ${source.genitive} для проверки дополнительного эффекта.`);
     return;
   }
 
@@ -528,7 +652,7 @@ export async function handleWeaponEffectButtonClick(message) {
   const effectRanges = normalizeEffectRanges(sourceItem.system?.effectRanges, effectDieFaces);
 
   if (!effectCheckDie || !effectDieFaces || !effectRanges.length) {
-    ui.notifications?.warn("У оружия некорректно настроена проверка дополнительного эффекта.");
+    ui.notifications?.warn(`У ${source.genitive} некорректно настроена проверка дополнительного эффекта.`);
     return;
   }
 
@@ -538,16 +662,70 @@ export async function handleWeaponEffectButtonClick(message) {
 
   const triggeredEffects = findTriggeredWeaponEffects(effectRanges, Number(effectRoll.total) || 0);
 
-  await createWeaponEffectResultMessage({
+  await createAttackEffectResultMessage({
     actor: attackerActor ?? sourceItem.parent ?? null,
     itemName: attackData.itemName,
     targetName: attackData.targetName,
     effectCheckDie,
     effectRoll,
+    source,
     triggeredEffects
   });
 
   await message.setFlag("ParovGrad", "attack.effectRolled", true);
+}
+
+export async function handleItemEffectButtonClick(message) {
+  const itemUseData = foundry.utils.deepClone(message.getFlag("ParovGrad", "itemUse") ?? {});
+  if (!itemUseData || !itemUseData.itemUuid) return;
+
+  const source = getAttackSourceConfig("item");
+  if (!itemUseData.hasSourceEffect) {
+    ui.notifications?.info("У этого предмета не настроен дополнительный эффект.");
+    return;
+  }
+
+  if (itemUseData.effectRolled) {
+    ui.notifications?.info("Дополнительный эффект по этому использованию уже был проверен.");
+    return;
+  }
+
+  if (!canRollItemEffect(message)) {
+    ui.notifications?.warn("У вас нет прав на бросок дополнительного эффекта этим предметом.");
+    return;
+  }
+
+  const sourceItem = fromUuidSync(itemUseData.itemUuid);
+  if (!sourceItem) {
+    ui.notifications?.warn("Не удалось найти предмет для проверки дополнительного эффекта.");
+    return;
+  }
+
+  const effectCheckDie = sourceItem.system?.effectCheckDie;
+  const effectDieFaces = getEffectDieFaces(effectCheckDie);
+  const effectRanges = normalizeEffectRanges(sourceItem.system?.effectRanges, effectDieFaces);
+
+  if (!effectCheckDie || !effectDieFaces || !effectRanges.length) {
+    ui.notifications?.warn("У предмета некорректно настроена проверка дополнительного эффекта.");
+    return;
+  }
+
+  const actor = itemUseData.actorUuid ? fromUuidSync(itemUseData.actorUuid) : null;
+  const effectRoll = game.parovgrad.dice.createRoll(effectCheckDie, {}, { autoExplode: false });
+  await effectRoll.evaluate();
+
+  const triggeredEffects = findTriggeredWeaponEffects(effectRanges, Number(effectRoll.total) || 0);
+
+  await createAttackEffectResultMessage({
+    actor: actor ?? sourceItem.parent ?? null,
+    itemName: itemUseData.itemName,
+    effectCheckDie,
+    effectRoll,
+    source,
+    triggeredEffects
+  });
+
+  await message.setFlag("ParovGrad", "itemUse.effectRolled", true);
 }
 
 export async function handleApplyDamageButtonClick(message) {

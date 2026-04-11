@@ -1,5 +1,5 @@
 import { openConfiguredD20RollDialog, consumeActorInspiration } from "../../dice/roll-dialog.js";
-import { startItemAttack } from "../../workflows/weapon-attack.js";
+import { startItemAttack, startItemUse } from "../../workflows/weapon-attack.js";
 import {
   applyEffectItemToActor,
   cloneActiveEffectToActor,
@@ -225,6 +225,11 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
   async _useItem(item) {
     if (item.type === "weapon" || item.type === "skill") {
       await startItemAttack({ actor: this.document, item });
+      return;
+    }
+
+    if (item.type === "item") {
+      await startItemUse({ actor: this.document, item });
       return;
     }
 
