@@ -518,6 +518,10 @@
   gap: 8px;
 }
 
+.pg-weapon-effect-row {
+  grid-template-columns: max-content max-content minmax(0, 1fr) auto;
+}
+
 .pg-weapon-effect-row__range-fields input {
   width: 84px;
 }
