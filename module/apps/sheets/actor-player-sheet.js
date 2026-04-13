@@ -24,7 +24,7 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
   static PARTS = {
     form: {
       template: "systems/ParovGrad/templates/sheet/actor-player.hbs",
-      scrollable: [""]
+      scrollable: [".sheet-body"]
     }
   };
 

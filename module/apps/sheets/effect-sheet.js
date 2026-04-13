@@ -22,7 +22,7 @@ export class ParovGradEffectSheet extends foundry.applications.api.HandlebarsApp
   static PARTS = {
     form: {
       template: "systems/ParovGrad/templates/sheet/item-effect.hbs",
-      scrollable: [""]
+      scrollable: [".sheet-body"]
     }
   };
 

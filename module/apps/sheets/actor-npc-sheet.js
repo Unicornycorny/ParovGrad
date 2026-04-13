@@ -21,7 +21,7 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
   static PARTS = {
     form: {
       template: "systems/ParovGrad/templates/sheet/actor-npc.hbs",
-      scrollable: [""]
+      scrollable: [".sheet-body"]
     }
   };
 

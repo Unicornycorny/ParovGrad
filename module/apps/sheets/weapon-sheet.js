@@ -49,7 +49,7 @@ export class ParovGradWeaponSheet extends foundry.applications.api.HandlebarsApp
   static PARTS = {
     form: {
       template: "systems/ParovGrad/templates/sheet/item-weapon.hbs",
-      scrollable: [""]
+      scrollable: [".sheet-body"]
     }
   };
 

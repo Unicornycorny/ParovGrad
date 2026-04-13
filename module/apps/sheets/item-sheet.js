@@ -47,7 +47,7 @@ export class ParovGradItemSheet extends foundry.applications.api.HandlebarsAppli
   static PARTS = {
     form: {
       template: "systems/ParovGrad/templates/sheet/item-item.hbs",
-      scrollable: [""]
+      scrollable: [".sheet-body"]
     }
   };
 
