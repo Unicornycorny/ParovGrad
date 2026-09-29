@@ -4,6 +4,7 @@ import { ItemDataModel } from "./data/item/item-data.js";
 import { WeaponDataModel } from "./data/item/weapon-data.js";
 import { SkillDataModel } from "./data/item/skill-data.js";
 import { EffectDataModel } from "./data/item/effect-data.js";
+import { SpellDataModel } from "./data/item/spell-data.js";
 
 import { ParovGradPlayerSheet } from "./apps/sheets/actor-player-sheet.js";
 import { ParovGradNpcSheet } from "./apps/sheets/actor-npc-sheet.js";
@@ -14,6 +15,7 @@ import { ParovGradEffectSheet } from "./apps/sheets/effect-sheet.js";
 import { createParovgradRoll, rollToMessage } from "./dice/parovgrad-roll.js";
 import { renderAttackChatButtons } from "./workflows/weapon-attack.js";
 import { handleCanvasEffectDrop, buildActorInfluenceState, migrateLegacyActorEffects } from "./effects/effect-utils.js";
+import { ParovGradSpellSheet } from "./apps/sheets/spell-sheet.js";
 
 Hooks.once("init", () => {
   CONFIG.Actor.dataModels.Player = PlayerDataModel;
@@ -22,6 +24,7 @@ Hooks.once("init", () => {
   CONFIG.Item.dataModels.weapon = WeaponDataModel;
   CONFIG.Item.dataModels.skill = SkillDataModel;
   CONFIG.Item.dataModels.effect = EffectDataModel;
+  CONFIG.Item.dataModels.spell = SpellDataModel;
 
   foundry.applications.apps.DocumentSheetConfig.registerSheet(Actor, "ParovGrad", ParovGradPlayerSheet, {
     types: ["Player"],
@@ -52,6 +55,15 @@ Hooks.once("init", () => {
     types: ["effect"],
     makeDefault: true
   });
+  foundry.applications.apps.DocumentSheetConfig.registerSheet(
+    Item,
+    "ParovGrad",
+    ParovGradSpellSheet,
+    {
+      types: ["spell"],
+      makeDefault: true
+    }
+  );
 });
 
 Hooks.once("setup", () => {

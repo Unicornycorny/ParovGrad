@@ -1,0 +1,220 @@
+<section class="pg-sheet">
+  <div class="sheet-body">
+
+    <header class="pg-sheet-header">
+      <h1>{{document.name}}</h1>
+
+      <div class="pg-item-sheet-mode">
+        {{#if isEditMode}}
+          Режим: редактирование
+        {{else}}
+          Режим: просмотр
+        {{/if}}
+      </div>
+    </header>
+
+    {{#if isEditMode}}
+
+      <div class="pg-form-field">
+        <label>Название</label>
+        <input
+          type="text"
+          name="name"
+          value="{{document.name}}"
+        />
+      </div>
+
+      <div class="pg-form-grid pg-form-grid--two-columns">
+
+        <div class="pg-form-field">
+          <label>Уровень</label>
+          <input
+            type="number"
+            name="system.level"
+            min="0"
+            step="1"
+            value="{{system.level}}"
+          />
+        </div>
+
+        <div class="pg-form-field">
+          <label>Школа</label>
+          <input
+            type="text"
+            name="system.school"
+            value="{{system.school}}"
+          />
+        </div>
+
+        <div class="pg-form-field">
+          <label>Дальность</label>
+          <input
+            type="text"
+            name="system.range"
+            value="{{system.range}}"
+          />
+        </div>
+
+        <div class="pg-form-field">
+          <label>Форма</label>
+          <input
+            type="text"
+            name="system.shape"
+            value="{{system.shape}}"
+          />
+        </div>
+
+      </div>
+
+      <div class="pg-form-field">
+        <label>Влияние</label>
+
+        {{#if canAddInfluence}}
+          <div class="pg-spell-influence-add-row">
+            <input
+              type="text"
+              class="pg-spell-influence-add-input"
+              placeholder="Тип влияния"
+            />
+
+            <button
+              type="button"
+              class="pg-spell-influence-add"
+            >
+              + Добавить
+            </button>
+          </div>
+        {{/if}}
+
+        <p class="pg-form-hint">
+          Можно указать до 4 типов влияния.
+        </p>
+
+        {{#if influenceList}}
+          <div class="pg-effect-modifier-list">
+
+            {{#each influenceList}}
+              <div class="pg-spell-influence-row">
+
+                <input
+                  type="text"
+                  class="pg-spell-influence-value"
+                  data-influence-index="{{this.index}}"
+                  value="{{this.value}}"
+                />
+
+                <button
+                  type="button"
+                  class="pg-effect-modifier-delete pg-spell-influence-delete"
+                  data-influence-index="{{this.index}}"
+                >
+                  Удалить
+                </button>
+
+              </div>
+            {{/each}}
+
+          </div>
+        {{else}}
+          <div class="pg-effect-modifier-empty">
+            Влияния не добавлены
+          </div>
+        {{/if}}
+      </div>
+
+      <div class="pg-form-field">
+        <label>Описание</label>
+        <textarea
+          name="system.description"
+          rows="5"
+        >{{system.description}}</textarea>
+      </div>
+
+    {{else}}
+
+      <div class="pg-weapon-stat-grid">
+
+        <article class="pg-weapon-stat">
+          <div class="pg-weapon-stat__label">
+            Название
+          </div>
+          <div class="pg-weapon-stat__value">
+            {{spellView.name}}
+          </div>
+        </article>
+
+        <article class="pg-weapon-stat">
+          <div class="pg-weapon-stat__label">
+            Уровень
+          </div>
+          <div class="pg-weapon-stat__value">
+            {{spellView.level}}
+          </div>
+        </article>
+
+        <article class="pg-weapon-stat">
+          <div class="pg-weapon-stat__label">
+            Школа
+          </div>
+          <div class="pg-weapon-stat__value">
+            {{spellView.school}}
+          </div>
+        </article>
+
+        <article class="pg-weapon-stat">
+          <div class="pg-weapon-stat__label">
+            Дальность
+          </div>
+          <div class="pg-weapon-stat__value">
+            {{spellView.range}}
+          </div>
+        </article>
+
+        <article class="pg-weapon-stat">
+          <div class="pg-weapon-stat__label">
+            Форма
+          </div>
+          <div class="pg-weapon-stat__value">
+            {{spellView.shape}}
+          </div>
+        </article>
+
+        <article class="pg-weapon-stat pg-weapon-stat--full">
+          <div class="pg-weapon-stat__label">
+            Влияние
+          </div>
+
+          <div class="pg-weapon-stat__value">
+
+            {{#if spellView.influences}}
+              <div class="pg-effect-modifier-readonly-list">
+
+                {{#each spellView.influences}}
+                  <div class="pg-effect-modifier-readonly-row">
+                    <strong>{{this}}</strong>
+                  </div>
+                {{/each}}
+
+              </div>
+            {{else}}
+              —
+            {{/if}}
+
+          </div>
+        </article>
+
+        <article class="pg-weapon-stat pg-weapon-stat--full">
+          <div class="pg-weapon-stat__label">
+            Описание
+          </div>
+          <div class="pg-weapon-stat__value">
+            {{spellView.description}}
+          </div>
+        </article>
+
+      </div>
+
+    {{/if}}
+
+  </div>
+</section>

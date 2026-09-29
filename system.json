@@ -22,7 +22,8 @@
             "item": {},
             "weapon": {},
             "skill": {},
-            "effect": {}
+            "effect": {},
+            "spell": {}
         }
     },
     "socket": false,
