@@ -1245,3 +1245,427 @@
     width: 168px;
   }
 }
+
+/* Spell construction ------------------------------------------------------ */
+.pg-spell-builder-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.22));
+  border-radius: 9px;
+  background: rgba(82, 105, 142, 0.08);
+}
+
+.pg-spell-builder-callout > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pg-spell-builder-callout > div > span {
+  font-size: 11px;
+  opacity: 0.72;
+}
+
+.pg-spell-builder-callout button {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.pg-spell-construction-status {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border: 1px solid rgba(46, 125, 82, 0.38);
+  border-radius: 8px;
+  background: rgba(46, 125, 82, 0.08);
+}
+
+.pg-spell-construction-status > i {
+  margin-top: 2px;
+}
+
+.pg-spell-construction-status > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pg-spell-construction-status span,
+.pg-spell-construction-status small {
+  overflow-wrap: anywhere;
+}
+
+.pg-spell-construction-status span {
+  font-size: 11px;
+  opacity: 0.78;
+}
+
+.pg-spell-construction-status small {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.pg-spell-construction-status.is-outdated {
+  border-color: rgba(155, 107, 0, 0.5);
+  background: rgba(155, 107, 0, 0.09);
+}
+
+.pg-spell-construction-status.is-missing {
+  border-color: rgba(178, 29, 29, 0.45);
+  background: rgba(178, 29, 29, 0.08);
+}
+
+.pg-spell-builder-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+  padding: 10px;
+  overflow: hidden;
+}
+
+.pg-spell-builder-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  flex: 0 0 auto;
+}
+
+.pg-spell-builder-header h1 {
+  margin: 2px 0 0;
+  font-size: 22px;
+}
+
+.pg-spell-builder-tree-field {
+  display: grid;
+  grid-template-columns: auto minmax(220px, 320px);
+  gap: 8px;
+  align-items: center;
+}
+
+.pg-spell-builder-tree-field label {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.74;
+}
+
+.pg-spell-builder-source-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex: 0 0 auto;
+  padding: 7px 9px;
+  border: 1px solid rgba(46, 125, 82, 0.35);
+  border-radius: 8px;
+  background: rgba(46, 125, 82, 0.07);
+  font-size: 11px;
+}
+
+.pg-spell-builder-source-status.is-outdated {
+  border-color: rgba(155, 107, 0, 0.45);
+  background: rgba(155, 107, 0, 0.09);
+}
+
+.pg-spell-builder-source-status button {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.pg-spell-builder-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 370px;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pg-spell-builder-graph {
+  min-width: 0;
+  min-height: 0;
+}
+
+.pg-spell-builder-selection-counter {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  font-size: 12px;
+}
+
+.pg-spell-builder-clear {
+  width: auto !important;
+}
+
+.pg-spell-builder-graph .pg-magic-tree-node.is-selected {
+  outline-width: 3px;
+  box-shadow: 0 0 0 3px rgba(46, 125, 82, 0.16), 0 5px 14px rgba(0, 0, 0, 0.16);
+}
+
+.pg-spell-builder-node-selected-mark {
+  position: absolute;
+  right: -8px;
+  bottom: -8px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(245, 246, 238, 0.98);
+  border-radius: 50%;
+  background: #2e7d52;
+  color: white;
+  font-size: 11px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.pg-spell-builder-preview {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.pg-spell-builder-preview-card {
+  margin-bottom: 9px;
+  padding: 10px;
+  border: 1px solid var(--pg-magic-tree-border);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.pg-spell-builder-preview-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pg-spell-builder-preview-header h2 {
+  margin: 2px 0 0;
+  font-size: 18px;
+}
+
+.pg-spell-builder-total-cost {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex: 0 0 auto;
+}
+
+.pg-spell-builder-total-cost span {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.62;
+}
+
+.pg-spell-builder-total-cost strong {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.pg-spell-builder-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.pg-spell-builder-message {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: flex-start;
+  padding: 7px 8px;
+  border: 1px solid currentColor;
+  border-radius: 7px;
+  font-size: 11px;
+}
+
+.pg-spell-builder-message.is-error {
+  color: var(--pg-magic-tree-danger);
+  background: rgba(178, 29, 29, 0.05);
+}
+
+.pg-spell-builder-message.is-warning {
+  color: var(--pg-magic-tree-warning);
+  background: rgba(155, 107, 0, 0.05);
+}
+
+.pg-spell-builder-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.pg-spell-builder-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 8px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.045);
+}
+
+.pg-spell-builder-stat span {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.64;
+}
+
+.pg-spell-builder-preview-section {
+  margin-top: 11px;
+}
+
+.pg-spell-builder-preview-section h3,
+.pg-spell-builder-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 12px;
+}
+
+.pg-spell-builder-preview-section h3 > span,
+.pg-spell-builder-section-title > span {
+  font-size: 10px;
+  font-weight: 400;
+  opacity: 0.65;
+}
+
+.pg-spell-builder-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.pg-spell-builder-tag-list > span {
+  padding: 3px 7px;
+  border: 1px solid rgba(176, 120, 50, 0.42);
+  border-radius: 999px;
+  background: rgba(176, 120, 50, 0.08);
+  font-size: 11px;
+}
+
+.pg-spell-builder-simple-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 11px;
+}
+
+.pg-spell-builder-empty {
+  font-size: 11px;
+  opacity: 0.58;
+}
+
+.pg-spell-builder-component-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pg-spell-builder-component {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 7px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.035);
+}
+
+.pg-spell-builder-component > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.pg-spell-builder-component strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.pg-spell-builder-component small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+  opacity: 0.62;
+}
+
+.pg-spell-builder-component > span {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pg-spell-builder-cost-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+}
+
+.pg-spell-builder-cost-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.pg-spell-builder-cost-total {
+  margin-top: 3px;
+  padding-top: 6px !important;
+  border-top: 1px solid var(--pg-magic-tree-border);
+  font-size: 12px;
+}
+
+.pg-spell-builder-actions {
+  position: sticky;
+  bottom: 0;
+  padding: 9px;
+  border: 1px solid var(--pg-magic-tree-border);
+  border-radius: 9px;
+  background: var(--color-bg, rgba(240, 238, 228, 0.96));
+  backdrop-filter: blur(4px);
+}
+
+.pg-spell-builder-actions button {
+  width: 100%;
+  min-height: 36px;
+  font-weight: 700;
+}
+
+.pg-spell-builder-actions p {
+  margin: 6px 0 0;
+  font-size: 9px;
+  line-height: 1.3;
+  opacity: 0.62;
+}
+
+@media (max-width: 1050px) {
+  .pg-spell-builder-workspace {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+
+  .pg-spell-builder-tree-field {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

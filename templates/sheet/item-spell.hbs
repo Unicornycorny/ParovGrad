@@ -13,6 +13,40 @@
       </div>
     </header>
 
+    <div class="pg-spell-builder-callout">
+      <div>
+        <strong>Конструктор заклинания</strong>
+        <span>Выберите составляющие прямо на древе магии и примените рассчитанный результат.</span>
+      </div>
+      <button type="button" class="pg-spell-open-builder">
+        <i class="fa-solid fa-diagram-project"></i>
+        Собрать из древа
+      </button>
+    </div>
+
+    {{#if constructionStatus.hasConstruction}}
+      <div class="pg-spell-construction-status {{#if constructionStatus.outdated}}is-outdated{{/if}} {{#unless constructionStatus.treeAvailable}}is-missing{{/unless}}">
+        <i class="fa-solid fa-code-branch"></i>
+        <div>
+          {{#if constructionStatus.treeAvailable}}
+            <strong>{{constructionStatus.treeName}}</strong>
+            <span>
+              Ревизия сборки: {{constructionStatus.treeRevision}} · Узлов: {{constructionStatus.selectedNodeIds.length}}
+              {{#if constructionStatus.outdated}}
+                · Текущая ревизия древа: {{constructionStatus.currentTreeRevision}}
+              {{/if}}
+            </span>
+            {{#if constructionStatus.outdated}}
+              <small>Древо изменилось. Текущие параметры заклинания сохранены как snapshot и не меняются автоматически.</small>
+            {{/if}}
+          {{else}}
+            <strong>Исходное древо недоступно</strong>
+            <span>Сохранён UUID: {{constructionStatus.treeUuid}}</span>
+          {{/if}}
+        </div>
+      </div>
+    {{/if}}
+
     {{#if isEditMode}}
 
       <div class="pg-form-field">
@@ -38,11 +72,13 @@
         </div>
 
         <div class="pg-form-field">
-          <label>Школа</label>
+          <label>Стоимость</label>
           <input
-            type="text"
-            name="system.school"
-            value="{{system.school}}"
+            type="number"
+            name="system.cost"
+            min="0"
+            step="1"
+            value="{{system.cost}}"
           />
         </div>
 
@@ -123,6 +159,16 @@
       </div>
 
       <div class="pg-form-field">
+        <label>Материальные компоненты</label>
+        <textarea
+          class="pg-spell-materials-input"
+          rows="4"
+          placeholder="Один компонент на строку"
+        >{{materialsText}}</textarea>
+        <p class="pg-form-hint">Пока это обычный текст. При сборке из древа значения берутся из выбранных узлов.</p>
+      </div>
+
+      <div class="pg-form-field">
         <label>Описание</label>
         <textarea
           name="system.description"
@@ -154,10 +200,10 @@
 
         <article class="pg-weapon-stat">
           <div class="pg-weapon-stat__label">
-            Школа
+            Стоимость
           </div>
           <div class="pg-weapon-stat__value">
-            {{spellView.school}}
+            {{spellView.cost}}
           </div>
         </article>
 
@@ -200,6 +246,23 @@
               —
             {{/if}}
 
+          </div>
+        </article>
+
+        <article class="pg-weapon-stat pg-weapon-stat--full">
+          <div class="pg-weapon-stat__label">
+            Материальные компоненты
+          </div>
+          <div class="pg-weapon-stat__value">
+            {{#if spellView.materials}}
+              <div class="pg-effect-modifier-readonly-list">
+                {{#each spellView.materials}}
+                  <div class="pg-effect-modifier-readonly-row">{{this}}</div>
+                {{/each}}
+              </div>
+            {{else}}
+              —
+            {{/if}}
           </div>
         </article>
 

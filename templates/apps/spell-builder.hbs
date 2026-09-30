@@ -1,0 +1,335 @@
+<section class="pg-spell-builder-shell pg-magic-tree-shell">
+  <header class="pg-spell-builder-header">
+    <div>
+      <span class="pg-magic-tree-inspector-kicker">Конструктор заклинания</span>
+      <h1>{{spell.name}}</h1>
+    </div>
+
+    <div class="pg-spell-builder-tree-field">
+      <label for="pg-spell-builder-tree-select">Древо магии</label>
+      <select id="pg-spell-builder-tree-select" class="pg-spell-builder-tree-select">
+        {{#if hasTreeOptions}}
+          {{#each treeOptions}}
+            <option value="{{this.uuid}}" {{#if this.selected}}selected{{/if}}>{{this.name}}</option>
+          {{/each}}
+        {{else}}
+          <option value="">— Древа магии не найдены —</option>
+        {{/if}}
+      </select>
+    </div>
+  </header>
+
+  {{#if sourceStatus.sameTree}}
+    <div class="pg-spell-builder-source-status {{#if sourceStatus.outdated}}is-outdated{{/if}}">
+      <span>
+        <i class="fa-solid fa-code-branch"></i>
+        Сохранённая сборка: ревизия {{sourceStatus.savedRevision}}, узлов {{sourceStatus.savedNodeCount}}.
+        {{#if sourceStatus.outdated}}
+          Текущее древо уже имеет ревизию {{sourceStatus.currentRevision}} — заклинание не изменится, пока Вы не примените сборку заново.
+        {{/if}}
+      </span>
+      {{#if sourceStatus.canRestore}}
+        <button type="button" class="pg-spell-builder-restore">
+          <i class="fa-solid fa-rotate-left"></i>
+          Вернуть сохранённый выбор
+        </button>
+      {{/if}}
+    </div>
+  {{/if}}
+
+  <div class="pg-spell-builder-workspace">
+    <section class="pg-magic-tree-canvas-panel pg-spell-builder-graph">
+      <div class="pg-magic-tree-toolbar">
+        <div class="pg-magic-tree-toolbar__group">
+          <span class="pg-spell-builder-selection-counter">
+            Выбрано: <strong>{{compilation.meta.selectedCount}}</strong>
+          </span>
+          <button type="button" class="pg-spell-builder-clear" {{#unless hasSelectedNodes}}disabled{{/unless}}>
+            <i class="fa-solid fa-xmark"></i>
+            Очистить
+          </button>
+        </div>
+
+        <div class="pg-magic-tree-toolbar__group pg-magic-tree-toolbar__group--view">
+          <button type="button" class="pg-magic-tree-zoom-out" title="Уменьшить масштаб"><i class="fa-solid fa-minus"></i></button>
+          <span class="pg-magic-tree-zoom-value">100%</span>
+          <button type="button" class="pg-magic-tree-zoom-in" title="Увеличить масштаб"><i class="fa-solid fa-plus"></i></button>
+          <button type="button" class="pg-magic-tree-fit" title="Показать всё дерево"><i class="fa-solid fa-expand"></i></button>
+          <button type="button" class="pg-magic-tree-reset-view" title="Сбросить вид"><i class="fa-solid fa-crosshairs"></i></button>
+        </div>
+      </div>
+
+      {{#if branches.length}}
+        <div class="pg-magic-tree-branch-legend">
+          {{#each branches}}
+            <span class="pg-magic-tree-branch-chip" data-branch-id="{{this.id}}">
+              <i class="fa-solid fa-code-branch"></i>
+              {{this.name}}
+            </span>
+          {{/each}}
+        </div>
+      {{/if}}
+
+      <div class="pg-magic-tree-viewport" tabindex="0">
+        <div
+          class="pg-magic-tree-world"
+          style="width: {{graph.width}}px; height: {{graph.height}}px;"
+          data-world-width="{{graph.width}}"
+          data-world-height="{{graph.height}}"
+        >
+          <div class="pg-magic-tree-grid-layer" aria-hidden="true"></div>
+
+          {{#each milestones}}
+            <div
+              class="pg-magic-tree-milestone"
+              data-milestone-id="{{this.id}}"
+              data-milestone-x="{{this.x}}"
+              style="left: {{this.x}}px; height: {{../graph.height}}px;"
+            >
+              <div class="pg-magic-tree-milestone__label">
+                <strong>{{this.name}}</strong>
+                <span>{{this.level}} уровень</span>
+              </div>
+            </div>
+          {{/each}}
+
+          <svg
+            class="pg-magic-tree-edges"
+            width="{{graph.width}}"
+            height="{{graph.height}}"
+            viewBox="0 0 {{graph.width}} {{graph.height}}"
+            aria-hidden="true"
+          >
+            <defs>
+              <marker
+                id="{{graph.markerId}}"
+                markerWidth="8"
+                markerHeight="8"
+                refX="7"
+                refY="4"
+                orient="auto"
+                markerUnits="strokeWidth"
+              >
+                <path d="M 0 0 L 8 4 L 0 8 z" class="pg-magic-tree-arrow-marker"></path>
+              </marker>
+            </defs>
+
+            {{#each edges}}
+              <g
+                class="pg-magic-tree-edge"
+                data-edge-id="{{this.id}}"
+                data-from-id="{{this.from}}"
+                data-to-id="{{this.to}}"
+              >
+                <path class="pg-magic-tree-edge__hit"></path>
+                <path class="pg-magic-tree-edge__line" marker-end="url(#{{../graph.markerId}})"></path>
+              </g>
+            {{/each}}
+          </svg>
+
+          <div class="pg-magic-tree-nodes">
+            {{#each nodes}}
+              <article
+                class="pg-magic-tree-node is-type-{{this.type}} {{#if this.selected}}is-selected{{/if}}"
+                data-node-id="{{this.id}}"
+                data-node-x="{{this.x}}"
+                data-node-y="{{this.y}}"
+                data-branch-id="{{this.branchId}}"
+                style="left: {{this.x}}px; top: {{this.y}}px;"
+                title="{{this.description}}"
+              >
+                <header class="pg-magic-tree-node__header">
+                  <strong>{{this.name}}</strong>
+                  <span class="pg-magic-tree-node__level">Ур. {{this.level}}</span>
+                </header>
+
+                <div class="pg-magic-tree-node__branch">{{this.branchName}}</div>
+
+                <div class="pg-magic-tree-node__meta">
+                  <span>{{this.typeLabel}}</span>
+                  <span>Стоимость: {{this.cost}}</span>
+                </div>
+
+                {{#if this.output.name}}
+                  <div class="pg-magic-tree-node__output">
+                    {{this.output.name}}{{#if this.output.value}}: {{this.output.value}}{{/if}}
+                  </div>
+                {{else}}
+                  {{#if this.output.value}}
+                    <div class="pg-magic-tree-node__output">{{this.output.value}}</div>
+                  {{/if}}
+                {{/if}}
+
+                {{#if this.selected}}
+                  <div class="pg-spell-builder-node-selected-mark" title="Узел входит в заклинание">
+                    <i class="fa-solid fa-check"></i>
+                  </div>
+                {{/if}}
+              </article>
+            {{/each}}
+          </div>
+        </div>
+
+        {{#unless tree}}
+          <div class="pg-magic-tree-empty-canvas">
+            <i class="fa-solid fa-diagram-project"></i>
+            {{#if treeMissing}}
+              <strong>Древо магии недоступно</strong>
+              <span>Выберите другое древо из списка.</span>
+            {{else}}
+              <strong>Нет доступного древа магии</strong>
+              <span>Сначала создайте Item типа Magic Tree.</span>
+            {{/if}}
+          </div>
+        {{else}}
+          {{#unless nodes.length}}
+            <div class="pg-magic-tree-empty-canvas">
+              <i class="fa-solid fa-diagram-project"></i>
+              <strong>В выбранном древе нет узлов</strong>
+            </div>
+          {{/unless}}
+        {{/unless}}
+      </div>
+
+      <div class="pg-magic-tree-canvas-hint">
+        <span><i class="fa-solid fa-computer-mouse"></i> Клик по узлу — выбрать / убрать</span>
+        <span><i class="fa-solid fa-hand"></i> Потяните фон — перемещение</span>
+        <span><i class="fa-solid fa-magnifying-glass"></i> Колесо — масштаб</span>
+      </div>
+    </section>
+
+    <aside class="pg-spell-builder-preview">
+      <section class="pg-spell-builder-preview-card">
+        <header class="pg-spell-builder-preview-header">
+          <div>
+            <span class="pg-magic-tree-inspector-kicker">Результат сборки</span>
+            <h2>{{spell.name}}</h2>
+          </div>
+          <div class="pg-spell-builder-total-cost" title="Сумма стоимости выбранных узлов">
+            <span>Стоимость</span>
+            <strong>{{compilation.spell.cost}}</strong>
+          </div>
+        </header>
+
+        {{#if compilation.errors.length}}
+          <div class="pg-spell-builder-messages">
+            {{#each compilation.errors}}
+              <div class="pg-spell-builder-message is-error">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>{{this}}</span>
+              </div>
+            {{/each}}
+          </div>
+        {{/if}}
+
+        {{#if compilation.warnings.length}}
+          <div class="pg-spell-builder-messages">
+            {{#each compilation.warnings}}
+              <div class="pg-spell-builder-message is-warning">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>{{this}}</span>
+              </div>
+            {{/each}}
+          </div>
+        {{/if}}
+
+        <div class="pg-spell-builder-stat-grid">
+          <div class="pg-spell-builder-stat">
+            <span>Дальность</span>
+            <strong>{{#if compilation.spell.range}}{{compilation.spell.range}}{{else}}—{{/if}}</strong>
+          </div>
+          <div class="pg-spell-builder-stat">
+            <span>Форма</span>
+            <strong>{{#if compilation.spell.shape}}{{compilation.spell.shape}}{{else}}—{{/if}}</strong>
+          </div>
+        </div>
+
+        <div class="pg-spell-builder-preview-section">
+          <h3>Влияния <span>{{compilation.spell.influences.length}} / 4</span></h3>
+          {{#if compilation.spell.influences.length}}
+            <div class="pg-spell-builder-tag-list">
+              {{#each compilation.spell.influences}}
+                <span>{{this}}</span>
+              {{/each}}
+            </div>
+          {{else}}
+            <div class="pg-spell-builder-empty">Не выбраны</div>
+          {{/if}}
+        </div>
+
+        <div class="pg-spell-builder-preview-section">
+          <h3>Материалы</h3>
+          {{#if compilation.spell.materials.length}}
+            <ul class="pg-spell-builder-simple-list">
+              {{#each compilation.spell.materials}}
+                <li>{{this}}</li>
+              {{/each}}
+            </ul>
+          {{else}}
+            <div class="pg-spell-builder-empty">Не указаны</div>
+          {{/if}}
+        </div>
+
+        {{#if compilation.modifiers.length}}
+          <div class="pg-spell-builder-preview-section">
+            <h3>Модификаторы</h3>
+            <ul class="pg-spell-builder-simple-list">
+              {{#each compilation.modifiers}}
+                <li><strong>{{this.name}}</strong> — {{this.output}}</li>
+              {{/each}}
+            </ul>
+          </div>
+        {{/if}}
+      </section>
+
+      <section class="pg-spell-builder-preview-card">
+        <h3 class="pg-spell-builder-section-title">Составляющие <span>{{compilation.components.length}}</span></h3>
+        {{#if compilation.components.length}}
+          <div class="pg-spell-builder-component-list">
+            {{#each compilation.components}}
+              <article class="pg-spell-builder-component">
+                <div>
+                  <strong>{{this.name}}</strong>
+                  <small>{{this.branchName}} · {{this.typeLabel}} · Ур. {{this.level}}</small>
+                </div>
+                <span>+{{this.cost}}</span>
+              </article>
+            {{/each}}
+          </div>
+        {{else}}
+          <div class="pg-spell-builder-empty">Выберите узлы на древе.</div>
+        {{/if}}
+      </section>
+
+      <section class="pg-spell-builder-preview-card">
+        <h3 class="pg-spell-builder-section-title">Расчёт стоимости</h3>
+        {{#if compilation.costBreakdown.length}}
+          <div class="pg-spell-builder-cost-list">
+            {{#each compilation.costBreakdown}}
+              <div>
+                <span>{{this.name}}</span>
+                <strong>+{{this.value}}</strong>
+              </div>
+            {{/each}}
+            <div class="pg-spell-builder-cost-total">
+              <span>Итого</span>
+              <strong>{{compilation.spell.cost}}</strong>
+            </div>
+          </div>
+        {{else}}
+          <div class="pg-spell-builder-empty">Стоимость появится после выбора узлов.</div>
+        {{/if}}
+      </section>
+
+      <div class="pg-spell-builder-actions">
+        <button type="button" class="pg-spell-builder-apply" {{#unless canApply}}disabled{{/unless}}>
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          Применить к заклинанию
+        </button>
+        <p>
+          Сохраняются дальность, форма, влияния, стоимость, материалы и ссылка на выбранные узлы. Название, уровень и описание заклинания не изменяются.
+        </p>
+      </div>
+    </aside>
+  </div>
+</section>

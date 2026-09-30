@@ -1,4 +1,9 @@
-const { StringField, NumberField, ArrayField } = foundry.data.fields;
+const {
+  ArrayField,
+  NumberField,
+  SchemaField,
+  StringField
+} = foundry.data.fields;
 
 export class SpellDataModel extends foundry.abstract.TypeDataModel {
   static defineSchema() {
@@ -27,6 +32,46 @@ export class SpellDataModel extends foundry.abstract.TypeDataModel {
         }
       ),
 
+      cost: new NumberField({
+        required: true,
+        min: 0,
+        initial: 0
+      }),
+
+      materials: new ArrayField(
+        new StringField({
+          required: true,
+          blank: false
+        }),
+        {
+          required: true,
+          initial: []
+        }
+      ),
+
+      construction: new SchemaField({
+        treeUuid: new StringField({ required: false, initial: "" }),
+        treeRevision: new NumberField({
+          required: true,
+          integer: true,
+          min: 0,
+          initial: 0
+        }),
+        selectedNodeIds: new ArrayField(
+          new StringField({
+            required: true,
+            blank: false
+          }),
+          {
+            required: true,
+            initial: []
+          }
+        )
+      }),
+
+      // Legacy compatibility only. Magic schools are branches of a Magic Tree
+      // and are no longer part of the spell itself. Keeping this field prevents
+      // older Spell Items from becoming invalid while their old data still exists.
       school: new StringField({
         required: false,
         initial: ""
