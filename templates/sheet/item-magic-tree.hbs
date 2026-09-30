@@ -1,0 +1,271 @@
+<section class="pg-sheet pg-magic-tree-sheet">
+  <div class="sheet-body">
+    <header class="pg-sheet-header">
+      <div>
+        <h1>{{document.name}}</h1>
+        <div class="pg-magic-tree-summary">
+          Ветки: {{counts.branches}} · Этапы: {{counts.milestones}} · Узлы: {{counts.nodes}} · Связи: {{counts.edges}} · Ревизия: {{system.revision}}
+        </div>
+      </div>
+
+      <div class="pg-item-sheet-mode">
+        {{#if isEditMode}}
+          Режим: редактирование
+        {{else}}
+          Режим: просмотр
+        {{/if}}
+      </div>
+    </header>
+
+    {{#if hasValidationMessages}}
+      <section class="pg-magic-tree-validation">
+        {{#each validation.errors}}
+          <div class="pg-magic-tree-validation__error"><i class="fa-solid fa-triangle-exclamation"></i> {{this}}</div>
+        {{/each}}
+        {{#each validation.warnings}}
+          <div class="pg-magic-tree-validation__warning"><i class="fa-solid fa-circle-exclamation"></i> {{this}}</div>
+        {{/each}}
+      </section>
+    {{/if}}
+
+    {{#if isEditMode}}
+      <div class="pg-form-field">
+        <label>Название дерева</label>
+        <input type="text" name="name" value="{{document.name}}" />
+      </div>
+
+      <div class="pg-form-field">
+        <label>Описание</label>
+        <textarea name="system.description" rows="3">{{system.description}}</textarea>
+      </div>
+    {{else}}
+      <div class="pg-form-field">
+        <label>Описание</label>
+        <div class="pg-magic-tree-readonly-text">{{#if system.description}}{{system.description}}{{else}}—{{/if}}</div>
+      </div>
+    {{/if}}
+
+    <section class="pg-magic-tree-section">
+      <header class="pg-section-header">
+        <h2>Ветки магии</h2>
+        {{#if isEditMode}}
+          <button type="button" class="pg-magic-tree-add-branch"><i class="fa-solid fa-plus"></i> Ветка</button>
+        {{/if}}
+      </header>
+
+      {{#if branches.length}}
+        <div class="pg-magic-tree-list">
+          {{#each branches}}
+            <article class="pg-magic-tree-card">
+              {{#if ../isEditMode}}
+                <div class="pg-form-grid pg-form-grid--two-columns">
+                  <div class="pg-form-field pg-form-field--compact">
+                    <label>Название</label>
+                    <input type="text" name="system.branches.{{this.id}}.name" value="{{this.name}}" />
+                  </div>
+                  <div class="pg-form-field pg-form-field--compact">
+                    <label>Порядок</label>
+                    <input type="number" name="system.branches.{{this.id}}.order" step="1" value="{{this.order}}" />
+                  </div>
+                </div>
+                <div class="pg-magic-tree-card__footer">
+                  <code>{{this.id}}</code>
+                  <button type="button" class="pg-magic-tree-delete" data-magic-tree-delete="branches" data-entry-id="{{this.id}}">Удалить</button>
+                </div>
+              {{else}}
+                <strong>{{this.name}}</strong>
+                <span>Порядок: {{this.order}}</span>
+              {{/if}}
+            </article>
+          {{/each}}
+        </div>
+      {{else}}
+        <div class="pg-effect-modifier-empty">Ветки ещё не созданы.</div>
+      {{/if}}
+    </section>
+
+    <section class="pg-magic-tree-section">
+      <header class="pg-section-header">
+        <h2>Этапы развития</h2>
+        {{#if isEditMode}}
+          <button type="button" class="pg-magic-tree-add-milestone"><i class="fa-solid fa-plus"></i> Этап</button>
+        {{/if}}
+      </header>
+
+      {{#if milestones.length}}
+        <div class="pg-magic-tree-list pg-magic-tree-list--compact">
+          {{#each milestones}}
+            <article class="pg-magic-tree-card">
+              {{#if ../isEditMode}}
+                <div class="pg-form-grid pg-magic-tree-grid--three-columns">
+                  <div class="pg-form-field pg-form-field--compact">
+                    <label>Название</label>
+                    <input type="text" name="system.milestones.{{this.id}}.name" value="{{this.name}}" />
+                  </div>
+                  <div class="pg-form-field pg-form-field--compact">
+                    <label>Уровень</label>
+                    <input type="number" name="system.milestones.{{this.id}}.level" min="0" step="1" value="{{this.level}}" />
+                  </div>
+                  <div class="pg-form-field pg-form-field--compact">
+                    <label>X</label>
+                    <input type="number" name="system.milestones.{{this.id}}.x" step="1" value="{{this.x}}" />
+                  </div>
+                </div>
+                <div class="pg-magic-tree-card__footer">
+                  <code>{{this.id}}</code>
+                  <button type="button" class="pg-magic-tree-delete" data-magic-tree-delete="milestones" data-entry-id="{{this.id}}">Удалить</button>
+                </div>
+              {{else}}
+                <strong>{{this.name}}</strong>
+                <span>Уровень {{this.level}} · X {{this.x}}</span>
+              {{/if}}
+            </article>
+          {{/each}}
+        </div>
+      {{else}}
+        <div class="pg-effect-modifier-empty">Этапы развития ещё не созданы.</div>
+      {{/if}}
+    </section>
+
+    <section class="pg-magic-tree-section">
+      <header class="pg-section-header">
+        <h2>Узлы</h2>
+        {{#if isEditMode}}
+          <button type="button" class="pg-magic-tree-add-node"><i class="fa-solid fa-plus"></i> Узел</button>
+        {{/if}}
+      </header>
+
+      {{#if nodes.length}}
+        <div class="pg-magic-tree-list">
+          {{#each nodes}}
+            <article class="pg-magic-tree-card pg-magic-tree-node-card">
+              {{#if ../isEditMode}}
+                <div class="pg-form-grid pg-form-grid--two-columns">
+                  <div class="pg-form-field pg-form-field--compact">
+                    <label>Название</label>
+                    <input type="text" name="system.nodes.{{this.id}}.name" value="{{this.name}}" />
+                  </div>
+
+                  <div class="pg-form-field pg-form-field--compact">
+                    <label>Ветка</label>
+                    <select name="system.nodes.{{this.id}}.branchId">
+                      {{#each this.branchOptions}}
+                        <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                      {{/each}}
+                    </select>
+                  </div>
+
+                  <div class="pg-form-field pg-form-field--compact">
+                    <label>Тип</label>
+                    <select name="system.nodes.{{this.id}}.type">
+                      {{#each this.typeOptions}}
+                        <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                      {{/each}}
+                    </select>
+                  </div>
+
+                  <div class="pg-form-field pg-form-field--compact">
+                    <label>Уровень</label>
+                    <input type="number" name="system.nodes.{{this.id}}.level" min="0" step="1" value="{{this.level}}" />
+                  </div>
+
+                  <div class="pg-form-field pg-form-field--compact">
+                    <label>Стоимость</label>
+                    <input type="number" name="system.nodes.{{this.id}}.cost" min="0" step="any" value="{{this.cost}}" />
+                  </div>
+
+                  <div class="pg-form-field pg-form-field--compact">
+                    <label>Результат: название</label>
+                    <input type="text" name="system.nodes.{{this.id}}.output.name" value="{{this.output.name}}" />
+                  </div>
+
+                  <div class="pg-form-field pg-form-field--compact">
+                    <label>Результат: значение</label>
+                    <input type="text" name="system.nodes.{{this.id}}.output.value" value="{{this.output.value}}" />
+                  </div>
+
+                  <div class="pg-form-field pg-form-field--compact">
+                    <label>Позиция X / Y</label>
+                    <div class="pg-magic-tree-position-row">
+                      <input type="number" name="system.nodes.{{this.id}}.position.x" step="1" value="{{this.position.x}}" />
+                      <input type="number" name="system.nodes.{{this.id}}.position.y" step="1" value="{{this.position.y}}" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pg-form-field pg-form-field--compact">
+                  <label>Материалы <span class="pg-form-hint">по одному на строку</span></label>
+                  <textarea class="pg-magic-tree-materials" data-node-id="{{this.id}}" rows="2">{{this.materialsText}}</textarea>
+                </div>
+
+                <div class="pg-form-field pg-form-field--compact">
+                  <label>Описание узла</label>
+                  <textarea name="system.nodes.{{this.id}}.description" rows="2">{{this.description}}</textarea>
+                </div>
+
+                <div class="pg-magic-tree-card__footer">
+                  <code>{{this.id}}</code>
+                  <button type="button" class="pg-magic-tree-delete" data-magic-tree-delete="nodes" data-entry-id="{{this.id}}">Удалить</button>
+                </div>
+              {{else}}
+                <div class="pg-magic-tree-node-view">
+                  <strong>{{this.name}}</strong>
+                  <span>Ветка: {{this.branchName}}</span>
+                  <span>Тип: {{this.typeLabel}}</span>
+                  <span>Уровень: {{this.level}}</span>
+                  <span>Стоимость: {{this.cost}}</span>
+                  {{#if this.output.name}}<span>{{this.output.name}}{{#if this.output.value}}: {{this.output.value}}{{/if}}</span>{{/if}}
+                  {{#unless this.output.name}}{{#if this.output.value}}<span>{{this.output.value}}</span>{{/if}}{{/unless}}
+                </div>
+              {{/if}}
+            </article>
+          {{/each}}
+        </div>
+      {{else}}
+        <div class="pg-effect-modifier-empty">Узлы ещё не созданы.</div>
+      {{/if}}
+    </section>
+
+    <section class="pg-magic-tree-section">
+      <header class="pg-section-header">
+        <h2>Связи требований</h2>
+        {{#if isEditMode}}
+          <button type="button" class="pg-magic-tree-add-edge"><i class="fa-solid fa-plus"></i> Связь</button>
+        {{/if}}
+      </header>
+
+      {{#if edges.length}}
+        <div class="pg-magic-tree-list pg-magic-tree-list--compact">
+          {{#each edges}}
+            <article class="pg-magic-tree-card">
+              {{#if ../isEditMode}}
+                <div class="pg-magic-tree-edge-row">
+                  <select name="system.edges.{{this.id}}.from">
+                    {{#each this.fromOptions}}
+                      <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                    {{/each}}
+                  </select>
+                  <i class="fa-solid fa-arrow-right"></i>
+                  <select name="system.edges.{{this.id}}.to">
+                    {{#each this.toOptions}}
+                      <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                    {{/each}}
+                  </select>
+                  <button type="button" class="pg-magic-tree-delete" data-magic-tree-delete="edges" data-entry-id="{{this.id}}">Удалить</button>
+                </div>
+              {{else}}
+                <div class="pg-magic-tree-edge-row">
+                  <span>{{this.fromLabel}}</span>
+                  <i class="fa-solid fa-arrow-right"></i>
+                  <span>{{this.toLabel}}</span>
+                </div>
+              {{/if}}
+            </article>
+          {{/each}}
+        </div>
+      {{else}}
+        <div class="pg-effect-modifier-empty">Связи ещё не созданы.</div>
+      {{/if}}
+    </section>
+  </div>
+</section>

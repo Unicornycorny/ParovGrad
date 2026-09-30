@@ -23,7 +23,8 @@
             "weapon": {},
             "skill": {},
             "effect": {},
-            "spell": {}
+            "spell": {},
+            "magicTree": {}
         }
     },
     "socket": false,
