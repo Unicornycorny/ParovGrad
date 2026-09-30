@@ -32,6 +32,19 @@ export class SpellDataModel extends foundry.abstract.TypeDataModel {
         }
       ),
 
+      effects: new ArrayField(
+        new SchemaField({
+          type: new StringField({ required: true, blank: false, initial: "damage" }),
+          label: new StringField({ required: false, initial: "" }),
+          formula: new StringField({ required: true, blank: false, initial: "1d4" })
+        }),
+        {
+          required: true,
+          initial: [],
+          max: 4
+        }
+      ),
+
       cost: new NumberField({
         required: true,
         min: 0,

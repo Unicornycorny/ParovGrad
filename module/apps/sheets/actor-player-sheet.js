@@ -1,5 +1,6 @@
 import { openConfiguredD20RollDialog, consumeActorInspiration } from "../../dice/roll-dialog.js";
 import { startItemAttack, startItemUse } from "../../workflows/weapon-attack.js";
+import { startSpellUse } from "../../workflows/spell-use.js";
 import {
   applyEffectItemToActor,
   cloneActiveEffectToActor,
@@ -230,6 +231,11 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
 
     if (item.type === "item") {
       await startItemUse({ actor: this.document, item });
+      return;
+    }
+
+    if (item.type === "spell") {
+      await startSpellUse({ actor: this.document, item });
       return;
     }
 

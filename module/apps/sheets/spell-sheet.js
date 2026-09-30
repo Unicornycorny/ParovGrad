@@ -1,5 +1,10 @@
 import { ParovGradSpellBuilder } from "../spell-builder.js";
 import { getSpellConstructionStatus } from "../../magic/spell-construction.js";
+import {
+  SPELL_EFFECT_TYPE_LABELS,
+  getSpellEffects
+} from "../../magic/spell-effects.js";
+import { startSpellUse } from "../../workflows/spell-use.js";
 
 const MAX_INFLUENCES = 4;
 
@@ -70,6 +75,10 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
 
     const influences = normalizeInfluences(this.document.system?.influences);
     const materials = normalizeMaterials(this.document.system?.materials);
+    const spellEffects = getSpellEffects(this.document).map((effect) => ({
+      ...effect,
+      typeLabel: SPELL_EFFECT_TYPE_LABELS[effect.type] ?? effect.type
+    }));
     const constructionStatus = await getSpellConstructionStatus(this.document);
 
     context.system = this.document.system;
@@ -82,6 +91,7 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
 
     context.canAddInfluence = influences.length < MAX_INFLUENCES;
     context.materialsText = materials.join("\n");
+    context.spellEffects = spellEffects;
     context.constructionStatus = constructionStatus;
 
     context.spellView = {
@@ -105,6 +115,7 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
         this.document.system?.description?.trim() || "—",
 
       influences,
+      effects: spellEffects,
       materials
     };
 
@@ -126,6 +137,16 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
 
   _getHeaderControls() {
     const controls = super._getHeaderControls();
+
+    controls.unshift({
+      action: "useSpell",
+      icon: "fa-solid fa-wand-sparkles",
+      label: "Применить",
+      visible: () => this.document.parent?.documentName === "Actor",
+      onClick: async () => {
+        await startSpellUse({ actor: this.document.parent, item: this.document });
+      }
+    });
 
     controls.unshift({
       action: "buildFromMagicTree",
@@ -199,6 +220,7 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
 
         await this.document.update({
           "system.influences": [...currentInfluences, nextInfluence],
+          "system.effects": [],
           "system.construction": emptyConstruction()
         });
       });
@@ -224,6 +246,7 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
 
         await this.document.update({
           "system.influences": nextInfluences,
+          "system.effects": [],
           "system.construction": emptyConstruction()
         });
       });
@@ -244,6 +267,7 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
           "system.influences": currentInfluences.filter(
             (_value, influenceIndex) => influenceIndex !== index
           ),
+          "system.effects": [],
           "system.construction": emptyConstruction()
         });
       });

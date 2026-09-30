@@ -264,7 +264,22 @@
               <div class="pg-form-field pg-form-field--compact">
                 <label>Результат: значение</label>
                 <input type="text" name="system.nodes.{{selectedNode.id}}.output.value" value="{{selectedNode.output.value}}" />
+                {{#if selectedNode.isInfluence}}
+                  <span class="pg-form-hint">Для урона и лечения здесь хранится формула броска, например <code>1d8 + 2d4</code>.</span>
+                {{/if}}
               </div>
+
+              {{#if selectedNode.isInfluence}}
+                <div class="pg-form-field pg-form-field--compact">
+                  <label>Механика влияния</label>
+                  <select name="system.nodes.{{selectedNode.id}}.output.effectType">
+                    {{#each selectedNode.influenceEffectTypeOptions}}
+                      <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                    {{/each}}
+                  </select>
+                  <span class="pg-form-hint">«Авто» распознаёт названия «Урон» и «Лечение». Для обычных влияний вроде «Огонь» или «Земля» используйте «Текст / тег».</span>
+                </div>
+              {{/if}}
 
               <div class="pg-form-field pg-form-field--compact">
                 <label>Материалы <span class="pg-form-hint">по одному на строку</span></label>
@@ -296,6 +311,13 @@
                     <span>{{selectedNode.output.value}}</span>
                   </div>
                 {{/if}}
+              {{/if}}
+
+              {{#if selectedNode.resolvedSpellEffect}}
+                <div class="pg-magic-tree-readonly-block">
+                  <strong>Механика</strong>
+                  <span>{{selectedNode.resolvedSpellEffect.typeLabel}} · {{selectedNode.resolvedSpellEffect.formula}}</span>
+                </div>
               {{/if}}
 
               {{#if selectedNode.description}}

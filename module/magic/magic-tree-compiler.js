@@ -2,6 +2,11 @@ import {
   MAGIC_TREE_NODE_TYPES,
   MAGIC_TREE_NODE_TYPE_LABELS
 } from "./magic-tree-constants.js";
+import {
+  SPELL_EFFECT_TYPE_LABELS,
+  getMagicTreeNodeSpellEffect,
+  isValidSpellRollFormula
+} from "./spell-effects.js";
 
 export const MAX_SPELL_INFLUENCES = 4;
 
@@ -32,8 +37,14 @@ function getNodeOutputValue(node) {
 function getNodeDisplayOutput(node) {
   const name = asTrimmedString(node?.output?.name);
   const value = asTrimmedString(node?.output?.value);
+  const spellEffect = node?.type === MAGIC_TREE_NODE_TYPES.INFLUENCE
+    ? getMagicTreeNodeSpellEffect(node)
+    : null;
 
   if (name && value) return `${name}: ${value}`;
+  if (!name && value && spellEffect) {
+    return `${spellEffect.label}: ${value}`;
+  }
   return name || value || asTrimmedString(node?.name) || "—";
 }
 
@@ -108,6 +119,26 @@ export class MagicTreeCompiler {
       .map(({ node }) => getNodeDisplayOutput(node))
       .filter(Boolean);
 
+    const effects = [];
+    for (const { node } of influenceNodes) {
+      const effect = getMagicTreeNodeSpellEffect(node);
+      if (!effect) continue;
+
+      effects.push({
+        ...effect,
+        typeLabel: SPELL_EFFECT_TYPE_LABELS[effect.type] ?? effect.type
+      });
+
+      if (!effect.formula) {
+        errors.push(`Влияние «${effect.label}» должно содержать формулу броска.`);
+        continue;
+      }
+
+      if (!isValidSpellRollFormula(effect.formula)) {
+        errors.push(`Влияние «${effect.label}» содержит некорректную формулу: ${effect.formula}.`);
+      }
+    }
+
     const materials = selectedNodes.flatMap(({ node }) => normalizeMaterials(node?.materials));
     const costBreakdown = selectedNodes.map(({ id, node }) => ({
       nodeId: id,
@@ -116,17 +147,26 @@ export class MagicTreeCompiler {
     }));
     const cost = costBreakdown.reduce((total, entry) => total + entry.value, 0);
 
-    const components = selectedNodes.map(({ id, node }) => ({
-      id,
-      name: asTrimmedString(node?.name) || id,
-      type: asTrimmedString(node?.type),
-      typeLabel: MAGIC_TREE_NODE_TYPE_LABELS[node?.type] ?? (asTrimmedString(node?.type) || "—"),
-      branchId: asTrimmedString(node?.branchId),
-      level: Number(node?.level) || 0,
-      cost: Math.max(0, Number(node?.cost) || 0),
-      output: getNodeDisplayOutput(node),
-      materials: normalizeMaterials(node?.materials)
-    }));
+    const components = selectedNodes.map(({ id, node }) => {
+      const spellEffect = node?.type === MAGIC_TREE_NODE_TYPES.INFLUENCE
+        ? getMagicTreeNodeSpellEffect(node)
+        : null;
+
+      return {
+        id,
+        name: asTrimmedString(node?.name) || id,
+        type: asTrimmedString(node?.type),
+        typeLabel: MAGIC_TREE_NODE_TYPE_LABELS[node?.type] ?? (asTrimmedString(node?.type) || "—"),
+        branchId: asTrimmedString(node?.branchId),
+        level: Number(node?.level) || 0,
+        cost: Math.max(0, Number(node?.cost) || 0),
+        output: getNodeDisplayOutput(node),
+        materials: normalizeMaterials(node?.materials),
+        effectType: spellEffect?.type ?? "",
+        effectTypeLabel: spellEffect ? (SPELL_EFFECT_TYPE_LABELS[spellEffect.type] ?? spellEffect.type) : "",
+        effectFormula: spellEffect?.formula ?? ""
+      };
+    });
 
     return {
       valid: errors.length === 0,
@@ -145,6 +185,7 @@ export class MagicTreeCompiler {
         range,
         shape,
         influences,
+        effects,
         cost,
         materials
       },

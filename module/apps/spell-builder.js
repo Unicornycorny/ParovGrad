@@ -146,7 +146,7 @@ export class ParovGradSpellBuilder extends foundry.applications.api.HandlebarsAp
         components: [],
         modifiers: [],
         costBreakdown: [],
-        spell: { range: "", shape: "", influences: [], cost: 0, materials: [] },
+        spell: { range: "", shape: "", influences: [], effects: [], cost: 0, materials: [] },
         meta: { selectedCount: 0, maxSelectedNodeLevel: 0 }
       };
       context.canApply = false;
@@ -357,6 +357,7 @@ export class ParovGradSpellBuilder extends foundry.applications.api.HandlebarsAp
       "system.range": compilation.spell.range,
       "system.shape": compilation.spell.shape,
       "system.influences": compilation.spell.influences,
+      "system.effects": compilation.spell.effects.map(({ type, label, formula }) => ({ type, label, formula })),
       "system.cost": compilation.spell.cost,
       "system.materials": compilation.spell.materials,
       "system.construction": buildSpellConstruction(tree, selectedNodeIds)

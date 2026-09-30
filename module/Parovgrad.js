@@ -15,6 +15,7 @@ import { ParovGradSkillSheet } from "./apps/sheets/skill-sheet.js";
 import { ParovGradEffectSheet } from "./apps/sheets/effect-sheet.js";
 import { createParovgradRoll, rollToMessage } from "./dice/parovgrad-roll.js";
 import { renderAttackChatButtons } from "./workflows/weapon-attack.js";
+import { renderSpellChatButtons } from "./workflows/spell-use.js";
 import { handleCanvasEffectDrop, buildActorInfluenceState, migrateLegacyActorEffects } from "./effects/effect-utils.js";
 import { ParovGradSpellSheet } from "./apps/sheets/spell-sheet.js";
 import { ParovGradMagicTreeSheet } from "./apps/sheets/magic-tree-sheet.js";
@@ -117,6 +118,7 @@ Hooks.once("ready", async () => {
 
 Hooks.on("renderChatMessageHTML", (message, html) => {
   renderAttackChatButtons(message, html);
+  renderSpellChatButtons(message, html);
 });
 
 Hooks.on("dropCanvasData", async (canvas, data, event) => {

@@ -44,7 +44,8 @@ function createNodeField() {
     }),
     output: new SchemaField({
       name: new StringField({ required: false, initial: "" }),
-      value: new StringField({ required: false, initial: "" })
+      value: new StringField({ required: false, initial: "" }),
+      effectType: new StringField({ required: false, initial: "" })
     }),
     materials: new ArrayField(
       new StringField({ required: true, blank: false }),

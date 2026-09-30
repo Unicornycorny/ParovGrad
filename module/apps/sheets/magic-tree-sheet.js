@@ -5,6 +5,12 @@ import {
   MAGIC_TREE_NODE_TYPES
 } from "../../magic/magic-tree-constants.js";
 import { validateMagicTreeStructure } from "../../magic/magic-tree-validator.js";
+import {
+  MAGIC_TREE_INFLUENCE_EFFECT_TYPE_LABELS,
+  MAGIC_TREE_INFLUENCE_EFFECT_TYPES,
+  SPELL_EFFECT_TYPE_LABELS,
+  getMagicTreeNodeSpellEffect
+} from "../../magic/spell-effects.js";
 
 function objectEntries(value) {
   return Object.entries(value ?? {});
@@ -151,6 +157,23 @@ export class ParovGradMagicTreeSheet extends foundry.applications.api.Handlebars
         label,
         selected: value === node?.type
       })),
+      isInfluence: node?.type === MAGIC_TREE_NODE_TYPES.INFLUENCE,
+      influenceEffectTypeOptions: Object.entries(MAGIC_TREE_INFLUENCE_EFFECT_TYPE_LABELS).map(([value, label]) => ({
+        value,
+        label,
+        selected: value === String(node?.output?.effectType ?? "")
+      })),
+      resolvedSpellEffect: (() => {
+        const effect = node?.type === MAGIC_TREE_NODE_TYPES.INFLUENCE
+          ? getMagicTreeNodeSpellEffect(node)
+          : null;
+        return effect
+          ? {
+              ...effect,
+              typeLabel: SPELL_EFFECT_TYPE_LABELS[effect.type] ?? effect.type
+            }
+          : null;
+      })(),
       selected: id === this._selectedNodeId,
       connectionSource: id === this._edgeStartNodeId
     }));
@@ -494,7 +517,11 @@ export class ParovGradMagicTreeSheet extends foundry.applications.api.Handlebars
         type: MAGIC_TREE_NODE_TYPES.INFLUENCE,
         cost: 0,
         position: { x, y },
-        output: { name: "", value: "" },
+        output: {
+          name: "",
+          value: "",
+          effectType: MAGIC_TREE_INFLUENCE_EFFECT_TYPES.AUTO
+        },
         materials: []
       },
       "system.revision": Number(this.document.system?.revision ?? 1) + 1

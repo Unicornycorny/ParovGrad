@@ -257,6 +257,17 @@
           {{/if}}
         </div>
 
+        {{#if compilation.spell.effects.length}}
+          <div class="pg-spell-builder-preview-section">
+            <h3>Броски влияний <span>{{compilation.spell.effects.length}}</span></h3>
+            <ul class="pg-spell-builder-simple-list pg-spell-builder-effect-list">
+              {{#each compilation.spell.effects}}
+                <li><strong>{{this.typeLabel}}</strong> · {{this.label}} · <code>{{this.formula}}</code></li>
+              {{/each}}
+            </ul>
+          </div>
+        {{/if}}
+
         <div class="pg-spell-builder-preview-section">
           <h3>Материалы</h3>
           {{#if compilation.spell.materials.length}}
@@ -291,6 +302,9 @@
                 <div>
                   <strong>{{this.name}}</strong>
                   <small>{{this.branchName}} · {{this.typeLabel}} · Ур. {{this.level}}</small>
+                  {{#if this.effectTypeLabel}}
+                    <small>{{this.effectTypeLabel}} · {{this.effectFormula}}</small>
+                  {{/if}}
                 </div>
                 <span>+{{this.cost}}</span>
               </article>

@@ -159,6 +159,24 @@
       </div>
 
       <div class="pg-form-field">
+        <label>Механика влияний</label>
+        {{#if spellEffects.length}}
+          <div class="pg-spell-effect-list">
+            {{#each spellEffects}}
+              <div class="pg-spell-effect-row is-{{this.type}}">
+                <strong>{{this.typeLabel}}</strong>
+                <span>{{this.label}}</span>
+                <code>{{this.formula}}</code>
+              </div>
+            {{/each}}
+          </div>
+        {{else}}
+          <div class="pg-effect-modifier-empty">Нет влияний с броском урона или лечения.</div>
+        {{/if}}
+        <p class="pg-form-hint">Механика урона и лечения задаётся в узле влияния древа. Старые записи вида «Урон: 1d8 + 2d4» распознаются автоматически.</p>
+      </div>
+
+      <div class="pg-form-field">
         <label>Материальные компоненты</label>
         <textarea
           class="pg-spell-materials-input"
@@ -246,6 +264,27 @@
               —
             {{/if}}
 
+          </div>
+        </article>
+
+        <article class="pg-weapon-stat pg-weapon-stat--full">
+          <div class="pg-weapon-stat__label">
+            Механика влияний
+          </div>
+          <div class="pg-weapon-stat__value">
+            {{#if spellView.effects.length}}
+              <div class="pg-spell-effect-list">
+                {{#each spellView.effects}}
+                  <div class="pg-spell-effect-row is-{{this.type}}">
+                    <strong>{{this.typeLabel}}</strong>
+                    <span>{{this.label}}</span>
+                    <code>{{this.formula}}</code>
+                  </div>
+                {{/each}}
+              </div>
+            {{else}}
+              —
+            {{/if}}
           </div>
         </article>
 

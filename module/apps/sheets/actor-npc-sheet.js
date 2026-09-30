@@ -1,3 +1,4 @@
+import { startSpellUse } from "../../workflows/spell-use.js";
 import {
   applyEffectItemToActor,
   cloneActiveEffectToActor,
@@ -37,7 +38,8 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
       .map((item) => ({
         id: item.id,
         name: item.name,
-        type: item.type
+        type: item.type,
+        isSpell: item.type === "spell"
       }));
 
     context.effects = Array.from(this.document.effects)
@@ -65,6 +67,21 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
         if (!item?.sheet) return;
 
         await item.sheet.render({ force: true });
+      });
+    });
+
+    htmlElement.querySelectorAll(".pg-item-roll").forEach((element) => {
+      element.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const itemId = element.dataset.itemId;
+        if (!itemId) return;
+
+        const item = this.document.items.get(itemId);
+        if (item?.type !== "spell") return;
+
+        await startSpellUse({ actor: this.document, item });
       });
     });
 
