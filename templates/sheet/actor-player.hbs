@@ -2,12 +2,16 @@
   <div class="sheet-body">
     <header class="pg-dossier-header">
       <figure class="pg-dossier-portrait">
-        <img src="{{document.img}}" alt="Портрет: {{document.name}}">
+        <button type="button" class="pg-portrait-edit" title="Изменить портрет" aria-label="Изменить портрет персонажа" {{#unless canEditProfile}}disabled{{/unless}}>
+          <img src="{{document.img}}" alt="Портрет: {{document.name}}">
+        </button>
       </figure>
       <div class="pg-dossier-identity">
         <div class="pg-dossier-kicker">Личное дело <span aria-hidden="true">◆</span> Лист персонажа</div>
         <div class="pg-dossier-brand" aria-hidden="true">Паров-Град</div>
-        <h1>{{document.name}}</h1>
+        <h1 class="pg-character-name">
+          <input type="text" name="name" value="{{document.name}}" aria-label="Имя персонажа" title="Имя персонажа" placeholder="Имя персонажа" {{#unless canEditProfile}}disabled{{/unless}}>
+        </h1>
       </div>
       <div class="pg-dossier-seal" aria-hidden="true">ПГ</div>
     </header>
@@ -157,12 +161,11 @@
       </div>
 
       {{#if items.length}}
-      <ul class="pg-item-list">
+      <ul class="pg-item-list pg-item-grid">
         {{#each items}}
-        <li class="pg-item-row">
-          <img class="pg-dossier-item-icon" src="{{this.img}}" alt="" loading="lazy">
-          <button type="button" class="pg-item-link" data-item-id="{{this.id}}">
-            {{this.name}}
+        <li class="pg-item-row pg-item-tile">
+          <button type="button" class="pg-item-link pg-item-icon-button" data-item-id="{{this.id}}" title="{{this.name}}" aria-label="Открыть: {{this.name}}">
+            <img class="pg-dossier-item-icon" src="{{this.img}}" alt="" loading="lazy">
           </button>
 
           <button type="button" class="pg-item-roll" data-item-id="{{this.id}}" aria-label="Использовать предмет"
@@ -191,10 +194,12 @@
     <section class="pg-dossier-section pg-legacy-trees">
       <h2>Ранее добавленные древа магии</h2>
       <p class="pg-form-hint">Древа магии должны храниться в каталоге предметов мира. Эти старые записи оставлены для сохранения данных: перед удалением экспортируйте их через меню листа.</p>
-      <ul class="pg-item-list">
+      <ul class="pg-item-list pg-item-grid">
         {{#each legacyMagicTrees}}
-        <li class="pg-item-row">
-          <button type="button" class="pg-item-link" data-item-id="{{this.id}}">{{this.name}}</button>
+        <li class="pg-item-row pg-item-tile">
+          <button type="button" class="pg-item-link pg-item-icon-button" data-item-id="{{this.id}}" title="{{this.name}}" aria-label="Открыть: {{this.name}}">
+            <img class="pg-dossier-item-icon" src="{{this.img}}" alt="" loading="lazy">
+          </button>
           <button type="button" class="pg-item-delete pg-legacy-tree-delete" data-item-id="{{this.id}}" aria-label="Удалить древо магии">Удалить</button>
         </li>
         {{/each}}

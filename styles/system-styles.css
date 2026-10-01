@@ -2041,3 +2041,45 @@
 .pg-player-dossier .pg-item-category option { background: var(--pg-field); color: var(--pg-ink); }
 .pg-player-dossier .pg-item-category:focus-visible { outline: 2px solid #7d5426; outline-offset: 2px; }
 .pg-player-dossier .pg-legacy-tree-delete { width: auto; }
+
+/* Editable identity and compact item tiles for every item category. */
+.pg-player-dossier .pg-character-name input {
+  height: 36px; padding: 4px 6px; font: normal 18px/1.25 Georgia, serif;
+  text-transform: none; background: #faf5e955; border-color: #aa947088;
+}
+.pg-player-dossier .pg-character-name input:focus { background: var(--pg-field); }
+.pg-player-dossier .pg-portrait-edit {
+  display: block; position: relative; width: 100%; min-height: 0;
+  padding: 0; border: 0; border-radius: 0; background: none; overflow: hidden;
+}
+.pg-player-dossier .pg-dossier-portrait .pg-portrait-edit img { width: 100%; }
+.pg-player-dossier .pg-portrait-edit-hint {
+  position: absolute; bottom: 0; left: 0; right: 0; padding: 4px 2px;
+  background: #302b25dc; color: #faf5e9; font: 10px/1.4 Arial, sans-serif;
+  text-align: center; pointer-events: none;
+}
+.pg-player-dossier .pg-portrait-edit:disabled { cursor: default; opacity: 1; }
+.pg-player-dossier .pg-portrait-edit:disabled .pg-portrait-edit-hint { display: none; }
+.pg-player-dossier .pg-item-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px; align-items: start;
+}
+.pg-player-dossier .pg-item-grid .pg-item-tile {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px; margin: 0; padding: 7px; min-width: 0;
+  border: 1px solid var(--pg-rule); border-radius: 2px; background: #faf5e944;
+}
+.pg-player-dossier .pg-item-grid .pg-item-icon-button {
+  grid-column: 1 / -1; display: block; width: 100%; height: 80px;
+  min-height: 0; padding: 3px; border: 1px solid var(--pg-rule);
+  border-radius: 2px; background: #302b250c; overflow: hidden;
+}
+.pg-player-dossier .pg-item-grid .pg-item-icon-button:hover { background: #ccb78e; border-color: var(--pg-brass); }
+.pg-player-dossier .pg-item-grid .pg-dossier-item-icon {
+  display: block; width: 100%; height: 100%; object-fit: contain; border: 0; border-radius: 0;
+}
+.pg-player-dossier .pg-item-grid .pg-item-roll,
+.pg-player-dossier .pg-item-grid .pg-item-delete {
+  width: 100%; min-width: 0; height: 28px; padding: 4px;
+}
+.pg-player-dossier .pg-item-grid .pg-legacy-tree-delete { grid-column: 1 / -1; }

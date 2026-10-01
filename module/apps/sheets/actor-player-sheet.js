@@ -34,6 +34,7 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.system = this.document.system;
+    context.canEditProfile = this.isEditable;
     context.statViews = this._buildStatViews();
     context.healthInfluenceView = this._buildHealthInfluenceView();
     context.derivedHealthMax = Number(this.document.system.derivedHealthMax) || 0;
@@ -54,7 +55,7 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
     context.itemCategoryEmpty = selected.empty;
     // Keep legacy embedded trees accessible for manual export/removal; never silently delete data.
     context.legacyMagicTrees = allItems.filter((item) => item.type === "magicTree")
-      .map((item) => ({ id: item.id, name: item.name }));
+      .map((item) => ({ id: item.id, name: item.name, img: item.img }));
     context.items = allItems
       .filter((item) => selected.types.includes(item.type))
       .map((item) => ({
@@ -78,6 +79,12 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
 
   _attachPartListeners(partId, htmlElement, options) {
     super._attachPartListeners(partId, htmlElement, options);
+
+    htmlElement.querySelector(".pg-portrait-edit")?.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      await this._editPortrait();
+    });
 
     htmlElement.querySelector(".pg-item-category")?.addEventListener("change", (event) => {
       // UI-only state: do not submit the category as an Actor field.
@@ -236,6 +243,19 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
         }));
       });
     });
+  }
+
+  async _editPortrait() {
+    if (!this.isEditable) return;
+    const picker = new foundry.applications.apps.FilePicker.implementation({
+      type: "image",
+      current: this.document.img,
+      callback: async (path) => {
+        if (!path || !this.isEditable) return;
+        await this.document.update({ img: path });
+      }
+    });
+    await picker.render({ force: true });
   }
 
   async _onDropItem(event, item) {
