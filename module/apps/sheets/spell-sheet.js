@@ -1,3 +1,4 @@
+import { attachItemPortraitListener } from "./item-portrait.js";
 import { ParovGradSpellBuilder } from "../spell-builder.js";
 import { getSpellConstructionStatus } from "../../magic/spell-construction.js";
 import {
@@ -47,7 +48,7 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
   _spellBuilder = null;
 
   static DEFAULT_OPTIONS = {
-    classes: ["ParovGrad", "sheet", "item", "spell"],
+    classes: ["pg-item-window", "ParovGrad", "sheet", "item", "spell"],
     position: { width: 700, height: 760 },
     window: {
       title: "ParovGrad: Spell",
@@ -72,6 +73,7 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
 
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
+    context.canEditPortrait = this.isEditable;
 
     const influences = normalizeInfluences(this.document.system?.influences);
     const materials = normalizeMaterials(this.document.system?.materials);
@@ -182,6 +184,7 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
 
   _attachPartListeners(partId, htmlElement, options) {
     super._attachPartListeners(partId, htmlElement, options);
+    attachItemPortraitListener(this, htmlElement);
 
     htmlElement.querySelector(".pg-spell-open-builder")?.addEventListener("click", async (event) => {
       event.preventDefault();

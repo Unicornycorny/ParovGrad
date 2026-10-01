@@ -1,3 +1,4 @@
+import { attachItemPortraitListener } from "./item-portrait.js";
 import {
   getEffectItemTemplateData,
   getEffectModifierOptions,
@@ -10,7 +11,7 @@ export class ParovGradEffectSheet extends foundry.applications.api.HandlebarsApp
   _isEditMode = false;
 
   static DEFAULT_OPTIONS = {
-    classes: ["ParovGrad", "sheet", "item", "effect"],
+    classes: ["pg-item-window", "ParovGrad", "sheet", "item", "effect"],
     position: { width: 720, height: 680 },
     window: { title: "ParovGrad: Effect", resizable: true },
     form: {
@@ -32,6 +33,7 @@ export class ParovGradEffectSheet extends foundry.applications.api.HandlebarsApp
 
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
+    context.canEditPortrait = this.isEditable;
     const effectData = getEffectItemTemplateData(this.document);
 
     context.system = this.document.system;
@@ -78,6 +80,7 @@ export class ParovGradEffectSheet extends foundry.applications.api.HandlebarsApp
 
   _attachPartListeners(partId, htmlElement, options) {
     super._attachPartListeners(partId, htmlElement, options);
+    attachItemPortraitListener(this, htmlElement);
     if (!this._isEditMode) return;
 
     const addButton = htmlElement.querySelector(".pg-effect-modifier-add");

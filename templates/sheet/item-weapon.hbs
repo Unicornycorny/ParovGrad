@@ -1,7 +1,11 @@
-<section class="pg-sheet">
+<section class="pg-sheet pg-item-dossier">
   <div class="sheet-body">
     <header class="pg-sheet-header">
-      <h1>{{document.name}}</h1>
+      <button type="button" class="pg-item-portrait-edit" title="Изменить изображение" aria-label="Изменить изображение: {{document.name}}" {{#unless canEditPortrait}}disabled{{/unless}}>
+        <img src="{{document.img}}" alt="{{document.name}}">
+      </button>
+      <div class="pg-item-dossier-heading"><div class="pg-item-dossier-kicker">Паров-Град · Оружие</div>
+        <h1>{{document.name}}</h1></div>
       <div class="pg-item-sheet-mode">
         {{#if isEditMode}}
           Режим: редактирование

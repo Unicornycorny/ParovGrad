@@ -1,3 +1,4 @@
+import { attachItemPortraitListener } from "./item-portrait.js";
 import { MagicTreeGraphView } from "../components/magic-tree-graph.js";
 import {
   MAGIC_TREE_EDGE_TYPES,
@@ -89,7 +90,7 @@ export class ParovGradMagicTreeSheet extends foundry.applications.api.Handlebars
   _graphView = null;
 
   static DEFAULT_OPTIONS = {
-    classes: ["ParovGrad", "sheet", "item", "magic-tree"],
+    classes: ["pg-item-window", "ParovGrad", "sheet", "item", "magic-tree"],
     position: { width: 1220, height: 860 },
     window: {
       title: "ParovGrad: Magic Tree",
@@ -114,6 +115,7 @@ export class ParovGradMagicTreeSheet extends foundry.applications.api.Handlebars
 
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
+    context.canEditPortrait = this.isEditable;
     const system = this.document.system;
     const branchEntries = objectEntries(system?.branches);
     const nodeEntries = objectEntries(system?.nodes);
@@ -271,6 +273,7 @@ export class ParovGradMagicTreeSheet extends foundry.applications.api.Handlebars
 
   _attachPartListeners(partId, htmlElement, options) {
     super._attachPartListeners(partId, htmlElement, options);
+    attachItemPortraitListener(this, htmlElement);
 
     this._mountGraph(htmlElement);
     this._bindGraphNavigation(htmlElement);

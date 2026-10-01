@@ -1,7 +1,11 @@
-<section class="pg-sheet pg-magic-tree-sheet">
+<section class="pg-sheet pg-item-dossier pg-magic-tree-sheet">
   <div class="sheet-body pg-magic-tree-shell">
     <header class="pg-sheet-header pg-magic-tree-header">
+      <button type="button" class="pg-item-portrait-edit" title="Изменить изображение" aria-label="Изменить изображение: {{document.name}}" {{#unless canEditPortrait}}disabled{{/unless}}>
+        <img src="{{document.img}}" alt="{{document.name}}">
+      </button>
       <div>
+        <div class="pg-item-dossier-kicker">Паров-Град · Древо магии</div>
         <h1>{{document.name}}</h1>
         <div class="pg-magic-tree-summary">
           Ветки: {{counts.branches}} · Этапы: {{counts.milestones}} · Узлы: {{counts.nodes}} · Связи: {{counts.edges}} · Ревизия: {{system.revision}}
