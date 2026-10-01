@@ -1,4 +1,8 @@
 import {
+  consumeActorInspiration,
+  openConfiguredD20RollDialog
+} from "../dice/roll-dialog.js";
+import {
   SPELL_EFFECT_TYPES,
   SPELL_EFFECT_TYPE_LABELS,
   getSpellEffects,
@@ -22,10 +26,48 @@ function getTokenDocument(tokenLike) {
   return tokenLike;
 }
 
+function getTokenFromUuid(tokenUuid) {
+  if (!tokenUuid) return null;
+  const tokenDocument = fromUuidSync(tokenUuid);
+  return tokenDocument?.object ?? tokenDocument ?? null;
+}
+
 function getActorFromTokenUuid(tokenUuid) {
   if (!tokenUuid) return null;
   const tokenDocument = fromUuidSync(tokenUuid);
   return tokenDocument?.actor ?? null;
+}
+
+function getRollModeLabel(mode) {
+  return {
+    normal: "Обычный",
+    advantage: "Преимущество",
+    disadvantage: "Помеха"
+  }[mode] ?? "Обычный";
+}
+
+function getD20Formula(mode) {
+  switch (mode) {
+    case "advantage":
+      return "2d20kh";
+    case "disadvantage":
+      return "2d20kl";
+    default:
+      return "1d20";
+  }
+}
+
+function buildFormula(baseFormula, modifier = 0) {
+  const normalizedModifier = Number(modifier) || 0;
+  if (!normalizedModifier) return baseFormula;
+  return `${baseFormula} ${normalizedModifier >= 0 ? "+" : "-"} ${Math.abs(normalizedModifier)}`;
+}
+
+function canControlSpellDefense(message) {
+  const data = message.getFlag("ParovGrad", "spellAttack") ?? {};
+  const targetActor = getActorFromTokenUuid(data.targetTokenUuid);
+  if (!targetActor) return false;
+  return game.user.isGM || targetActor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
 }
 
 function canApplySpellEffect(message) {
@@ -41,6 +83,26 @@ function formatInfluences(influences) {
     : [];
 
   return values.length ? values.join(" · ") : "—";
+}
+
+async function createRollCardMessage({ roll, speaker, content, flags = {} }) {
+  const rollHtml = await roll.render();
+
+  return ChatMessage.create({
+    user: game.user.id,
+    speaker,
+    content: `
+      <div class="pg-chat-card">
+        ${content}
+        <div class="pg-chat-card__roll">${rollHtml}</div>
+      </div>
+    `,
+    rolls: [JSON.stringify(roll.toJSON())],
+    style: CONST.CHAT_MESSAGE_STYLES.ROLL,
+    flags: {
+      ParovGrad: flags
+    }
+  });
 }
 
 async function createInfoCardMessage({ actor, item, targetDocument = null, effects = [] }) {
@@ -80,7 +142,50 @@ async function createInfoCardMessage({ actor, item, targetDocument = null, effec
   });
 }
 
-async function createSpellEffectRollMessage({ actor, item, targetDocument, effect, roll }) {
+async function createSpellAttackRollMessage({ actor, item, targetDocument, effects, attackConfig, attackFormula, roll }) {
+  const speaker = ChatMessage.getSpeaker({ actor });
+
+  return createRollCardMessage({
+    roll,
+    speaker,
+    content: `
+      <div class="pg-chat-card__header">
+        <div class="pg-chat-card__title">Атака заклинанием</div>
+        <div class="pg-chat-card__subtitle">${actor.name} атакует ${targetDocument.name} заклинанием «${item.name}»</div>
+      </div>
+      <div class="pg-chat-card__meta">Дальность: ${item.system?.range || "—"} · Форма: ${item.system?.shape || "—"}</div>
+      <div class="pg-chat-card__meta">Влияния: ${formatInfluences(item.system?.influences)}</div>
+      <div class="pg-chat-card__meta">Режим: ${getRollModeLabel(attackConfig.mode)}${attackConfig.modifier ? ` · Модификатор: ${attackConfig.modifier >= 0 ? "+" : "-"}${Math.abs(attackConfig.modifier)}` : ""}${attackConfig.useInspiration ? " · Вдохновение" : ""}</div>
+      <div class="pg-chat-card__actions">
+        <button type="button" class="pg-chat-button" data-action="roll-spell-defense">Защита от заклинания</button>
+      </div>
+    `,
+    flags: {
+      cardType: "spell-attack",
+      spellAttack: {
+        attackerActorUuid: actor.uuid,
+        itemUuid: item.uuid,
+        itemName: item.name,
+        targetTokenUuid: targetDocument.uuid,
+        targetName: targetDocument.name,
+        total: roll.total,
+        formula: attackFormula,
+        mode: attackConfig.mode,
+        modifier: attackConfig.modifier,
+        usedInspiration: attackConfig.useInspiration,
+        resolved: false,
+        success: null,
+        effects: effects.map((effect) => ({
+          type: effect.type,
+          label: effect.label,
+          formula: effect.formula
+        }))
+      }
+    }
+  });
+}
+
+async function createSpellEffectRollMessage({ actor, item, targetDocument, effect, roll, sourceAttackMessageId = null }) {
   const isDamage = effect.type === SPELL_EFFECT_TYPES.DAMAGE;
   const typeLabel = SPELL_EFFECT_TYPE_LABELS[effect.type] ?? effect.label ?? effect.type;
   const rollHtml = await roll.render();
@@ -124,6 +229,7 @@ async function createSpellEffectRollMessage({ actor, item, targetDocument, effec
           effectLabel: effect.label,
           formula: effect.formula,
           amount: Math.max(0, Number(roll.total) || 0),
+          sourceAttackMessageId,
           applied: false,
           appliedMode: null,
           appliedAmount: null
@@ -133,34 +239,29 @@ async function createSpellEffectRollMessage({ actor, item, targetDocument, effec
   });
 }
 
-export async function startSpellUse({ actor, item }) {
-  if (!actor || !item || item.type !== "spell") return;
+async function rollSpellEffectsAfterHit({ attackMessage, attackData, targetDocument }) {
+  const actor = attackData.attackerActorUuid ? fromUuidSync(attackData.attackerActorUuid) : null;
+  const item = attackData.itemUuid ? fromUuidSync(attackData.itemUuid) : null;
 
-  const effects = getSpellEffects(item);
-  let targetDocument = null;
-
-  if (effects.length) {
-    const targetToken = getSingleTargetToken();
-    if (!targetToken) return;
-
-    targetDocument = getTokenDocument(targetToken);
-    if (!targetDocument?.actor) {
-      ui.notifications?.warn("У выбранной цели нет актора.");
-      return;
-    }
-
-    for (const effect of effects) {
-      if (!isValidSpellRollFormula(effect.formula)) {
-        ui.notifications?.error(`У влияния «${effect.label}» задана некорректная формула: ${effect.formula || "—"}.`);
-        return;
-      }
-    }
+  if (!actor) {
+    ui.notifications?.warn("Не удалось найти заклинателя для броска эффекта.");
+    return;
   }
 
-  await createInfoCardMessage({ actor, item, targetDocument, effects });
+  if (!item || item.type !== "spell") {
+    ui.notifications?.warn("Не удалось найти заклинание для броска эффекта.");
+    return;
+  }
+
+  const effects = Array.isArray(attackData.effects) ? attackData.effects : getSpellEffects(item);
+  const rollData = actor.getRollData?.() ?? actor.system?.toObject?.() ?? actor.system ?? {};
 
   for (const effect of effects) {
-    const rollData = actor.getRollData?.() ?? actor.system?.toObject?.() ?? actor.system ?? {};
+    if (!isValidSpellRollFormula(effect?.formula)) {
+      ui.notifications?.error(`У влияния «${effect?.label || "—"}» задана некорректная формула: ${effect?.formula || "—"}.`);
+      continue;
+    }
+
     const roll = game.parovgrad.dice.createRoll(effect.formula, rollData);
     await roll.evaluate();
 
@@ -169,13 +270,94 @@ export async function startSpellUse({ actor, item }) {
       item,
       targetDocument,
       effect,
-      roll
+      roll,
+      sourceAttackMessageId: attackMessage.id
     });
   }
 }
 
+export async function startSpellUse({ actor, item }) {
+  if (!actor || !item || item.type !== "spell") return;
+
+  const effects = getSpellEffects(item);
+
+  // Spells without rollable damage/healing effects keep their informational use flow.
+  // Once a spell has a rollable effect, it becomes an attack and must be defended first.
+  if (!effects.length) {
+    await createInfoCardMessage({ actor, item, effects });
+    return;
+  }
+
+  const targetToken = getSingleTargetToken();
+  if (!targetToken) return;
+
+  const targetDocument = getTokenDocument(targetToken);
+  if (!targetDocument?.actor) {
+    ui.notifications?.warn("У выбранной цели нет актора.");
+    return;
+  }
+
+  for (const effect of effects) {
+    if (!isValidSpellRollFormula(effect.formula)) {
+      ui.notifications?.error(`У влияния «${effect.label}» задана некорректная формула: ${effect.formula || "—"}.`);
+      return;
+    }
+  }
+
+  const attackConfig = await openConfiguredD20RollDialog({
+    title: `Атака заклинанием: ${item.name}`,
+    actor
+  });
+  if (!attackConfig) return;
+
+  if (attackConfig.useInspiration) {
+    const spent = await consumeActorInspiration(actor);
+    if (!spent) return;
+  }
+
+  const attackFormula = buildFormula(getD20Formula(attackConfig.mode), attackConfig.modifier);
+  const attackRoll = game.parovgrad.dice.createRoll(attackFormula, {}, {
+    addExtraDie: attackConfig.useInspiration
+  });
+  await attackRoll.evaluate();
+
+  await createSpellAttackRollMessage({
+    actor,
+    item,
+    targetDocument,
+    effects,
+    attackConfig,
+    attackFormula,
+    roll: attackRoll
+  });
+}
+
 export function renderSpellChatButtons(message, html) {
   const cardType = message.getFlag("ParovGrad", "cardType");
+
+  if (cardType === "spell-attack") {
+    const button = html.querySelector('[data-action="roll-spell-defense"]');
+    if (!(button instanceof HTMLButtonElement)) return;
+
+    const attackData = message.getFlag("ParovGrad", "spellAttack") ?? {};
+    const allowed = canControlSpellDefense(message);
+    const resolved = Boolean(attackData.resolved);
+
+    button.disabled = !allowed || resolved;
+    button.textContent = resolved ? "Защита выполнена" : "Защита от заклинания";
+
+    if (!allowed && !resolved) {
+      button.title = "Кнопка доступна только GM или владельцу цели.";
+    }
+
+    button.addEventListener("click", async (event) => {
+      event.preventDefault();
+      await handleSpellDefenseButtonClick(message);
+    });
+
+    return;
+  }
+
   if (cardType !== "spell-effect") return;
 
   const effectData = message.getFlag("ParovGrad", "spellEffect") ?? {};
@@ -212,6 +394,89 @@ export function renderSpellChatButtons(message, html) {
   bind('[data-action="apply-spell-damage"]', "damage", "Нанести урон");
   bind('[data-action="apply-spell-half-damage"]', "halfDamage", "Нанести половину урона");
   bind('[data-action="apply-spell-healing"]', "healing", "Вылечить");
+}
+
+export async function handleSpellDefenseButtonClick(message) {
+  const attackData = foundry.utils.deepClone(message.getFlag("ParovGrad", "spellAttack") ?? {});
+  if (!attackData?.targetTokenUuid) return;
+
+  if (attackData.resolved) {
+    ui.notifications?.info("Эта атака заклинанием уже была обработана.");
+    return;
+  }
+
+  if (!canControlSpellDefense(message)) {
+    ui.notifications?.warn("У вас нет прав на бросок защиты за эту цель.");
+    return;
+  }
+
+  const targetToken = getTokenFromUuid(attackData.targetTokenUuid);
+  if (!targetToken?.actor) {
+    ui.notifications?.warn("Не удалось найти цель для защиты.");
+    return;
+  }
+
+  const defenseConfig = await openConfiguredD20RollDialog({
+    title: `Защита от заклинания: ${attackData.targetName}`,
+    actor: targetToken.actor
+  });
+  if (!defenseConfig) return;
+
+  if (defenseConfig.useInspiration) {
+    const spent = await consumeActorInspiration(targetToken.actor);
+    if (!spent) return;
+  }
+
+  const defenseFormula = buildFormula(getD20Formula(defenseConfig.mode), defenseConfig.modifier);
+  const defenseRoll = game.parovgrad.dice.createRoll(defenseFormula, {}, {
+    addExtraDie: defenseConfig.useInspiration
+  });
+  await defenseRoll.evaluate();
+
+  const attackTotal = Number(attackData.total) || 0;
+  const defenseTotal = Number(defenseRoll.total) || 0;
+  const success = attackTotal >= defenseTotal;
+  const speaker = ChatMessage.getSpeaker({ actor: targetToken.actor, token: targetToken.document ?? targetToken });
+
+  await createRollCardMessage({
+    roll: defenseRoll,
+    speaker,
+    content: `
+      <div class="pg-chat-card__header">
+        <div class="pg-chat-card__title">Защита от заклинания</div>
+        <div class="pg-chat-card__subtitle">${attackData.targetName} защищается от заклинания «${attackData.itemName}»</div>
+      </div>
+      <div class="pg-chat-card__meta">Режим: ${getRollModeLabel(defenseConfig.mode)}${defenseConfig.modifier ? ` · Модификатор: ${defenseConfig.modifier >= 0 ? "+" : "-"}${Math.abs(defenseConfig.modifier)}` : ""}${defenseConfig.useInspiration ? " · Вдохновение" : ""}</div>
+      <div class="pg-chat-card__comparison">
+        <div>Атака: <strong>${attackTotal}</strong></div>
+        <div>Защита: <strong>${defenseTotal}</strong></div>
+      </div>
+      <div class="pg-chat-card__result ${success ? "is-success" : "is-failure"}">
+        ${success ? "Заклинание попало" : "Заклинание отбито"}
+      </div>
+    `,
+    flags: {
+      cardType: "spell-defense-result",
+      spellDefense: {
+        attackMessageId: message.id,
+        targetTokenUuid: attackData.targetTokenUuid,
+        total: defenseRoll.total,
+        success,
+        usedInspiration: defenseConfig.useInspiration
+      }
+    }
+  });
+
+  await message.setFlag("ParovGrad", "spellAttack.resolved", true);
+  await message.setFlag("ParovGrad", "spellAttack.success", success);
+
+  if (!success) return;
+
+  await rollSpellEffectsAfterHit({
+    attackMessage: message,
+    attackData,
+    targetDocument: getTokenDocument(targetToken)
+  });
 }
 
 export async function handleApplySpellEffectButtonClick(message, mode) {
