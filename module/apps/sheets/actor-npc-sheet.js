@@ -187,6 +187,11 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
   }
 
   async _onDropItem(event, item) {
+    if (item?.type === "magicTree") {
+      ui.notifications.warn("Древо магии нельзя хранить у актёра. Добавьте созданное на его основе заклинание.");
+      return;
+    }
+
     if (item?.type === "effect") {
       await applyEffectItemToActor(this.document, item);
       return;

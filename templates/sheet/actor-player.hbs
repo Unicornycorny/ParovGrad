@@ -1,9 +1,20 @@
-<section class="pg-sheet">
+<section class="pg-sheet pg-player-dossier">
   <div class="sheet-body">
-    <h1>{{document.name}}</h1>
+    <header class="pg-dossier-header">
+      <figure class="pg-dossier-portrait">
+        <img src="{{document.img}}" alt="Портрет: {{document.name}}">
+      </figure>
+      <div class="pg-dossier-identity">
+        <div class="pg-dossier-kicker">Личное дело <span aria-hidden="true">◆</span> Лист персонажа</div>
+        <div class="pg-dossier-brand" aria-hidden="true">Паров-Град</div>
+        <h1>{{document.name}}</h1>
+      </div>
+      <div class="pg-dossier-seal" aria-hidden="true">ПГ</div>
+    </header>
 
-    <section>
+    <section class="pg-dossier-section pg-dossier-stats">
       <h2>Характеристики</h2>
+      <div class="pg-dossier-stat-grid">
 
       {{#each statViews}}
       <div class="pg-stat-row">
@@ -21,32 +32,34 @@
         </div>
       </div>
       {{/each}}
+      </div>
     </section>
 
-    <section>
+    <section class="pg-dossier-section pg-dossier-resources">
       <h2>Показатели</h2>
+      <div class="pg-dossier-resource-grid">
 
-      <div>
+      <div class="pg-dossier-field">
         <label for="pg-life-path">Жизненный путь</label>
         <input id="pg-life-path" type="number" name="system.lifePath" min="1" max="5" value="{{system.lifePath}}">
       </div>
 
-      <div>
+      <div class="pg-dossier-field">
         <label>Вдохновение</label>
         <input type="number" name="system.inspiration" min="0" value="{{system.inspiration}}">
       </div>
 
-      <div>
+      <div class="pg-dossier-field">
         <label>Очки навыков</label>
         <input type="number" name="system.skillPoints" min="0" step="1" value="{{system.skillPoints}}">
       </div>
 
-      <div>
+      <div class="pg-dossier-field">
         <label>Опыт</label>
         <input type="number" name="system.experience" min="0" value="{{system.experience}}">
       </div>
 
-      <div>
+      <div class="pg-dossier-field pg-dossier-level">
         <label>Уровень</label>
         <div class="pg-level-up-controls">
           <input type="number" name="system.level" min="0" value="{{system.level}}">
@@ -54,22 +67,25 @@
         </div>
       </div>
 
-      <div>
+      <div class="pg-dossier-field pg-dossier-health-influence">
         <label>Внешнее влияние на макс. здоровье</label>
         <input type="text" class="pg-stat-influence" value="{{healthInfluenceView.influenceDisplay}}" readonly disabled
           tabindex="-1" title="{{healthInfluenceView.influenceTooltip}}">
       </div>
 
-      <div>
+      <div class="pg-dossier-field pg-dossier-health">
         <label>Здоровье</label>
+        <div class="pg-dossier-health-values">
         <input type="number" name="system.health.value" min="0" max="{{derivedHealthMax}}"
           value="{{system.health.value}}">
         /
-        <input type="number" value="{{derivedHealthMax}}" disabled>
+        <input type="number" value="{{derivedHealthMax}}" disabled aria-label="Максимальное здоровье">
+        </div>
+      </div>
       </div>
     </section>
 
-    <section>
+    <section class="pg-dossier-section pg-dossier-effects">
       <div class="pg-section-header">
         <h2>Эффекты</h2>
         <button type="button" class="pg-effect-create">+ Добавить эффект</button>
@@ -128,13 +144,23 @@
       {{/if}}
     </section>
 
-    <section>
+    <section class="pg-dossier-section pg-dossier-items">
       <h2>Предметы</h2>
+      <div class="pg-item-category-menu">
+        <label>Категория
+          <select class="pg-item-category" aria-label="Категория предметов">
+            {{#each itemCategories}}
+            <option value="{{this.key}}" {{#if this.selected}}selected{{/if}}>{{this.label}} ({{this.count}})</option>
+            {{/each}}
+          </select>
+        </label>
+      </div>
 
       {{#if items.length}}
       <ul class="pg-item-list">
         {{#each items}}
         <li class="pg-item-row">
+          <img class="pg-dossier-item-icon" src="{{this.img}}" alt="" loading="lazy">
           <button type="button" class="pg-item-link" data-item-id="{{this.id}}">
             {{this.name}}
           </button>
@@ -158,8 +184,23 @@
         {{/each}}
       </ul>
       {{else}}
-      <p>Нет предметов</p>
+      <p>{{itemCategoryEmpty}}</p>
       {{/if}}
     </section>
+    {{#if legacyMagicTrees.length}}
+    <section class="pg-dossier-section pg-legacy-trees">
+      <h2>Ранее добавленные древа магии</h2>
+      <p class="pg-form-hint">Древа магии должны храниться в каталоге предметов мира. Эти старые записи оставлены для сохранения данных: перед удалением экспортируйте их через меню листа.</p>
+      <ul class="pg-item-list">
+        {{#each legacyMagicTrees}}
+        <li class="pg-item-row">
+          <button type="button" class="pg-item-link" data-item-id="{{this.id}}">{{this.name}}</button>
+          <button type="button" class="pg-item-delete pg-legacy-tree-delete" data-item-id="{{this.id}}" aria-label="Удалить древо магии">Удалить</button>
+        </li>
+        {{/each}}
+      </ul>
+    </section>
+    {{/if}}
+    <footer class="pg-dossier-footer" aria-hidden="true"><span>Паров-Град</span><span>◆</span><span>Личное дело</span></footer>
   </div>
 </section>

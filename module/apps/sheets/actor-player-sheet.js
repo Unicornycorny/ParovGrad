@@ -29,6 +29,8 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
     }
   };
 
+  _itemCategory = "inventory";
+
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.system = this.document.system;
@@ -36,8 +38,25 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
     context.healthInfluenceView = this._buildHealthInfluenceView();
     context.derivedHealthMax = Number(this.document.system.derivedHealthMax) || 0;
 
-    context.items = Array.from(this.document.items)
-      .filter((item) => item.type !== "effect")
+    const categories = [
+      { key: "spells", label: "Заклинания", types: ["spell"], empty: "Нет заклинаний" },
+      { key: "abilities", label: "Способности", types: ["skill"], empty: "Нет способностей" },
+      { key: "inventory", label: "Инвентарь", types: ["item", "weapon"], empty: "Инвентарь пуст" }
+    ];
+    const selected = categories.find((category) => category.key === this._itemCategory) ?? categories[2];
+    const allItems = Array.from(this.document.items);
+    context.itemCategories = categories.map((category) => ({
+      key: category.key,
+      label: category.label,
+      selected: category.key === selected.key,
+      count: allItems.filter((item) => category.types.includes(item.type)).length
+    }));
+    context.itemCategoryEmpty = selected.empty;
+    // Keep legacy embedded trees accessible for manual export/removal; never silently delete data.
+    context.legacyMagicTrees = allItems.filter((item) => item.type === "magicTree")
+      .map((item) => ({ id: item.id, name: item.name }));
+    context.items = allItems
+      .filter((item) => selected.types.includes(item.type))
       .map((item) => ({
         id: item.id,
         name: item.name,
@@ -59,6 +78,15 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
 
   _attachPartListeners(partId, htmlElement, options) {
     super._attachPartListeners(partId, htmlElement, options);
+
+    htmlElement.querySelector(".pg-item-category")?.addEventListener("change", (event) => {
+      // UI-only state: do not submit the category as an Actor field.
+      event.stopPropagation();
+      const category = event.currentTarget.value;
+      if (!["spells", "abilities", "inventory"].includes(category)) return;
+      this._itemCategory = category;
+      this.render({ parts: ["form"] });
+    });
 
     htmlElement.querySelectorAll(".pg-item-link").forEach((element) => {
       element.addEventListener("click", async (event) => {
@@ -211,6 +239,11 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
   }
 
   async _onDropItem(event, item) {
+    if (item?.type === "magicTree") {
+      ui.notifications.warn("Древо магии нельзя хранить у актёра. Добавьте созданное на его основе заклинание.");
+      return;
+    }
+
     if (item?.type === "effect") {
       await applyEffectItemToActor(this.document, item);
       return;

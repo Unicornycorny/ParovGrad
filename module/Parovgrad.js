@@ -93,12 +93,35 @@ Hooks.once("setup", () => {
   };
 });
 
+// Protect all Actor types, including API-created embedded Items and token Actors.
+Hooks.on("preCreateItem", (item) => {
+  if (item.parent?.documentName === "Actor" && item.type === "magicTree") {
+    ui.notifications.warn("Древо магии нельзя хранить у актёра. Храните его в каталоге предметов мира.");
+    return false;
+  }
+});
+
+Hooks.on("preUpdateItem", (item, changed) => {
+  if (item.parent?.documentName === "Actor" && changed.type === "magicTree") {
+    ui.notifications.warn("Нельзя преобразовать предмет актёра в древо магии.");
+    return false;
+  }
+});
+
 Hooks.on("preCreateActor", (actor, data) => {
+  if (data.items?.some((item) => item.type === "magicTree")) {
+    ui.notifications.warn("Актёр содержит древо магии. Уберите его из состава предметов перед импортом или копированием.");
+    return false;
+  }
   if (actor.type !== "Player") return;
   applyDerivedHealthToSource(data);
 });
 
 Hooks.on("preUpdateActor", (actor, changed) => {
+  if (changed.items?.some((item) => item.type === "magicTree")) {
+    ui.notifications.warn("Древо магии нельзя добавить в состав предметов актёра.");
+    return false;
+  }
   if (actor.type !== "Player") return;
   applyDerivedHealthToUpdate(actor, changed);
 });
