@@ -239,6 +239,29 @@ async function createSpellEffectRollMessage({ actor, item, targetDocument, effec
   });
 }
 
+async function rollSpellEffectsWithoutAttack({ actor, item, targetDocument, effects }) {
+  const rollData = actor.getRollData?.() ?? actor.system?.toObject?.() ?? actor.system ?? {};
+
+  for (const effect of effects) {
+    if (!isValidSpellRollFormula(effect?.formula)) {
+      ui.notifications?.error(`У влияния «${effect?.label || "—"}» задана некорректная формула: ${effect?.formula || "—"}.`);
+      continue;
+    }
+
+    const roll = game.parovgrad.dice.createRoll(effect.formula, rollData);
+    await roll.evaluate();
+
+    await createSpellEffectRollMessage({
+      actor,
+      item,
+      targetDocument,
+      effect,
+      roll,
+      sourceAttackMessageId: null
+    });
+  }
+}
+
 async function rollSpellEffectsAfterHit({ attackMessage, attackData, targetDocument }) {
   const actor = attackData.attackerActorUuid ? fromUuidSync(attackData.attackerActorUuid) : null;
   const item = attackData.itemUuid ? fromUuidSync(attackData.itemUuid) : null;
@@ -282,7 +305,6 @@ export async function startSpellUse({ actor, item }) {
   const effects = getSpellEffects(item);
 
   // Spells without rollable damage/healing effects keep their informational use flow.
-  // Once a spell has a rollable effect, it becomes an attack and must be defended first.
   if (!effects.length) {
     await createInfoCardMessage({ actor, item, effects });
     return;
@@ -303,6 +325,23 @@ export async function startSpellUse({ actor, item }) {
       return;
     }
   }
+
+  // Healing never requires an attack/defense roll. If a spell contains both healing
+  // and offensive rollable effects, healing resolves immediately while only the
+  // remaining effects continue through the normal attack -> defense pipeline.
+  const healingEffects = effects.filter((effect) => effect.type === SPELL_EFFECT_TYPES.HEALING);
+  const attackEffects = effects.filter((effect) => effect.type !== SPELL_EFFECT_TYPES.HEALING);
+
+  if (healingEffects.length) {
+    await rollSpellEffectsWithoutAttack({
+      actor,
+      item,
+      targetDocument,
+      effects: healingEffects
+    });
+  }
+
+  if (!attackEffects.length) return;
 
   const attackConfig = await openConfiguredD20RollDialog({
     title: `Атака заклинанием: ${item.name}`,
@@ -325,7 +364,7 @@ export async function startSpellUse({ actor, item }) {
     actor,
     item,
     targetDocument,
-    effects,
+    effects: attackEffects,
     attackConfig,
     attackFormula,
     roll: attackRoll
