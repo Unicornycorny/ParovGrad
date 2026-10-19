@@ -79,7 +79,16 @@ export class ParovGradSpellBuilder extends foundry.applications.api.HandlebarsAp
 
     const construction = getSpellConstruction(spell);
     const worldTrees = getWorldMagicTrees();
-    this._treeUuid = String(options.treeUuid ?? construction.treeUuid ?? worldTrees[0]?.uuid ?? "");
+    const requestedTreeUuid = String(options.treeUuid ?? "").trim();
+
+    // Empty strings are valid JS values for ??, so the previous fallback chain
+    // stopped at an empty construction.treeUuid and never selected worldTrees[0].
+    // Use the first available tree when neither the caller nor the saved spell
+    // construction provides a real UUID. This also makes the visually selected
+    // first <option> match the builder's internal state.
+    this._treeUuid = requestedTreeUuid
+      || construction.treeUuid
+      || String(worldTrees[0]?.uuid ?? "");
 
     if (this._treeUuid && this._treeUuid === construction.treeUuid) {
       this._selectedNodeIds = new Set(construction.selectedNodeIds);
