@@ -1,89 +1,106 @@
-<section class="pg-sheet">
+<section class="pg-sheet pg-player-dossier pg-npc-dossier">
   <div class="sheet-body">
-    <h1>{{document.name}}</h1>
+    <header class="pg-dossier-header">
+      <figure class="pg-dossier-portrait">
+        <img src="{{document.img}}" alt="Портрет: {{document.name}}">
+      </figure>
+      <div class="pg-dossier-identity">
+        <div class="pg-dossier-kicker">Личное дело <span aria-hidden="true">◆</span> Лист NPC</div>
+        <div class="pg-dossier-brand" aria-hidden="true">Паров-Град</div>
+        <h1>{{document.name}}</h1>
+      </div>
+      <div class="pg-dossier-seal" aria-hidden="true">ПГ</div>
+    </header>
 
-    <section>
+    <section class="pg-dossier-section pg-npc-profile">
       <h2>NPC</h2>
-      <div>
-        <label>Роль</label>
-        <input type="text" name="system.role" value="{{system.role}}">
+      <div class="pg-dossier-resource-grid pg-npc-profile-grid">
+        <div class="pg-dossier-field pg-npc-role">
+          <label for="pg-npc-role">Роль</label>
+          <input id="pg-npc-role" type="text" name="system.role" value="{{system.role}}">
+        </div>
       </div>
     </section>
 
-    <section>
+    <section class="pg-dossier-section pg-dossier-stats">
       <h2>Характеристики</h2>
+      <div class="pg-dossier-stat-grid">
+        {{#each statViews}}
+        <div class="pg-stat-row">
+          <label for="pg-stat-{{this.key}}">{{this.label}}</label>
+          <div class="pg-stat-controls pg-stat-controls--with-influence">
+            <input
+              id="pg-stat-{{this.key}}"
+              type="number"
+              name="system.stats.{{this.key}}"
+              min="1"
+              max="20"
+              value="{{this.value}}"
+            >
+            <input
+              type="text"
+              class="pg-stat-influence"
+              value="{{this.influenceDisplay}}"
+              readonly
+              disabled
+              tabindex="-1"
+              title="{{this.influenceTooltip}}"
+              aria-label="Сумма внешних влияний: {{this.influenceDisplay}}"
+            >
+          </div>
+        </div>
+        {{/each}}
+      </div>
+    </section>
 
-      {{#each statViews}}
-      <div class="pg-stat-row">
-        <label for="pg-stat-{{this.key}}">{{this.label}}</label>
-        <div class="pg-stat-controls pg-stat-controls--with-influence">
-          <input
-            id="pg-stat-{{this.key}}"
-            type="number"
-            name="system.stats.{{this.key}}"
-            min="1"
-            max="20"
-            value="{{this.value}}"
-          >
+    <section class="pg-dossier-section pg-dossier-resources">
+      <h2>Показатели</h2>
+      <div class="pg-dossier-resource-grid">
+        <div class="pg-dossier-field">
+          <label>Вдохновение</label>
+          <input type="number" name="system.inspiration" min="0" value="{{system.inspiration}}">
+        </div>
+
+        <div class="pg-dossier-field">
+          <label>Опыт</label>
+          <input type="number" name="system.experience" min="0" value="{{system.experience}}">
+        </div>
+
+        <div class="pg-dossier-field">
+          <label>Уровень</label>
+          <input type="number" name="system.level" min="0" value="{{system.level}}">
+        </div>
+
+        <div class="pg-dossier-field">
+          <label>Итоговое макс. здоровье</label>
+          <input type="number" value="{{derivedHealthMax}}" disabled>
+        </div>
+
+        <div class="pg-dossier-field pg-npc-health">
+          <label>Здоровье</label>
+          <div class="pg-dossier-health-values">
+            <input type="number" name="system.health.value" min="0" max="{{derivedHealthMax}}" value="{{system.health.value}}">
+            /
+            <input type="number" name="system.health.max" min="0" value="{{system.health.max}}">
+          </div>
+        </div>
+
+        <div class="pg-dossier-field pg-dossier-health-influence">
+          <label>Внешнее влияние на макс. здоровье</label>
           <input
             type="text"
             class="pg-stat-influence"
-            value="{{this.influenceDisplay}}"
+            value="{{healthInfluenceView.influenceDisplay}}"
             readonly
             disabled
             tabindex="-1"
-            title="{{this.influenceTooltip}}"
-            aria-label="Сумма внешних влияний: {{this.influenceDisplay}}"
+            title="{{healthInfluenceView.influenceTooltip}}"
           >
         </div>
       </div>
-      {{/each}}
     </section>
 
-    <section>
-      <h2>Показатели</h2>
-
-      <div>
-        <label>Вдохновение</label>
-        <input type="number" name="system.inspiration" min="0" value="{{system.inspiration}}">
-      </div>
-
-      <div>
-        <label>Опыт</label>
-        <input type="number" name="system.experience" min="0" value="{{system.experience}}">
-      </div>
-
-      <div>
-        <label>Уровень</label>
-        <input type="number" name="system.level" min="0" value="{{system.level}}">
-      </div>
-
-      <div>
-        <label>Внешнее влияние на макс. здоровье</label>
-        <input
-          type="text"
-          class="pg-stat-influence"
-          value="{{healthInfluenceView.influenceDisplay}}"
-          readonly
-          disabled
-          tabindex="-1"
-          title="{{healthInfluenceView.influenceTooltip}}"
-        >
-      </div>
-
-      <div>
-        <label>Здоровье</label>
-        <input type="number" name="system.health.value" min="0" max="{{derivedHealthMax}}" value="{{system.health.value}}">
-        /
-        <input type="number" name="system.health.max" min="0" value="{{system.health.max}}">
-      </div>
-      <div>
-        <label>Итоговое макс. здоровье</label>
-        <input type="number" value="{{derivedHealthMax}}" disabled>
-      </div>
-    </section>
-
-    <section>
+    <section class="pg-dossier-section pg-dossier-effects">
       <div class="pg-section-header">
         <h2>Эффекты</h2>
         <button type="button" class="pg-effect-create">+ Добавить эффект</button>
@@ -139,25 +156,33 @@
       {{/if}}
     </section>
 
-    <section>
+    <section class="pg-dossier-section pg-dossier-items">
       <h2>Предметы</h2>
+      <div class="pg-item-category-menu">
+        <label>Категория
+          <select class="pg-item-category" aria-label="Категория предметов">
+            {{#each itemCategories}}
+            <option value="{{this.key}}" {{#if this.selected}}selected{{/if}}>{{this.label}} ({{this.count}})</option>
+            {{/each}}
+          </select>
+        </label>
+      </div>
 
       {{#if items.length}}
-      <ul class="pg-item-list">
+      <ul class="pg-item-list pg-item-grid">
         {{#each items}}
-        <li class="pg-item-row">
-          <button type="button" class="pg-item-link" data-item-id="{{this.id}}">
-            {{this.name}}
+        <li class="pg-item-row pg-item-tile">
+          <button type="button" class="pg-item-link pg-item-icon-button" data-item-id="{{this.id}}" title="{{this.name}}" aria-label="Открыть: {{this.name}}">
+            <img class="pg-dossier-item-icon" src="{{this.img}}" alt="" loading="lazy">
           </button>
 
-          {{#if this.isSpell}}
-          <button type="button" class="pg-item-roll" data-item-id="{{this.id}}" aria-label="Применить заклинание"
-            title="Применить заклинание">
+          <button type="button" class="pg-item-roll" data-item-id="{{this.id}}" aria-label="Использовать предмет"
+            title="Использовать предмет">
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <path d="M12 2l1.9 5.2L19 9l-5.1 1.8L12 16l-1.9-5.2L5 9l5.1-1.8L12 2Zm6.5 11 1 2.5L22 16.5l-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5ZM5 14l1.2 3.3L9.5 18.5l-3.3 1.2L5 23l-1.2-3.3-3.3-1.2 3.3-1.2L5 14Z" />
+              <path
+                d="M11.2 2.3a2 2 0 0 1 1.6 0l7 3.1A2 2 0 0 1 21 7.2v9.6a2 2 0 0 1-1.2 1.8l-7 3.1a2 2 0 0 1-1.6 0l-7-3.1A2 2 0 0 1 3 16.8V7.2a2 2 0 0 1 1.2-1.8l7-3.1ZM8.1 5.1l3.9 1.7 3.9-1.7L12 3.4 8.1 5.1Zm9.9 2.3-4 1.8v4.1l4-1.8V7.4Zm-12 0v4.1l4 1.8V9.2l-4-1.8Zm4 13.1v-4.1l-4-1.8v4.1l4 1.8Zm4 0 4-1.8v-4.1l-4 1.8v4.1Z" />
             </svg>
           </button>
-          {{/if}}
 
           <button type="button" class="pg-item-delete" data-item-id="{{this.id}}" aria-label="Удалить предмет"
             title="Удалить предмет">
@@ -170,8 +195,27 @@
         {{/each}}
       </ul>
       {{else}}
-      <p>Нет предметов</p>
+      <p>{{itemCategoryEmpty}}</p>
       {{/if}}
     </section>
+
+    {{#if legacyMagicTrees.length}}
+    <section class="pg-dossier-section pg-legacy-trees">
+      <h2>Ранее добавленные древа магии</h2>
+      <p class="pg-form-hint">Древа магии должны храниться в каталоге предметов мира. Эти старые записи сохранены для доступа к данным.</p>
+      <ul class="pg-item-list pg-item-grid">
+        {{#each legacyMagicTrees}}
+        <li class="pg-item-row pg-item-tile">
+          <button type="button" class="pg-item-link pg-item-icon-button" data-item-id="{{this.id}}" title="{{this.name}}" aria-label="Открыть: {{this.name}}">
+            <img class="pg-dossier-item-icon" src="{{this.img}}" alt="" loading="lazy">
+          </button>
+          <button type="button" class="pg-item-delete pg-item-delete--full" data-item-id="{{this.id}}" aria-label="Удалить древо магии" title="Удалить древо магии">Удалить</button>
+        </li>
+        {{/each}}
+      </ul>
+    </section>
+    {{/if}}
+
+    <footer class="pg-dossier-footer" aria-hidden="true"><span>Паров-Град</span><span>◆</span><span>Личное дело NPC</span></footer>
   </div>
 </section>

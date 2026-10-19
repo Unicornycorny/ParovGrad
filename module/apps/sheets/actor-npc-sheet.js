@@ -1,4 +1,5 @@
 import { startSpellUse } from "../../workflows/spell-use.js";
+import { startItemAttack, startItemUse } from "../../workflows/weapon-attack.js";
 import {
   applyEffectItemToActor,
   cloneActiveEffectToActor,
@@ -10,8 +11,8 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
   foundry.applications.sheets.ActorSheetV2
 ) {
   static DEFAULT_OPTIONS = {
-    classes: ["ParovGrad", "sheet", "actor", "NPC"],
-    position: { width: 760, height: 720 },
+    classes: ["parovgrad", "sheet", "actor", "npc"],
+    position: { width: 760, height: 760 },
     window: { title: "ParovGrad: NPC", resizable: true },
     form: {
       submitOnChange: true,
@@ -26,6 +27,8 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
     }
   };
 
+  _itemCategory = "inventory";
+
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.system = this.document.system;
@@ -33,12 +36,30 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
     context.healthInfluenceView = this._buildHealthInfluenceView();
     context.derivedHealthMax = Number(this.document.system.derivedHealthMax) || 0;
 
-    context.items = Array.from(this.document.items)
-      .filter((item) => item.type !== "effect")
+    const categories = [
+      { key: "spells", label: "Заклинания", types: ["spell"], empty: "Нет заклинаний" },
+      { key: "abilities", label: "Способности", types: ["skill"], empty: "Нет способностей" },
+      { key: "inventory", label: "Инвентарь", types: ["item", "weapon"], empty: "Инвентарь пуст" }
+    ];
+    const selected = categories.find((category) => category.key === this._itemCategory) ?? categories[2];
+    const allItems = Array.from(this.document.items);
+    context.itemCategories = categories.map((category) => ({
+      key: category.key,
+      label: category.label,
+      selected: category.key === selected.key,
+      count: allItems.filter((item) => category.types.includes(item.type)).length
+    }));
+    context.itemCategoryEmpty = selected.empty;
+    // Keep previously embedded magic trees available for inspection and removal.
+    context.legacyMagicTrees = allItems.filter((item) => item.type === "magicTree")
+      .map((item) => ({ id: item.id, name: item.name, img: item.img }));
+    context.items = allItems
+      .filter((item) => selected.types.includes(item.type))
       .map((item) => ({
         id: item.id,
         name: item.name,
         type: item.type,
+        img: item.img,
         isSpell: item.type === "spell"
       }));
 
@@ -55,6 +76,14 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
 
   _attachPartListeners(partId, htmlElement, options) {
     super._attachPartListeners(partId, htmlElement, options);
+
+    htmlElement.querySelector(".pg-item-category")?.addEventListener("change", (event) => {
+      event.stopPropagation();
+      const category = event.currentTarget.value;
+      if (!["spells", "abilities", "inventory"].includes(category)) return;
+      this._itemCategory = category;
+      this.render({ parts: ["form"] });
+    });
 
     htmlElement.querySelectorAll(".pg-item-link").forEach((element) => {
       element.addEventListener("click", async (event) => {
@@ -79,9 +108,15 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
         if (!itemId) return;
 
         const item = this.document.items.get(itemId);
-        if (item?.type !== "spell") return;
+        if (!item) return;
 
-        await startSpellUse({ actor: this.document, item });
+        if (item.type === "weapon" || item.type === "skill") {
+          await startItemAttack({ actor: this.document, item });
+        } else if (item.type === "item") {
+          await startItemUse({ actor: this.document, item });
+        } else if (item.type === "spell") {
+          await startSpellUse({ actor: this.document, item });
+        }
       });
     });
 

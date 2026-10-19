@@ -1708,8 +1708,9 @@
   font-weight: 700;
 }
 
-/* Player dossier: presentation only. Keep all rules scoped to the player sheet. */
-.parovgrad.sheet.actor.player {
+/* Actor dossier: shared visual presentation for Player and NPC sheets. */
+.parovgrad.sheet.actor.player,
+.parovgrad.sheet.actor.npc {
   --pg-ink: #302b25;
   --pg-muted: #655b4d;
   --pg-brass: #856436;
@@ -1718,18 +1719,21 @@
   --pg-field: #faf5e9;
   color: var(--pg-ink);
 }
-.parovgrad.sheet.actor.player .window-header {
+.parovgrad.sheet.actor.player .window-header,
+.parovgrad.sheet.actor.npc .window-header {
   background: #302d27;
   color: #eee3cd;
   border-bottom: 2px solid var(--pg-brass);
 }
-.parovgrad.sheet.actor.player .window-content {
+.parovgrad.sheet.actor.player .window-content,
+.parovgrad.sheet.actor.npc .window-content {
   padding: 0;
   overflow: hidden;
   background: var(--pg-paper);
   color: var(--pg-ink);
 }
-.parovgrad.sheet.actor.player .pg-player-dossier {
+.parovgrad.sheet.actor.player .pg-player-dossier,
+.parovgrad.sheet.actor.npc .pg-player-dossier {
   min-height: 0;
   flex: 1;
   container-type: inline-size;
@@ -2083,6 +2087,16 @@
   width: 100%; min-width: 0; height: 28px; padding: 4px;
 }
 .pg-player-dossier .pg-item-grid .pg-legacy-tree-delete { grid-column: 1 / -1; }
+
+
+/* NPC keeps its existing fields/actions; these rules only adapt them to the shared dossier layout. */
+.pg-player-dossier.pg-npc-dossier .pg-npc-profile-grid { grid-template-columns: minmax(0, 1fr); }
+.pg-player-dossier.pg-npc-dossier .pg-npc-role { max-width: 420px; }
+.pg-player-dossier.pg-npc-dossier .pg-npc-health { grid-column: span 2; }
+.pg-player-dossier.pg-npc-dossier .pg-item-grid .pg-item-delete--full { grid-column: 1 / -1; }
+@container (max-width: 590px) {
+  .pg-player-dossier.pg-npc-dossier .pg-npc-health { grid-column: span 2; }
+}
 
 /* All Item sheets share the character dossier palette; graph geometry is retained. */
 .pg-item-window {
