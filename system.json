@@ -32,5 +32,6 @@
         "distance": 10,
         "units": "ft"
     },
-    "url": "https://github.com/Unicornycorny/ParovGrad.git"
+    "url": "https://github.com/Unicornycorny/ParovGrad.git",
+    "initiative": "1d20 + @effectiveStats.movement"
 }
