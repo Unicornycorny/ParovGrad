@@ -1,5 +1,6 @@
 const {
   ArrayField,
+  BooleanField,
   NumberField,
   SchemaField,
   StringField
@@ -18,6 +19,35 @@ export class SpellDataModel extends foundry.abstract.TypeDataModel {
       shape: new StringField({
         required: false,
         initial: ""
+      }),
+
+      template: new SchemaField({
+        enabled: new BooleanField({
+          required: true,
+          initial: false
+        }),
+        type: new StringField({
+          required: true,
+          blank: false,
+          initial: "circle",
+          choices: ["circle", "cone", "ray", "rect"]
+        }),
+        distance: new NumberField({
+          required: true,
+          min: 0,
+          initial: 0
+        }),
+        width: new NumberField({
+          required: true,
+          min: 0,
+          initial: 0
+        }),
+        angle: new NumberField({
+          required: true,
+          min: 1,
+          max: 360,
+          initial: 90
+        })
       }),
 
       influences: new ArrayField(

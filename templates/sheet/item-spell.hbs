@@ -106,6 +106,75 @@
 
       </div>
 
+      <section class="pg-spell-template-panel">
+        <div class="pg-spell-template-panel__header">
+          <div>
+            <strong>Шаблон области</strong>
+            <span>При применении заклинания шаблон размещается на сцене и выбирает токены, центр которых попал в область.</span>
+          </div>
+          <label class="pg-spell-template-toggle">
+            <input
+              type="checkbox"
+              name="system.template.enabled"
+              {{checked spellTemplate.enabled}}
+            />
+            Использовать
+          </label>
+        </div>
+
+        <div class="pg-form-grid pg-form-grid--two-columns">
+          <div class="pg-form-field">
+            <label>Тип шаблона</label>
+            <select name="system.template.type">
+              {{#each spellTemplate.typeOptions}}
+                <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+              {{/each}}
+            </select>
+          </div>
+
+          <div class="pg-form-field">
+            <label>{{spellTemplate.distanceLabel}}</label>
+            <input
+              type="number"
+              name="system.template.distance"
+              min="0"
+              step="1"
+              value="{{spellTemplate.distance}}"
+            />
+          </div>
+
+          {{#if spellTemplate.usesWidth}}
+            <div class="pg-form-field">
+              <label>Ширина линии</label>
+              <input
+                type="number"
+                name="system.template.width"
+                min="0"
+                step="1"
+                value="{{spellTemplate.width}}"
+              />
+              <p class="pg-form-hint">0 — ширина одной клетки текущей сцены.</p>
+            </div>
+          {{/if}}
+
+          {{#if spellTemplate.usesAngle}}
+            <div class="pg-form-field">
+              <label>Угол конуса</label>
+              <input
+                type="number"
+                name="system.template.angle"
+                min="1"
+                max="360"
+                step="1"
+                value="{{spellTemplate.angle}}"
+              />
+            </div>
+          {{/if}}
+        </div>
+
+        <p class="pg-form-hint">Размеры задаются в единицах дистанции сцены. Для квадрата указанная величина считается длиной стороны.</p>
+      </section>
+
       <div class="pg-form-field">
         <label>Влияние</label>
 
@@ -244,6 +313,15 @@
           </div>
           <div class="pg-weapon-stat__value">
             {{spellView.shape}}
+          </div>
+        </article>
+
+        <article class="pg-weapon-stat">
+          <div class="pg-weapon-stat__label">
+            Шаблон области
+          </div>
+          <div class="pg-weapon-stat__value">
+            {{spellView.template}}
           </div>
         </article>
 

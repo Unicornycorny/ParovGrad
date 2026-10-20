@@ -19,6 +19,12 @@ import { renderSpellChatButtons } from "./workflows/spell-use.js";
 import { handleCanvasEffectDrop, buildActorInfluenceState, migrateLegacyActorEffects } from "./effects/effect-utils.js";
 import { ParovGradSpellSheet } from "./apps/sheets/spell-sheet.js";
 import { ParovGradMagicTreeSheet } from "./apps/sheets/magic-tree-sheet.js";
+import {
+  getSpellTemplateConfig,
+  getTargetsForSpellTemplate,
+  hasSpellTemplate,
+  placeSpellTemplate
+} from "./canvas/spell-template.js";
 
 Hooks.once("init", () => {
   CONFIG.Actor.dataModels.Player = PlayerDataModel;
@@ -89,6 +95,12 @@ Hooks.once("setup", () => {
     },
     actors: {
       getDerivedHealthMax
+    },
+    spells: {
+      getTemplateConfig: getSpellTemplateConfig,
+      hasTemplate: hasSpellTemplate,
+      placeTemplate: placeSpellTemplate,
+      getTemplateTargets: getTargetsForSpellTemplate
     }
   };
 });

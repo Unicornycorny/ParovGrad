@@ -6,6 +6,10 @@ import {
   getSpellEffects
 } from "../../magic/spell-effects.js";
 import { startSpellUse } from "../../workflows/spell-use.js";
+import {
+  SPELL_TEMPLATE_TYPE_LABELS,
+  getSpellTemplateConfig
+} from "../../canvas/spell-template.js";
 
 const MAX_INFLUENCES = 4;
 
@@ -82,6 +86,14 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
       typeLabel: SPELL_EFFECT_TYPE_LABELS[effect.type] ?? effect.type
     }));
     const constructionStatus = await getSpellConstructionStatus(this.document);
+    const spellTemplate = getSpellTemplateConfig(this.document);
+    const templateTypeLabel = SPELL_TEMPLATE_TYPE_LABELS[spellTemplate.type] ?? spellTemplate.type;
+    const templateDetails = [templateTypeLabel, `${spellTemplate.distance} ед. сцены`];
+    if (spellTemplate.type === "ray") {
+      const width = spellTemplate.width > 0 ? spellTemplate.width : "по сетке";
+      templateDetails.push(`ширина: ${width}`);
+    }
+    if (spellTemplate.type === "cone") templateDetails.push(`угол: ${spellTemplate.angle}°`);
 
     context.system = this.document.system;
     context.isEditMode = this._isEditMode;
@@ -95,6 +107,18 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
     context.materialsText = materials.join("\n");
     context.spellEffects = spellEffects;
     context.constructionStatus = constructionStatus;
+    context.spellTemplate = {
+      ...spellTemplate,
+      typeLabel: templateTypeLabel,
+      usesWidth: spellTemplate.type === "ray",
+      usesAngle: spellTemplate.type === "cone",
+      distanceLabel: spellTemplate.type === "rect" ? "Сторона квадрата" : "Размер / дальность",
+      typeOptions: Object.entries(SPELL_TEMPLATE_TYPE_LABELS).map(([value, label]) => ({
+        value,
+        label,
+        selected: value === spellTemplate.type
+      }))
+    };
 
     context.spellView = {
       name: this.document.name || "—",
@@ -102,6 +126,10 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
       range: this.document.system?.range?.trim() || "—",
 
       shape: this.document.system?.shape?.trim() || "—",
+
+      template: spellTemplate.enabled && spellTemplate.distance > 0
+        ? templateDetails.join(" · ")
+        : "Не используется",
 
       level:
         Number.isFinite(Number(this.document.system?.level))

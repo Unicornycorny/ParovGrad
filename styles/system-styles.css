@@ -2214,3 +2214,53 @@
   .pg-item-dossier .pg-form-grid--two-columns,
   .pg-item-dossier .pg-weapon-stat-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Spell measured templates ------------------------------------------------ */
+.pg-spell-template-panel {
+  margin-top: 14px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--pg-rule, var(--color-border-light-tertiary, rgba(0, 0, 0, 0.22)));
+  border-top: 3px double var(--pg-brass, #8b6a3c);
+  background: #faf5e944;
+}
+
+.pg-spell-template-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pg-spell-template-panel__header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pg-spell-template-panel__header > div > strong {
+  color: var(--pg-ink, inherit);
+  font: normal 17px/1.25 Georgia, "Times New Roman", serif;
+}
+
+.pg-spell-template-panel__header > div > span {
+  color: var(--pg-muted, inherit);
+  font: italic 12px/1.45 Georgia, "Times New Roman", serif;
+}
+
+.pg-spell-template-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-height: 28px;
+  color: var(--pg-ink, inherit);
+  font: 12px/1.4 Arial, sans-serif;
+  white-space: nowrap;
+}
+
+@container (max-width: 440px) {
+  .pg-spell-template-panel__header {
+    flex-direction: column;
+  }
+}

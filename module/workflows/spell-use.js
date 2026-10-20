@@ -8,6 +8,7 @@ import {
   getSpellEffects,
   isValidSpellRollFormula
 } from "../magic/spell-effects.js";
+import { hasSpellTemplate, placeSpellTemplate } from "../canvas/spell-template.js";
 
 function getSingleTargetToken() {
   const targets = Array.from(game.user.targets ?? []);
@@ -105,9 +106,32 @@ async function createRollCardMessage({ roll, speaker, content, flags = {} }) {
   });
 }
 
-async function createInfoCardMessage({ actor, item, targetDocument = null, effects = [] }) {
+async function createInfoCardMessage({
+  actor,
+  item,
+  targetDocument = null,
+  targetDocuments = [],
+  effects = [],
+  templateDocument = null,
+  massPending = false
+}) {
   const speaker = ChatMessage.getSpeaker({ actor });
-  const targetText = targetDocument ? ` на цель ${targetDocument.name}` : "";
+  const documents = Array.isArray(targetDocuments) && targetDocuments.length
+    ? targetDocuments
+    : (targetDocument ? [targetDocument] : []);
+  const targetTokenUuids = documents.map((document) => document?.uuid).filter(Boolean);
+  const targetNames = documents.map((document) => document?.name).filter(Boolean);
+
+  let targetText = "";
+  if (targetNames.length === 1) targetText = ` на цель ${targetNames[0]}`;
+  else if (targetNames.length > 1) targetText = ` по области (${targetNames.length} целей)`;
+
+  const targetListHtml = targetNames.length
+    ? `<div class="pg-chat-card__meta">Цели: ${targetNames.join(" · ")}</div>`
+    : (templateDocument ? '<div class="pg-chat-card__meta">Цели в области не найдены.</div>' : "");
+  const pendingHtml = massPending
+    ? '<div class="pg-chat-card__meta">Цели сохранены для массовой атаки. Обработка массовой атаки будет добавлена отдельным этапом.</div>'
+    : "";
 
   return ChatMessage.create({
     user: game.user.id,
@@ -120,6 +144,8 @@ async function createInfoCardMessage({ actor, item, targetDocument = null, effec
         </div>
         <div class="pg-chat-card__meta">Дальность: ${item.system?.range || "—"} · Форма: ${item.system?.shape || "—"}</div>
         <div class="pg-chat-card__meta">Влияния: ${formatInfluences(item.system?.influences)}</div>
+        ${targetListHtml}
+        ${pendingHtml}
         ${effects.length
           ? `<div class="pg-chat-card__meta">Бросков эффекта: ${effects.length}</div>`
           : '<div class="pg-chat-card__meta">У заклинания нет влияний с броском урона или лечения.</div>'}
@@ -133,8 +159,12 @@ async function createInfoCardMessage({ actor, item, targetDocument = null, effec
           actorUuid: actor.uuid,
           itemUuid: item.uuid,
           itemName: item.name,
-          targetTokenUuid: targetDocument?.uuid ?? null,
-          targetName: targetDocument?.name ?? null,
+          targetTokenUuid: targetTokenUuids[0] ?? null,
+          targetName: targetNames[0] ?? null,
+          targetTokenUuids,
+          targetNames,
+          templateUuid: templateDocument?.uuid ?? null,
+          massPending,
           effectCount: effects.length
         }
       }
@@ -303,17 +333,56 @@ export async function startSpellUse({ actor, item }) {
   if (!actor || !item || item.type !== "spell") return;
 
   const effects = getSpellEffects(item);
+  const usesTemplate = hasSpellTemplate(item);
+  let templateDocument = null;
+  let targetTokens = [];
+
+  if (usesTemplate) {
+    const placement = await placeSpellTemplate({ actor, item, targetTokens: true });
+    if (!placement) return;
+
+    templateDocument = placement.templateDocument;
+    targetTokens = placement.targets;
+  } else if (effects.length) {
+    const targetToken = getSingleTargetToken();
+    if (!targetToken) return;
+    targetTokens = [targetToken];
+  }
+
+  const targetDocuments = targetTokens
+    .map((token) => getTokenDocument(token))
+    .filter((document) => document?.actor);
 
   // Spells without rollable damage/healing effects keep their informational use flow.
+  // Area spells still place their template first so the selected targets are recorded.
   if (!effects.length) {
-    await createInfoCardMessage({ actor, item, effects });
+    await createInfoCardMessage({
+      actor,
+      item,
+      targetDocuments,
+      effects,
+      templateDocument
+    });
     return;
   }
 
-  const targetToken = getSingleTargetToken();
-  if (!targetToken) return;
+  if (usesTemplate && targetDocuments.length !== 1) {
+    await createInfoCardMessage({
+      actor,
+      item,
+      targetDocuments,
+      effects,
+      templateDocument,
+      massPending: targetDocuments.length > 1
+    });
 
-  const targetDocument = getTokenDocument(targetToken);
+    if (!targetDocuments.length) {
+      ui.notifications?.warn("Шаблон размещён, но в его области нет целей.");
+    }
+    return;
+  }
+
+  const targetDocument = targetDocuments[0];
   if (!targetDocument?.actor) {
     ui.notifications?.warn("У выбранной цели нет актора.");
     return;
