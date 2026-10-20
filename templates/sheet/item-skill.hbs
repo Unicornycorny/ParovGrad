@@ -21,6 +21,75 @@
         <input type="text" name="name" value="{{document.name}}" />
       </div>
 
+      <section class="pg-spell-template-panel">
+        <div class="pg-spell-template-panel__header">
+          <div>
+            <strong>Шаблон области</strong>
+            <span>При применении навыка шаблон размещается на сцене и выбирает токены, центр которых попал в область.</span>
+          </div>
+          <label class="pg-spell-template-toggle">
+            <input
+              type="checkbox"
+              name="system.template.enabled"
+              {{checked skillTemplate.enabled}}
+            />
+            Использовать
+          </label>
+        </div>
+
+        <div class="pg-form-grid pg-form-grid--two-columns">
+          <div class="pg-form-field">
+            <label>Тип шаблона</label>
+            <select name="system.template.type">
+              {{#each skillTemplate.typeOptions}}
+                <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+              {{/each}}
+            </select>
+          </div>
+
+          <div class="pg-form-field">
+            <label>{{skillTemplate.distanceLabel}}</label>
+            <input
+              type="number"
+              name="system.template.distance"
+              min="0"
+              step="1"
+              value="{{skillTemplate.distance}}"
+            />
+          </div>
+
+          {{#if skillTemplate.usesWidth}}
+            <div class="pg-form-field">
+              <label>Ширина линии</label>
+              <input
+                type="number"
+                name="system.template.width"
+                min="0"
+                step="1"
+                value="{{skillTemplate.width}}"
+              />
+              <p class="pg-form-hint">0 — ширина одной клетки текущей сцены.</p>
+            </div>
+          {{/if}}
+
+          {{#if skillTemplate.usesAngle}}
+            <div class="pg-form-field">
+              <label>Угол конуса</label>
+              <input
+                type="number"
+                name="system.template.angle"
+                min="1"
+                max="360"
+                step="1"
+                value="{{skillTemplate.angle}}"
+              />
+            </div>
+          {{/if}}
+        </div>
+
+        <p class="pg-form-hint">Размеры задаются в единицах дистанции сцены. Для квадрата указанная величина считается длиной стороны.</p>
+      </section>
+
       <div class="pg-form-field">
         <label>Кость урона</label>
         <select name="system.damageDie">
@@ -146,6 +215,10 @@
           </div>
         </article>
 
+        <article class="pg-weapon-stat pg-weapon-stat--full">
+          <div class="pg-weapon-stat__label">Шаблон области</div>
+          <div class="pg-weapon-stat__value">{{skillView.template}}</div>
+        </article>
         <article class="pg-weapon-stat pg-weapon-stat--full">
           <div class="pg-weapon-stat__label">Описание</div>
           <div class="pg-weapon-stat__value">{{skillView.description}}</div>

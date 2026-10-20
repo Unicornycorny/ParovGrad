@@ -265,10 +265,10 @@ class ParovGradSpellTemplatePreview extends foundry.canvas.placeables.MeasuredTe
 }
 
 export async function placeSpellTemplate({ actor, item, targetTokens = true } = {}) {
-  if (!item || item.type !== "spell") return null;
+  if (!item || !["spell", "skill"].includes(item.type)) return null;
 
   if (!hasSpellTemplate(item)) {
-    ui.notifications?.warn("Для этого заклинания шаблон не настроен.");
+    ui.notifications?.warn("Для этого предмета шаблон не настроен.");
     return null;
   }
 

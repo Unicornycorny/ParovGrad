@@ -301,6 +301,13 @@ export async function startItemUse({ actor, item }) {
 }
 
 export async function startItemAttack({ actor, item, sourceType = null }) {
+  if (item?.type === "skill") {
+    const { hasSpellTemplate } = await import("../canvas/spell-template.js");
+    if (hasSpellTemplate(item)) {
+      const { startMassSkillAttack } = await import("./skill-area-attack.js");
+      return startMassSkillAttack({ actor, item });
+    }
+  }
   if ((sourceType ?? item?.type) === "item") {
     return startItemUse({ actor, item });
   }

@@ -1,4 +1,5 @@
 import { attachItemPortraitListener } from "./item-portrait.js";
+import { SPELL_TEMPLATE_TYPE_LABELS, getSpellTemplateConfig } from "../../canvas/spell-template.js";
 const STANDARD_EFFECT_DICE = ["", "d2", "d4", "d6", "d8", "d12", "d20", "d100"];
 
 function getDieFaces(die) {
@@ -79,6 +80,17 @@ export class ParovGradSkillSheet extends foundry.applications.api.HandlebarsAppl
         }))
       : [];
 
+    const template = getSpellTemplateConfig(this.document);
+    context.skillTemplate = {
+      ...template,
+      typeLabel: SPELL_TEMPLATE_TYPE_LABELS[template.type],
+      typeOptions: Object.entries(SPELL_TEMPLATE_TYPE_LABELS).map(([value, label]) => ({
+        value, label, selected: value === template.type
+      })),
+      usesWidth: template.type === "ray",
+      usesAngle: template.type === "cone",
+      distanceLabel: template.type === "rect" ? "Сторона квадрата" : "Размер / дальность"
+    };
     context.system = this.document.system;
     context.isEditMode = this._isEditMode;
     context.damageDieOptions = damageDice.map((value) => ({
@@ -100,7 +112,8 @@ export class ParovGradSkillSheet extends foundry.applications.api.HandlebarsAppl
       cost: Number(this.document.system?.cost) || 0,
       description: this.document.system?.description?.trim() || "—",
       effectCheckDie: currentEffectDie ? currentEffectDie.toUpperCase() : "—",
-      effectRanges
+      effectRanges,
+      template: template.enabled && template.distance > 0 ? `${SPELL_TEMPLATE_TYPE_LABELS[template.type]} · ${template.distance} ед. сцены` : "Не используется"
     };
 
     return context;
