@@ -2264,3 +2264,17 @@
     flex-direction: column;
   }
 }
+
+/* Independent targets for area spell attacks. */
+.pg-mass-targets { display: grid; gap: 4px; margin: 8px 0; min-width: 0; }
+.pg-mass-target { display: flex; align-items: center; gap: 5px; border: 1px solid var(--color-border-light-tertiary, #777); border-radius: 4px; padding: 3px 5px; min-width: 0; max-width: 100%; overflow: hidden; font-size: 11px; line-height: 1.25; }
+.pg-mass-target__name { flex: 0 1 58px; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.pg-mass-target__actions { display: flex; align-items: center; justify-content: flex-end; gap: 4px; flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow-x: auto; scrollbar-width: thin; }
+.pg-mass-defense { flex: 0 0 auto; font-size: 10px; font-weight: 600; }
+.pg-mass-defense.is-success { color: #24783b; }
+.pg-mass-defense.is-failure { color: #9c3636; }
+.pg-mass-effect { display: inline-flex; align-items: center; gap: 3px; flex: 0 0 auto; white-space: nowrap; }
+.pg-mass-effect__value { font-size: 10px; }
+.pg-mass-applied { font-size: 10px; opacity: .85; }
+.pg-mass-target .pg-chat-button { width: auto; min-height: 0; height: 20px; line-height: 18px; margin: 0; padding: 0 4px; font-size: 10px; flex: 0 0 auto; }
+

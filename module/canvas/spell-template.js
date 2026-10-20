@@ -103,6 +103,19 @@ function isEligibleTarget(token) {
 export function getTargetsForSpellTemplate(templateObject) {
   if (!templateObject?.testPoint) return [];
 
+  // In Foundry V13 createEmbeddedDocuments resolves before the freshly created
+  // canvas placeable has necessarily been drawn. testPoint() expects its shape
+  // to exist and otherwise throws when accessing shape.contains(). Compute the
+  // native geometry immediately, rather than waiting for an unrelated render.
+  if (!templateObject.shape) {
+    const shape = templateObject._computeShape?.();
+    if (!shape) {
+      console.warn("ParovGrad | Не удалось определить геометрию шаблона заклинания", templateObject);
+      return [];
+    }
+    templateObject.shape = shape;
+  }
+
   return (canvas.tokens?.placeables ?? []).filter((token) => {
     if (!isEligibleTarget(token)) return false;
     const center = getTokenCenter(token);
