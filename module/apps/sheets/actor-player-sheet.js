@@ -8,6 +8,7 @@ import {
   openActorEffectDialog
 } from "../../effects/effect-utils.js";
 import { openActorLevelUpDialog } from "../level-up-dialog.js";
+import { openLearnSkillFromTreeDialog } from "../learn-skill-dialog.js";
 
 export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.sheets.ActorSheetV2
@@ -53,6 +54,8 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
       count: allItems.filter((item) => category.types.includes(item.type)).length
     }));
     context.itemCategoryEmpty = selected.empty;
+    context.isAbilitiesCategory = selected.key === "abilities";
+    context.canLearnSkill = this.isEditable;
     // Keep legacy embedded trees accessible for manual export/removal; never silently delete data.
     context.legacyMagicTrees = allItems.filter((item) => item.type === "magicTree")
       .map((item) => ({ id: item.id, name: item.name, img: item.img }));
@@ -93,6 +96,13 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
       if (!["spells", "abilities", "inventory"].includes(category)) return;
       this._itemCategory = category;
       this.render({ parts: ["form"] });
+    });
+
+    htmlElement.querySelector(".pg-learn-skill-button")?.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!this.isEditable) return;
+      await openLearnSkillFromTreeDialog(this.document);
     });
 
     htmlElement.querySelectorAll(".pg-item-link").forEach((element) => {
@@ -259,8 +269,10 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
   }
 
   async _onDropItem(event, item) {
-    if (item?.type === "magicTree") {
-      ui.notifications.warn("Древо магии нельзя хранить у актёра. Добавьте созданное на его основе заклинание.");
+    if (item?.type === "magicTree" || item?.type === "skillTree") {
+      ui.notifications.warn(item.type === "skillTree"
+        ? "Древо навыков нельзя хранить у актёра. Используйте кнопку «Изучить навык» в разделе «Способности»."
+        : "Древо магии нельзя хранить у актёра. Добавьте созданное на его основе заклинание.");
       return;
     }
 

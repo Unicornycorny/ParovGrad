@@ -30,6 +30,7 @@ export class MagicTreeGraphView {
     onNodeSelect = null,
     onEdgeSelect = null,
     onNodeMove = null,
+    onMilestoneMove = null,
     onConnectNode = null,
     onClearSelection = null
   } = {}) {
@@ -44,6 +45,7 @@ export class MagicTreeGraphView {
     this.onNodeSelect = onNodeSelect;
     this.onEdgeSelect = onEdgeSelect;
     this.onNodeMove = onNodeMove;
+    this.onMilestoneMove = onMilestoneMove;
     this.onConnectNode = onConnectNode;
     this.onClearSelection = onClearSelection;
 
@@ -58,6 +60,7 @@ export class MagicTreeGraphView {
     this._raf = null;
     this._panning = null;
     this._draggingNode = null;
+    this._draggingMilestone = null;
     this._skipNodeClickId = "";
   }
 
@@ -66,6 +69,7 @@ export class MagicTreeGraphView {
 
     this._bindViewport();
     this._bindNodes();
+    this._bindMilestones();
     this._bindEdges();
     this._observeResize();
     this._applyTransform();
@@ -182,6 +186,15 @@ export class MagicTreeGraphView {
     };
   }
 
+  clientToWorldPosition(clientX, clientY) {
+    if (!(this.viewport instanceof HTMLElement)) return { x: 0, y: 0 };
+    const rect = this.viewport.getBoundingClientRect();
+    return {
+      x: roundCoordinate((Number(clientX) - rect.left - this.state.x) / this.state.scale),
+      y: roundCoordinate((Number(clientY) - rect.top - this.state.y) / this.state.scale)
+    };
+  }
+
   redrawEdges() {
     if (!(this.world instanceof HTMLElement)) return;
 
@@ -246,7 +259,7 @@ export class MagicTreeGraphView {
       "pointerdown",
       (event) => {
         if (event.button !== 0 && event.button !== 1) return;
-        if (event.target.closest(".pg-magic-tree-node, .pg-magic-tree-edge, button, input, select, textarea, label")) return;
+        if (event.target.closest(".pg-magic-tree-node, .pg-magic-tree-edge, .pg-magic-tree-milestone__label, button, input, select, textarea, label")) return;
 
         event.preventDefault();
         this.viewport.setPointerCapture?.(event.pointerId);
@@ -392,6 +405,58 @@ export class MagicTreeGraphView {
 
     this.root?.classList.toggle("is-connecting", this.connectMode);
     this._syncConnectionSourceClass();
+  }
+
+  /** Drag milestone labels horizontally, without changing the vertical axis. */
+  _bindMilestones() {
+    if (!this.editable || typeof this.onMilestoneMove !== "function") return;
+    const signal = this._abortController.signal;
+
+    for (const milestone of this.world.querySelectorAll(".pg-magic-tree-milestone")) {
+      const handle = milestone.querySelector(".pg-magic-tree-milestone__label");
+      if (!(handle instanceof HTMLElement)) continue;
+
+      handle.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0) return;
+        const milestoneId = milestone.dataset.milestoneId;
+        if (!milestoneId) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        handle.setPointerCapture?.(event.pointerId);
+        this._draggingMilestone = {
+          pointerId: event.pointerId,
+          milestoneId,
+          startClientX: event.clientX,
+          startX: Number(milestone.dataset.milestoneX ?? 0),
+          moved: false
+        };
+        handle.classList.add("is-dragging");
+      }, { signal });
+
+      handle.addEventListener("pointermove", (event) => {
+        const drag = this._draggingMilestone;
+        if (!drag || drag.pointerId !== event.pointerId || drag.milestoneId !== milestone.dataset.milestoneId) return;
+
+        const dx = (event.clientX - drag.startClientX) / this.state.scale;
+        if (Math.abs(dx) > 2) drag.moved = true;
+        const x = roundCoordinate(drag.startX + dx);
+        milestone.dataset.milestoneX = String(x);
+        milestone.style.left = `${x}px`;
+      }, { signal });
+
+      const finishDrag = (event) => {
+        const drag = this._draggingMilestone;
+        if (!drag || drag.pointerId !== event.pointerId || drag.milestoneId !== milestone.dataset.milestoneId) return;
+
+        handle.classList.remove("is-dragging");
+        handle.releasePointerCapture?.(event.pointerId);
+        this._draggingMilestone = null;
+        if (drag.moved) this.onMilestoneMove?.(drag.milestoneId, roundCoordinate(milestone.dataset.milestoneX));
+      };
+      handle.addEventListener("pointerup", finishDrag, { signal });
+      handle.addEventListener("pointercancel", finishDrag, { signal });
+    }
   }
 
   _bindEdges() {

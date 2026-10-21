@@ -160,6 +160,16 @@
         </label>
       </div>
 
+      {{#if isAbilitiesCategory}}
+        {{#if canLearnSkill}}
+        <div class="pg-learn-skill-controls">
+          <button type="button" class="pg-learn-skill-button" title="Выучить навык из древа навыков">
+            <i class="fa-solid fa-graduation-cap"></i> Изучить навык
+          </button>
+        </div>
+        {{/if}}
+      {{/if}}
+
       {{#if items.length}}
       <ul class="pg-item-list pg-item-grid">
         {{#each items}}

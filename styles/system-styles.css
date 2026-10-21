@@ -1246,6 +1246,87 @@
   }
 }
 
+/* Skill tree additions ---------------------------------------------------- */
+.pg-skill-tree-add-group {
+  min-width: 0;
+}
+
+.pg-skill-tree-skill-select {
+  width: 210px;
+  min-width: 120px;
+  max-width: 280px;
+}
+
+.pg-skill-tree-node {
+  border-top-color: #4f7b68;
+}
+
+.pg-skill-tree-node.is-missing {
+  border-top-color: var(--pg-magic-tree-danger);
+  background: rgba(255, 231, 231, 0.97);
+}
+
+.pg-skill-tree-node__header {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.pg-skill-tree-node__header strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pg-skill-tree-node__portrait {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.pg-skill-tree-drop-zone {
+  transition: box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.pg-skill-tree-drop-zone.is-skill-drop-target {
+  box-shadow: inset 0 0 0 3px rgba(79, 123, 104, 0.62);
+  background: rgba(79, 123, 104, 0.08);
+}
+
+.pg-skill-tree-inspector-title {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.pg-skill-tree-inspector-title > img {
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--pg-magic-tree-border);
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.pg-skill-tree-inspector-title > div {
+  min-width: 0;
+}
+
+.pg-skill-tree-inspector-actions {
+  display: flex;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 980px) {
+  .pg-skill-tree-skill-select {
+    width: 150px;
+  }
+}
+
 /* Spell construction ------------------------------------------------------ */
 .pg-spell-builder-callout {
   display: flex;
@@ -2278,3 +2359,135 @@
 .pg-mass-applied { font-size: 10px; opacity: .85; }
 .pg-mass-target .pg-chat-button { width: auto; min-height: 0; height: 20px; line-height: 18px; margin: 0; padding: 0 4px; font-size: 10px; flex: 0 0 auto; }
 
+
+/* Skill-tree milestones: drag the header along X, keep the line fixed on Y. */
+.pg-skill-tree-sheet.is-edit-mode .pg-magic-tree-milestone__label {
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.pg-skill-tree-sheet.is-edit-mode .pg-magic-tree-milestone__label:active,
+.pg-skill-tree-sheet.is-edit-mode .pg-magic-tree-milestone__label.is-dragging {
+  cursor: grabbing;
+  box-shadow: 0 2px 12px rgba(31, 60, 38, 0.24);
+  z-index: 5;
+}
+
+/* Learning skills from a tree in the Player sheet. */
+.pg-player-dossier .pg-learn-skill-controls { margin: -2px 0 12px; }
+.pg-player-dossier .pg-learn-skill-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: auto;
+  padding: 6px 12px;
+  background: var(--pg-field);
+  color: var(--pg-ink);
+  border: 1px solid var(--pg-brass);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.pg-player-dossier .pg-learn-skill-button:hover { filter: brightness(0.96); }
+.pg-learn-skill-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 5px 2px;
+  min-width: min(350px, 100%);
+}
+.pg-learn-skill-dialog__intro, .pg-learn-skill-dialog__hint { margin: 0; }
+.pg-learn-skill-dialog__field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-weight: 600;
+}
+.pg-learn-skill-dialog__field select { width: 100%; min-width: 0; }
+.pg-learn-skill-dialog__preview {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--color-border-light-tertiary, #9b8e7a);
+  border-radius: 5px;
+  padding: 8px;
+}
+.pg-learn-skill-dialog__preview[hidden] { display: none; }
+.pg-learn-skill-dialog__preview img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.pg-learn-skill-dialog__preview > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pg-learn-skill-dialog__preview strong { overflow-wrap: anywhere; }
+.pg-learn-skill-dialog__preview span, .pg-learn-skill-dialog__hint {
+  font-size: 12px;
+  opacity: .8;
+}
+
+/* Visual skill learning: shares graph & preview styling with Spell Builder. */
+.pg-learn-skill-window .window-content {
+  min-height: 0;
+  overflow: hidden;
+}
+.pg-learn-skill-shell { padding: 10px; }
+.pg-learn-skill-subtitle {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+.pg-learn-skill-workspace { grid-template-columns: minmax(0, 1fr) 300px; }
+.pg-learn-skill-toolbar-search { flex: 1 1 auto; min-width: 0; }
+.pg-learn-skill-toolbar-search > i { flex: 0 0 auto; opacity: 0.7; }
+.pg-learn-skill-search { width: 100%; max-width: 270px; min-width: 90px; }
+.pg-learn-skill-node.is-learned { border-top-color: #2e7d52; background: rgba(220, 239, 221, .98); }
+.pg-learn-skill-node.is-missing { opacity: 0.72; }
+.pg-learn-skill-node.is-search-dimmed { opacity: .22; }
+.pg-learn-skill-node.is-search-match {
+  outline: 3px solid #aa813c;
+  outline-offset: 3px;
+  z-index: 5;
+}
+.pg-learn-skill-node.is-selected { outline: 3px solid var(--pg-magic-tree-accent); outline-offset: 3px; z-index: 6; }
+.pg-learn-skill-status-mark {
+  position: absolute;
+  right: -8px;
+  bottom: -8px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #f5f6ee;
+  border-radius: 50%;
+  background: #2e7d52;
+  color: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,.2);
+}
+.pg-learn-skill-status-mark.is-missing { background: #a43e35; }
+.pg-learn-skill-preview { display: flex; flex-direction: column; gap: 9px; overflow: hidden; }
+.pg-learn-skill-preview-card { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.pg-learn-skill-preview-title {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin: 8px 0 14px;
+}
+.pg-learn-skill-preview-title img { width: 54px; height: 54px; border-radius: 6px; object-fit: cover; }
+.pg-learn-skill-preview-title h2 { margin: 0 0 4px; overflow-wrap: anywhere; }
+.pg-learn-skill-state { font-size: 11px; color: #34885a; }
+.pg-learn-skill-state.is-learned { color: #34885a; }
+.pg-learn-skill-state.is-missing { color: #b33c2d; }
+.pg-learn-skill-description { margin-top: 12px; overflow-wrap: anywhere; }
+.pg-learn-skill-prompt { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 7px; padding: 36px 12px; }
+.pg-learn-skill-prompt i { font-size: 30px; opacity: .65; }
+.pg-learn-skill-actions { flex: 0 0 auto; }
+.pg-learn-skill-actions .pg-learn-skill-cancel { margin-top: 6px; min-height: 30px; font-weight: 400; }
+.pg-learn-skill-actions .pg-learn-skill-apply:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 1000px) {
+  .pg-learn-skill-workspace { grid-template-columns: minmax(0, 1fr) 255px; }
+  .pg-learn-skill-header { flex-wrap: wrap; }
+}

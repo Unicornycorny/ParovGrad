@@ -1,0 +1,163 @@
+<section class="pg-spell-builder-shell pg-magic-tree-shell pg-learn-skill-shell">
+  <header class="pg-spell-builder-header pg-learn-skill-header">
+    <div>
+      <span class="pg-magic-tree-inspector-kicker">Паров-Град · Изучение навыков</span>
+      <h1>Древо навыков</h1>
+      <span class="pg-learn-skill-subtitle">Персонаж: {{actor.name}} · Выберите навык нажатием на его узел</span>
+    </div>
+    <div class="pg-spell-builder-tree-field">
+      <label for="pg-learn-skill-tree-select">Древо</label>
+      <select id="pg-learn-skill-tree-select" class="pg-learn-skill-tree-select">
+        {{#each treeOptions}}
+          <option value="{{this.uuid}}" {{#if this.selected}}selected{{/if}}>{{this.name}}</option>
+        {{/each}}
+      </select>
+    </div>
+  </header>
+
+  <div class="pg-spell-builder-workspace pg-learn-skill-workspace">
+    <section class="pg-magic-tree-canvas-panel pg-learn-skill-graph">
+      <div class="pg-magic-tree-toolbar">
+        <div class="pg-magic-tree-toolbar__group pg-learn-skill-toolbar-search">
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+          <input class="pg-learn-skill-search" type="search" placeholder="Поиск навыка на дереве" value="{{searchText}}" aria-label="Поиск навыка на дереве" />
+        </div>
+        <div class="pg-magic-tree-toolbar__group pg-magic-tree-toolbar__group--view">
+          <button type="button" class="pg-magic-tree-zoom-out" title="Уменьшить масштаб"><i class="fa-solid fa-minus"></i></button>
+          <span class="pg-magic-tree-zoom-value">100%</span>
+          <button type="button" class="pg-magic-tree-zoom-in" title="Увеличить масштаб"><i class="fa-solid fa-plus"></i></button>
+          <button type="button" class="pg-magic-tree-fit" title="Показать всё дерево"><i class="fa-solid fa-expand"></i></button>
+          <button type="button" class="pg-magic-tree-reset-view" title="Сбросить вид"><i class="fa-solid fa-crosshairs"></i></button>
+          {{#if selectedNode}}
+            <button type="button" class="pg-learn-skill-focus-selected" title="Найти выбранный навык"><i class="fa-solid fa-location-crosshairs"></i></button>
+          {{/if}}
+        </div>
+      </div>
+
+      {{#if branches.length}}
+        <div class="pg-magic-tree-branch-legend">
+          {{#each branches}}
+            <span class="pg-magic-tree-branch-chip" data-branch-id="{{this.id}}"><i class="fa-solid fa-code-branch"></i> {{this.name}}</span>
+          {{/each}}
+        </div>
+      {{/if}}
+
+      <div class="pg-magic-tree-viewport" tabindex="0" aria-label="Древо навыков: кликните по навыку, чтобы выбрать его">
+        <div class="pg-magic-tree-world" style="width: {{graph.width}}px; height: {{graph.height}}px;" data-world-width="{{graph.width}}" data-world-height="{{graph.height}}">
+          <div class="pg-magic-tree-grid-layer" aria-hidden="true"></div>
+
+          {{#each milestones}}
+            <div class="pg-magic-tree-milestone" data-milestone-id="{{this.id}}" data-milestone-x="{{this.x}}" style="left: {{this.x}}px; height: {{../graph.height}}px;">
+              <div class="pg-magic-tree-milestone__label"><strong>{{this.name}}</strong><span>{{this.level}} уровень</span></div>
+            </div>
+          {{/each}}
+
+          <svg class="pg-magic-tree-edges" width="{{graph.width}}" height="{{graph.height}}" viewBox="0 0 {{graph.width}} {{graph.height}}" aria-hidden="true">
+            <defs>
+              <marker id="{{graph.markerId}}" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+                <path d="M 0 0 L 8 4 L 0 8 z" class="pg-magic-tree-arrow-marker"></path>
+              </marker>
+            </defs>
+            {{#each edges}}
+              <g class="pg-magic-tree-edge" data-edge-id="{{this.id}}" data-from-id="{{this.from}}" data-to-id="{{this.to}}">
+                <path class="pg-magic-tree-edge__hit"></path>
+                <path class="pg-magic-tree-edge__line" marker-end="url(#{{../graph.markerId}})"></path>
+              </g>
+            {{/each}}
+          </svg>
+
+          <div class="pg-magic-tree-nodes">
+            {{#each nodes}}
+              <article
+                class="pg-magic-tree-node pg-skill-tree-node pg-learn-skill-node is-type-skill {{#if this.missing}}is-missing{{/if}} {{#if this.known}}is-learned{{/if}} {{#if this.selected}}is-selected{{/if}}"
+                data-node-id="{{this.id}}" data-node-x="{{this.x}}" data-node-y="{{this.y}}" data-search-text="{{this.skillName}} {{this.branchName}}"
+                data-branch-id="{{this.branchId}}" style="left: {{this.x}}px; top: {{this.y}}px;"
+                title="{{this.skillName}} — {{this.branchName}} · Уровень {{this.level}}"
+              >
+                <header class="pg-magic-tree-node__header pg-skill-tree-node__header">
+                  <img class="pg-skill-tree-node__portrait" src="{{this.skillImg}}" alt="">
+                  <strong>{{this.skillName}}</strong>
+                  <span class="pg-magic-tree-node__level">Ур. {{this.level}}</span>
+                </header>
+                <div class="pg-magic-tree-node__branch">{{this.branchName}}</div>
+                <div class="pg-magic-tree-node__meta">
+                  <span>{{this.damageDie}}</span>
+                  {{#unless this.missing}}<span>Стоимость: {{this.cost}}</span>{{/unless}}
+                </div>
+                {{#if this.known}}
+                  <div class="pg-learn-skill-status-mark" title="Уже изучен"><i class="fa-solid fa-check"></i></div>
+                {{/if}}
+                {{#if this.missing}}
+                  <div class="pg-learn-skill-status-mark is-missing" title="Исходный навык недоступен"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                {{/if}}
+              </article>
+            {{/each}}
+          </div>
+        </div>
+        {{#unless nodes.length}}
+          <div class="pg-magic-tree-empty-canvas">
+            <i class="fa-solid fa-sitemap"></i>
+            <strong>В этом древе пока нет навыков</strong>
+            <span>Добавьте навыки через редактор древа.</span>
+          </div>
+        {{/unless}}
+      </div>
+
+      <div class="pg-magic-tree-canvas-hint">
+        <span><i class="fa-solid fa-computer-mouse"></i> Клик по узлу — выбрать навык</span>
+        <span><i class="fa-solid fa-hand"></i> Потяните фон — перемещение</span>
+        <span><i class="fa-solid fa-magnifying-glass"></i> Колесо — масштаб</span>
+      </div>
+    </section>
+
+    <aside class="pg-spell-builder-preview pg-learn-skill-preview">
+      <section class="pg-spell-builder-preview-card pg-learn-skill-preview-card">
+        {{#if selectedNode}}
+          <span class="pg-magic-tree-inspector-kicker">Выбранный навык</span>
+          <div class="pg-learn-skill-preview-title">
+            <img src="{{selectedNode.skillImg}}" alt="">
+            <div>
+              <h2>{{selectedNode.skillName}}</h2>
+              {{#if selectedNode.known}}
+                <span class="pg-learn-skill-state is-learned"><i class="fa-solid fa-check"></i> Уже изучен</span>
+              {{else}}
+                {{#if selectedNode.missing}}
+                  <span class="pg-learn-skill-state is-missing"><i class="fa-solid fa-triangle-exclamation"></i> Навык недоступен</span>
+                {{else}}
+                  <span class="pg-learn-skill-state"><i class="fa-solid fa-book-open"></i> Доступен для изучения</span>
+                {{/if}}
+              {{/if}}
+            </div>
+          </div>
+          <dl class="pg-magic-tree-readonly-list">
+            <div><dt>Ветка</dt><dd>{{selectedNode.branchName}}</dd></div>
+            <div><dt>Уровень</dt><dd>{{selectedNode.level}}</dd></div>
+            {{#unless selectedNode.missing}}
+              <div><dt>Кость урона</dt><dd>{{selectedNode.damageDie}}</dd></div>
+              <div><dt>Стоимость</dt><dd>{{selectedNode.cost}}</dd></div>
+            {{/unless}}
+          </dl>
+          {{#if selectedNode.description}}
+            <div class="pg-magic-tree-readonly-block pg-learn-skill-description">
+              <strong>Описание навыка</strong>
+              <span>{{selectedNode.description}}</span>
+            </div>
+          {{/if}}
+        {{else}}
+          <div class="pg-magic-tree-inspector-empty pg-learn-skill-prompt">
+            <i class="fa-solid fa-arrow-pointer"></i>
+            <strong>Выберите узел на дереве</strong>
+            <span>Здесь появится информация о навыке, который можно изучить.</span>
+          </div>
+        {{/if}}
+      </section>
+      <div class="pg-spell-builder-actions pg-learn-skill-actions">
+        <button type="button" class="pg-learn-skill-apply" {{#unless canLearn}}disabled{{/unless}}>
+          <i class="fa-solid fa-graduation-cap"></i> Изучить навык
+        </button>
+        <button type="button" class="pg-learn-skill-cancel"><i class="fa-solid fa-xmark"></i> Закрыть</button>
+        <p>Навык копируется в «Способности» персонажа. Уже изученные навыки повторно добавить нельзя.</p>
+      </div>
+    </aside>
+  </div>
+</section>

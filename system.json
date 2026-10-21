@@ -24,7 +24,8 @@
             "skill": {},
             "effect": {},
             "spell": {},
-            "magicTree": {}
+            "magicTree": {},
+            "skillTree": {}
         }
     },
     "socket": false,

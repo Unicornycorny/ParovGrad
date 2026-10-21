@@ -6,6 +6,7 @@ import { SkillDataModel } from "./data/item/skill-data.js";
 import { EffectDataModel } from "./data/item/effect-data.js";
 import { SpellDataModel } from "./data/item/spell-data.js";
 import { MagicTreeDataModel } from "./data/item/magic-tree-data.js";
+import { SkillTreeDataModel } from "./data/item/skill-tree-data.js";
 
 import { ParovGradPlayerSheet } from "./apps/sheets/actor-player-sheet.js";
 import { ParovGradNpcSheet } from "./apps/sheets/actor-npc-sheet.js";
@@ -20,6 +21,7 @@ import { renderMassSkillChatButtons } from "./workflows/skill-area-attack.js";
 import { handleCanvasEffectDrop, buildActorInfluenceState, migrateLegacyActorEffects } from "./effects/effect-utils.js";
 import { ParovGradSpellSheet } from "./apps/sheets/spell-sheet.js";
 import { ParovGradMagicTreeSheet } from "./apps/sheets/magic-tree-sheet.js";
+import { ParovGradSkillTreeSheet } from "./apps/sheets/skill-tree-sheet.js";
 import {
   getSpellTemplateConfig,
   getTargetsForSpellTemplate,
@@ -36,6 +38,7 @@ Hooks.once("init", () => {
   CONFIG.Item.dataModels.effect = EffectDataModel;
   CONFIG.Item.dataModels.spell = SpellDataModel;
   CONFIG.Item.dataModels.magicTree = MagicTreeDataModel;
+  CONFIG.Item.dataModels.skillTree = SkillTreeDataModel;
 
   foundry.applications.apps.DocumentSheetConfig.registerSheet(Actor, "ParovGrad", ParovGradPlayerSheet, {
     types: ["Player"],
@@ -85,6 +88,16 @@ Hooks.once("init", () => {
       makeDefault: true
     }
   );
+
+  foundry.applications.apps.DocumentSheetConfig.registerSheet(
+    Item,
+    "ParovGrad",
+    ParovGradSkillTreeSheet,
+    {
+      types: ["skillTree"],
+      makeDefault: true
+    }
+  );
 });
 
 Hooks.once("setup", () => {
@@ -107,23 +120,33 @@ Hooks.once("setup", () => {
 });
 
 // Protect all Actor types, including API-created embedded Items and token Actors.
+const NON_EMBEDDABLE_ITEM_TYPES = new Set(["magicTree", "skillTree"]);
+
+function getNonEmbeddableItemLabel(type) {
+  if (type === "magicTree") return "Древо магии";
+  if (type === "skillTree") return "Древо навыков";
+  return "Эта сущность";
+}
+
 Hooks.on("preCreateItem", (item) => {
-  if (item.parent?.documentName === "Actor" && item.type === "magicTree") {
-    ui.notifications.warn("Древо магии нельзя хранить у актёра. Храните его в каталоге предметов мира.");
-    return false;
-  }
+  if (item.parent?.documentName !== "Actor" || !NON_EMBEDDABLE_ITEM_TYPES.has(item.type)) return;
+  const label = getNonEmbeddableItemLabel(item.type);
+  ui.notifications.warn(`${label} нельзя хранить у актёра. Храните его в каталоге предметов мира.`);
+  return false;
 });
 
 Hooks.on("preUpdateItem", (item, changed) => {
-  if (item.parent?.documentName === "Actor" && changed.type === "magicTree") {
-    ui.notifications.warn("Нельзя преобразовать предмет актёра в древо магии.");
-    return false;
-  }
+  if (item.parent?.documentName !== "Actor" || !NON_EMBEDDABLE_ITEM_TYPES.has(changed.type)) return;
+  const label = getNonEmbeddableItemLabel(changed.type);
+  ui.notifications.warn(`Нельзя преобразовать предмет актёра в сущность «${label}».`);
+  return false;
 });
 
 Hooks.on("preCreateActor", (actor, data) => {
-  if (data.items?.some((item) => item.type === "magicTree")) {
-    ui.notifications.warn("Актёр содержит древо магии. Уберите его из состава предметов перед импортом или копированием.");
+  const forbiddenItem = data.items?.find((item) => NON_EMBEDDABLE_ITEM_TYPES.has(item.type));
+  if (forbiddenItem) {
+    const label = getNonEmbeddableItemLabel(forbiddenItem.type);
+    ui.notifications.warn(`Актёр содержит сущность «${label}». Уберите её из состава предметов перед импортом или копированием.`);
     return false;
   }
   if (actor.type !== "Player") return;
@@ -131,8 +154,10 @@ Hooks.on("preCreateActor", (actor, data) => {
 });
 
 Hooks.on("preUpdateActor", (actor, changed) => {
-  if (changed.items?.some((item) => item.type === "magicTree")) {
-    ui.notifications.warn("Древо магии нельзя добавить в состав предметов актёра.");
+  const forbiddenItem = changed.items?.find((item) => NON_EMBEDDABLE_ITEM_TYPES.has(item.type));
+  if (forbiddenItem) {
+    const label = getNonEmbeddableItemLabel(forbiddenItem.type);
+    ui.notifications.warn(`Сущность «${label}» нельзя добавить в состав предметов актёра.`);
     return false;
   }
   if (actor.type !== "Player") return;
