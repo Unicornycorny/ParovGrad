@@ -1,3 +1,5 @@
+import {getItemDamageParts, normalizedDamagePart} from "../damage/damage-types.js";
+
 export const SPELL_EFFECT_TYPES = Object.freeze({
   DAMAGE: "damage",
   HEALING: "healing"
@@ -56,7 +58,12 @@ export function normalizeSpellEffect(effect) {
   return {
     type,
     label: asTrimmedString(effect?.label) || SPELL_EFFECT_TYPE_LABELS[type] || type,
-    formula: normalizeSpellRollFormula(effect?.formula)
+    formula: normalizeSpellRollFormula(effect?.formula),
+    damage: {parts: type === SPELL_EFFECT_TYPES.DAMAGE
+      ? (Array.isArray(effect?.damage?.parts) && effect.damage.parts.length
+        ? effect.damage.parts.map(part => normalizedDamagePart(part, effect?.formula || "1d4"))
+        : getItemDamageParts({damageDie: effect?.formula || "1d4"}))
+      : []}
   };
 }
 

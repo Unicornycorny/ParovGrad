@@ -1,3 +1,4 @@
+import { DAMAGE_TYPES } from "../damage/damage-types.js";
 import { MagicTreeGraphView } from "./components/magic-tree-graph.js";
 import {
   MAGIC_TREE_NODE_TYPE_LABELS
@@ -49,6 +50,7 @@ export class ParovGradSpellBuilder extends foundry.applications.api.HandlebarsAp
   _treeUuid = "";
   _treeDocument = null;
   _selectedNodeIds = new Set();
+  _damageBindings = new Map();
   _viewState = null;
   _graphView = null;
 
@@ -92,6 +94,9 @@ export class ParovGradSpellBuilder extends foundry.applications.api.HandlebarsAp
 
     if (this._treeUuid && this._treeUuid === construction.treeUuid) {
       this._selectedNodeIds = new Set(construction.selectedNodeIds);
+      this._damageBindings = new Map(construction.damageBindings.map(
+        (binding) => [binding.influenceNodeId, binding]
+      ));
     }
   }
 
@@ -192,12 +197,13 @@ export class ParovGradSpellBuilder extends foundry.applications.api.HandlebarsAp
       y: Number(node?.position?.y ?? 0),
       typeLabel: MAGIC_TREE_NODE_TYPE_LABELS[node?.type] ?? node?.type ?? "—",
       branchName: branchNameById.get(node?.branchId) ?? "Без ветки",
+      damageTypeLabel: node?.type === "damageType" ? (DAMAGE_TYPES[node?.output?.damageType] ?? "Тип не выбран") : "",
       selected: this._selectedNodeIds.has(id)
     }));
 
     const edges = edgeEntries.map(([id, edge]) => ({ id, ...edge }));
     const graphSize = getWorldSize(nodes, milestones);
-    const compilation = MagicTreeCompiler.compile(tree, Array.from(this._selectedNodeIds));
+    const compilation = MagicTreeCompiler.compile(tree, Array.from(this._selectedNodeIds), Array.from(this._damageBindings.values()));
 
     compilation.components = compilation.components.map((component) => ({
       ...component,
@@ -238,6 +244,7 @@ export class ParovGradSpellBuilder extends foundry.applications.api.HandlebarsAp
     this._bindButton(htmlElement, ".pg-spell-builder-clear", async () => {
       if (!this._selectedNodeIds.size) return;
       this._selectedNodeIds.clear();
+      this._damageBindings.clear();
       await this.render({ force: true });
     });
 
@@ -245,8 +252,23 @@ export class ParovGradSpellBuilder extends foundry.applications.api.HandlebarsAp
       const construction = getSpellConstruction(this.spell);
       if (!this._treeUuid || construction.treeUuid !== this._treeUuid) return;
       this._selectedNodeIds = new Set(construction.selectedNodeIds);
+      this._damageBindings = new Map(construction.damageBindings.map(binding => [binding.influenceNodeId, binding]));
       await this.render({ force: true });
     });
+
+    for (const select of htmlElement.querySelectorAll(".pg-spell-damage-binding")) {
+      select.addEventListener("change", async () => {
+        const influenceNodeId = select.dataset.influenceId;
+        if (!influenceNodeId) return;
+        if (!select.value) this._damageBindings.delete(influenceNodeId);
+        else this._damageBindings.set(influenceNodeId, {
+          influenceNodeId,
+          damageTypeNodeId: select.value === "__physical" ? "" : select.value,
+          category: select.value === "__physical" ? "physical" : "typed"
+        });
+        await this.render({force: true});
+      });
+    }
 
     this._bindButton(htmlElement, ".pg-spell-builder-apply", async () => {
       await this._applyToSpell();
@@ -316,6 +338,9 @@ export class ParovGradSpellBuilder extends foundry.applications.api.HandlebarsAp
     this._selectedNodeIds = nextUuid && nextUuid === construction.treeUuid
       ? new Set(construction.selectedNodeIds)
       : new Set();
+    this._damageBindings = nextUuid && nextUuid === construction.treeUuid
+      ? new Map(construction.damageBindings.map(binding => [binding.influenceNodeId, binding]))
+      : new Map();
 
     await this.render({ force: true });
   }
@@ -355,7 +380,7 @@ export class ParovGradSpellBuilder extends foundry.applications.api.HandlebarsAp
     }
 
     const selectedNodeIds = Array.from(this._selectedNodeIds);
-    const compilation = MagicTreeCompiler.compile(tree, selectedNodeIds);
+    const compilation = MagicTreeCompiler.compile(tree, selectedNodeIds, Array.from(this._damageBindings.values()));
 
     if (!compilation.valid) {
       ui.notifications?.warn(compilation.errors[0] ?? "Невозможно собрать заклинание из выбранных узлов.");
@@ -366,10 +391,10 @@ export class ParovGradSpellBuilder extends foundry.applications.api.HandlebarsAp
       "system.range": compilation.spell.range,
       "system.shape": compilation.spell.shape,
       "system.influences": compilation.spell.influences,
-      "system.effects": compilation.spell.effects.map(({ type, label, formula }) => ({ type, label, formula })),
+      "system.effects": compilation.spell.effects.map(({ type, label, formula, damage }) => ({ type, label, formula, damage: damage ?? {parts: []} })),
       "system.cost": compilation.spell.cost,
       "system.materials": compilation.spell.materials,
-      "system.construction": buildSpellConstruction(tree, selectedNodeIds)
+      "system.construction": buildSpellConstruction(tree, selectedNodeIds, Array.from(this._damageBindings.values()))
     });
 
     ui.notifications?.info(`Заклинание «${this.spell.name}» пересобрано из древа «${tree.name}».`);

@@ -1,5 +1,7 @@
 const { StringField, NumberField, ArrayField, SchemaField, BooleanField } = foundry.data.fields;
 
+import { damageSchema } from "../../damage/damage-types.js";
+
 export class SkillDataModel extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     return {
@@ -33,6 +35,7 @@ export class SkillDataModel extends foundry.abstract.TypeDataModel {
         })
       }),
 
+      damage: damageSchema(),
       damageDie: new StringField({ required: false, initial: "d4" }),
       cost: new NumberField({ required: true, integer: true, min: 0, initial: 0 }),
       effectCheckDie: new StringField({ required: false, initial: "" }),

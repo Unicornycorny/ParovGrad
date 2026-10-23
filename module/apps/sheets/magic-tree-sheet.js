@@ -1,3 +1,4 @@
+import { DAMAGE_TYPES, DAMAGE_TYPE_OPTIONS } from "../../damage/damage-types.js";
 import { attachItemPortraitListener } from "./item-portrait.js";
 import { MagicTreeGraphView } from "../components/magic-tree-graph.js";
 import {
@@ -160,6 +161,9 @@ export class ParovGradMagicTreeSheet extends foundry.applications.api.Handlebars
         selected: value === node?.type
       })),
       isInfluence: node?.type === MAGIC_TREE_NODE_TYPES.INFLUENCE,
+      isDamageType: node?.type === MAGIC_TREE_NODE_TYPES.DAMAGE_TYPE,
+      damageTypeLabel: node?.type === MAGIC_TREE_NODE_TYPES.DAMAGE_TYPE ? (DAMAGE_TYPES[node?.output?.damageType] ?? "Тип не выбран") : "",
+      damageTypeOptions: DAMAGE_TYPE_OPTIONS.map((option) => ({...option, selected: option.value === node?.output?.damageType})),
       influenceEffectTypeOptions: Object.entries(MAGIC_TREE_INFLUENCE_EFFECT_TYPE_LABELS).map(([value, label]) => ({
         value,
         label,
@@ -523,7 +527,8 @@ export class ParovGradMagicTreeSheet extends foundry.applications.api.Handlebars
         output: {
           name: "",
           value: "",
-          effectType: MAGIC_TREE_INFLUENCE_EFFECT_TYPES.AUTO
+          effectType: MAGIC_TREE_INFLUENCE_EFFECT_TYPES.AUTO,
+          damageType: ""
         },
         materials: []
       },

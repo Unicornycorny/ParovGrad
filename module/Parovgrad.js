@@ -1,3 +1,4 @@
+import {DAMAGE_TYPES, DAMAGE_CATEGORIES, getItemDamageParts, applyTypedDamage} from "./damage/damage-types.js";
 import { PlayerDataModel } from "./data/actor/player-data.js";
 import { NpcDataModel } from "./data/actor/npc-data.js";
 import { ItemDataModel } from "./data/item/item-data.js";
@@ -107,6 +108,7 @@ Hooks.once("setup", () => {
       createRoll: createParovgradRoll,
       rollToMessage
     },
+    damage: {types: DAMAGE_TYPES, categories: DAMAGE_CATEGORIES, getItemDamageParts, applyTypedDamage},
     actors: {
       getDerivedHealthMax
     },

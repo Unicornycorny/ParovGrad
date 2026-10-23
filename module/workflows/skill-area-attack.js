@@ -1,4 +1,5 @@
 /** Multi-target skill attacks. Each target has an independent, persistent chat-card state. */
+import {getItemDamageParts, rollDamageParts, serializeDamageResults, damageResultsHtml, applyTypedDamage} from "../damage/damage-types.js";
 import { consumeActorInspiration, openConfiguredD20RollDialog, openConfiguredDamageRollDialog } from "../dice/roll-dialog.js";
 import { placeSpellTemplate } from "../canvas/spell-template.js";
 
@@ -19,7 +20,7 @@ const targetsHtml = (state) => state.targets.map((target, i) => {
       : target.damage === null
         ? `<button type="button" class="pg-chat-button" data-action="mass-skill-damage" data-target="${i}">Урон</button>`
         : target.applied ? `<span class="pg-mass-applied">Нанесено ${target.appliedAmount}</span>`
-          : `<span class="pg-mass-effect__value">Урон: ${target.damage}</span><button type="button" class="pg-chat-button" data-action="mass-skill-apply" data-target="${i}" data-half="false">Урон</button><button type="button" class="pg-chat-button" data-action="mass-skill-apply" data-target="${i}" data-half="true">Половина</button>`;
+          : `<span class="pg-mass-effect__value" title="${esc(damageResultsHtml(target.damageParts ?? []))}">Урон: ${target.damage}</span><button type="button" class="pg-chat-button" data-action="mass-skill-apply" data-target="${i}" data-half="false">Урон</button><button type="button" class="pg-chat-button" data-action="mass-skill-apply" data-target="${i}" data-half="true">Половина</button>`;
   const effect = target.effectTotal === null ? "" : `<span class="pg-mass-effect__value" title="${esc(target.effectText)}">Эффект ${target.effectTotal}: ${esc(target.effectText || "—")}</span>`;
   const effectButton = target.defended && target.hit && target.damage !== null && !target.effectChecked && state.hasEffect
     ? `<button type="button" class="pg-chat-button" data-action="mass-skill-effect" data-target="${i}">Доп. эффект</button>` : "";
@@ -78,14 +79,15 @@ export async function startMassSkillAttack({ actor, item }) {
 async function rollTargetDamage(state, target) {
     const item = await fromUuid(state.itemUuid);
     const attacker = await fromUuid(state.actorUuid);
-    const damageDie = item?.system?.damageDie;
+    const parts = getItemDamageParts(item);
+    const damageDie = parts[0]?.formula;
     if (!damageDie) { ui.notifications?.warn("У навыка не задана кость урона."); return false; }
     const config = await openConfiguredDamageRollDialog({ title: `Урон навыка: ${state.itemName} — ${target.name}`, actor: attacker, damageDie });
     if (!config) return false;
     if (config.useInspiration && !await consumeActorInspiration(attacker)) return false;
-    const roll = game.parovgrad.dice.createRoll(damageDie, {}, { addExtraDie: config.useInspiration });
-    await roll.evaluate();
-    target.damage = Math.max(0, Number(roll.total) || 0);
+    const rolled = await rollDamageParts(parts, {useInspiration: config.useInspiration});
+    target.damageParts = serializeDamageResults(rolled.results);
+    target.damage = rolled.total;
     return true;
 }
 
@@ -130,9 +132,8 @@ async function performAction(message, action, i, half) {
     target.effectText = (item.system.effectRanges ?? []).filter(r => target.effectTotal >= Number(r.from) && target.effectTotal <= Number(r.to)).map(r => r.effect).filter(Boolean).join(" · ");
   } else if (action === "mass-skill-apply") {
     if (target.damage === null || !target.hit || target.applied) return;
-    const value = half ? Math.floor(target.damage / 2) : target.damage;
-    const health = Number(actor.system?.health?.value) || 0;
-    await actor.update({ "system.health.value": Math.max(0, health - value) });
+    const {amount: value} = await applyTypedDamage(actor,
+      target.damageParts?.length ? target.damageParts : [{amount: target.damage}], {half});
     target.applied = true;
     target.appliedAmount = value;
   } else return;

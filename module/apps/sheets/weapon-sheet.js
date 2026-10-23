@@ -1,3 +1,5 @@
+import { getItemDamageParts, damagePartOptions, damagePartLabel } from "../../damage/damage-types.js";
+import { attachDamageEditor } from "../../damage/damage-editor.js";
 import { attachItemPortraitListener } from "./item-portrait.js";
 const STANDARD_EFFECT_DICE = ["", "d2", "d4", "d6", "d8", "d12", "d20", "d100"];
 
@@ -81,6 +83,9 @@ export class ParovGradWeaponSheet extends foundry.applications.api.HandlebarsApp
         }))
       : [];
 
+    const damageParts = getItemDamageParts(this.document);
+    context.damageParts = damageParts.map(damagePartOptions);
+    context.damageSummary = damageParts.map(part => `${part.formula.toUpperCase()} (${damagePartLabel(part)})`).join(" + ");
     context.system = this.document.system;
     context.isEditMode = this._isEditMode;
     context.damageDieOptions = damageDice.map((value) => ({
@@ -98,7 +103,7 @@ export class ParovGradWeaponSheet extends foundry.applications.api.HandlebarsApp
 
     context.weaponView = {
       name: this.document.name || "—",
-      damageDie: String(this.document.system?.damageDie || "—").toUpperCase(),
+      damageDie: context.damageSummary,
       description: this.document.system?.description?.trim() || "—",
       effectCheckDie: currentEffectDie ? currentEffectDie.toUpperCase() : "—",
       effectRanges
@@ -128,6 +133,7 @@ export class ParovGradWeaponSheet extends foundry.applications.api.HandlebarsApp
     super._attachPartListeners(partId, htmlElement, options);
     attachItemPortraitListener(this, htmlElement);
     if (!this._isEditMode) return;
+    attachDamageEditor(this, htmlElement);
 
     const addButton = htmlElement.querySelector(".pg-weapon-effect-add");
     const fromInput = htmlElement.querySelector(".pg-weapon-effect-add-from");

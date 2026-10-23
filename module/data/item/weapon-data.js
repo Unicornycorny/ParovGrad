@@ -1,9 +1,12 @@
 const { StringField, ArrayField, SchemaField, NumberField } = foundry.data.fields;
 
+import { damageSchema } from "../../damage/damage-types.js";
+
 export class WeaponDataModel extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     return {
       description: new StringField({ required: false, initial: "" }),
+      damage: damageSchema(),
       damageDie: new StringField({ required: false, initial: "d4" }),
       effectCheckDie: new StringField({ required: false, initial: "" }),
       effectRanges: new ArrayField(

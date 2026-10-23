@@ -1,3 +1,5 @@
+import { damageSchema } from "../../damage/damage-types.js";
+
 const {
   ArrayField,
   BooleanField,
@@ -66,7 +68,8 @@ export class SpellDataModel extends foundry.abstract.TypeDataModel {
         new SchemaField({
           type: new StringField({ required: true, blank: false, initial: "damage" }),
           label: new StringField({ required: false, initial: "" }),
-          formula: new StringField({ required: true, blank: false, initial: "1d4" })
+          formula: new StringField({ required: true, blank: false, initial: "1d4" }),
+          damage: damageSchema()
         }),
         {
           required: true,
@@ -100,6 +103,14 @@ export class SpellDataModel extends foundry.abstract.TypeDataModel {
           min: 0,
           initial: 0
         }),
+        damageBindings: new ArrayField(
+          new SchemaField({
+            influenceNodeId: new StringField({required: true, blank: false}),
+            damageTypeNodeId: new StringField({required: false, initial: ""}),
+            category: new StringField({required: true, initial: "physical", choices: ["physical", "typed"]})
+          }),
+          {required: true, initial: []}
+        ),
         selectedNodeIds: new ArrayField(
           new StringField({
             required: true,

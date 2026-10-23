@@ -7,6 +7,7 @@ import {
   getMagicTreeNodeSpellEffect,
   isValidSpellRollFormula
 } from "./spell-effects.js";
+import {DAMAGE_TYPES, damagePartLabel, makeDamagePart} from "../damage/damage-types.js";
 
 export const MAX_SPELL_INFLUENCES = 4;
 
@@ -35,6 +36,7 @@ function getNodeOutputValue(node) {
 }
 
 function getNodeDisplayOutput(node) {
+  if (node?.type === MAGIC_TREE_NODE_TYPES.DAMAGE_TYPE) return DAMAGE_TYPES[node?.output?.damageType] ?? "Тип не выбран";
   const name = asTrimmedString(node?.output?.name);
   const value = asTrimmedString(node?.output?.value);
   const spellEffect = node?.type === MAGIC_TREE_NODE_TYPES.INFLUENCE
@@ -60,7 +62,7 @@ function normalizeMaterials(materials) {
  * not the composition of an individual spell.
  */
 export class MagicTreeCompiler {
-  static compile(tree, selectedNodeIds = []) {
+  static compile(tree, selectedNodeIds = [], damageBindings = []) {
     const system = tree?.system ?? tree ?? {};
     const nodesById = system?.nodes ?? {};
     const selectedIds = uniqueIds(selectedNodeIds);
@@ -83,6 +85,7 @@ export class MagicTreeCompiler {
     const rangeNodes = selectedNodes.filter(({ node }) => node?.type === MAGIC_TREE_NODE_TYPES.RANGE);
     const shapeNodes = selectedNodes.filter(({ node }) => node?.type === MAGIC_TREE_NODE_TYPES.SHAPE);
     const influenceNodes = selectedNodes.filter(({ node }) => node?.type === MAGIC_TREE_NODE_TYPES.INFLUENCE);
+    const damageTypeNodes = selectedNodes.filter(({node}) => node?.type === MAGIC_TREE_NODE_TYPES.DAMAGE_TYPE);
     const modifierNodes = selectedNodes.filter(({ node }) => node?.type === MAGIC_TREE_NODE_TYPES.MODIFIER);
     const knownTypes = new Set(Object.values(MAGIC_TREE_NODE_TYPES));
     const unknownNodes = selectedNodes.filter(({ node }) => !knownTypes.has(node?.type));
@@ -120,14 +123,45 @@ export class MagicTreeCompiler {
       .filter(Boolean);
 
     const effects = [];
-    for (const { node } of influenceNodes) {
+    const explicitBindings = new Map((damageBindings ?? []).map(binding => [binding.influenceNodeId, binding]));
+    const automaticTypeId = damageTypeNodes.length === 1 ? damageTypeNodes[0].id : "";
+    const selectedDamageTypes = new Map(damageTypeNodes.map(({id, node}) => [id, node]));
+    for (const {id, node} of damageTypeNodes) {
+      if (!Object.hasOwn(DAMAGE_TYPES, node?.output?.damageType)) {
+        errors.push(`Узел типа урона «${node?.name || id}» не имеет выбранного типа.`);
+      }
+    }
+    const damageControls = [];
+    for (const { id, node } of influenceNodes) {
       const effect = getMagicTreeNodeSpellEffect(node);
       if (!effect) continue;
 
-      effects.push({
-        ...effect,
-        typeLabel: SPELL_EFFECT_TYPE_LABELS[effect.type] ?? effect.type
-      });
+      if (effect.type === "damage") {
+        const binding = explicitBindings.get(id);
+        let typeNodeId = binding?.category === "physical" ? "__physical" : binding?.damageTypeNodeId;
+        if (!binding && automaticTypeId) typeNodeId = automaticTypeId;
+        if (!typeNodeId) errors.push(`Укажите тип урона для влияния «${effect.label}» (либо «Физический»).`);
+        if (typeNodeId && typeNodeId !== "__physical" && !selectedDamageTypes.has(typeNodeId)) {
+          errors.push(`Тип урона для влияния «${effect.label}» не выбран в дереве.`);
+        }
+        const damageType = typeNodeId === "__physical" ? null : selectedDamageTypes.get(typeNodeId)?.output?.damageType;
+        effect.damage = {parts: [makeDamagePart(effect.formula, typeNodeId === "__physical" ? "physical" : "typed", damageType)]};
+        damageControls.push({
+          influenceNodeId: id, label: effect.label,
+          selectedTypeNodeId: typeNodeId || "",
+          typeOptions: [
+            {value: "", label: "— Выберите тип —", selected: !typeNodeId},
+            {value: "__physical", label: "Физический", selected: typeNodeId === "__physical"},
+            ...damageTypeNodes.map(({id: typeId, node: typeNode}) => ({
+              value: typeId,
+              label: `${typeNode.name || DAMAGE_TYPES[typeNode.output?.damageType]} (${DAMAGE_TYPES[typeNode.output?.damageType] || "Не задан"})`,
+              selected: typeNodeId === typeId
+            }))
+          ]
+        });
+      }
+      effects.push({...effect, typeLabel: SPELL_EFFECT_TYPE_LABELS[effect.type] ?? effect.type,
+        damageTypeLabel: effect.damage?.parts?.length ? damagePartLabel(effect.damage.parts[0]) : ""});
 
       if (!effect.formula) {
         errors.push(`Влияние «${effect.label}» должно содержать формулу броска.`);
@@ -181,6 +215,7 @@ export class MagicTreeCompiler {
         output: getNodeDisplayOutput(node)
       })),
       costBreakdown,
+      damageControls,
       spell: {
         range,
         shape,

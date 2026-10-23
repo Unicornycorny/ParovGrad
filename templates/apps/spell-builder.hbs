@@ -159,6 +159,9 @@
                     <div class="pg-magic-tree-node__output">{{this.output.value}}</div>
                   {{/if}}
                 {{/if}}
+                {{#if this.damageTypeLabel}}
+                  <div class="pg-magic-tree-node__output">{{this.damageTypeLabel}}</div>
+                {{/if}}
 
                 {{#if this.selected}}
                   <div class="pg-spell-builder-node-selected-mark" title="Узел входит в заклинание">
@@ -257,12 +260,29 @@
           {{/if}}
         </div>
 
+        {{#if compilation.damageControls.length}}
+          <div class="pg-spell-builder-preview-section">
+            <h3>Типы урона</h3>
+            <p class="pg-form-hint">Для каждого повреждающего влияния выберите узел типа урона или обычный физический урон.</p>
+            {{#each compilation.damageControls}}
+              <div class="pg-form-field pg-form-field--compact">
+                <label>{{this.label}}</label>
+                <select class="pg-spell-damage-binding" data-influence-id="{{this.influenceNodeId}}">
+                  {{#each this.typeOptions}}
+                    <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                  {{/each}}
+                </select>
+              </div>
+            {{/each}}
+          </div>
+        {{/if}}
+
         {{#if compilation.spell.effects.length}}
           <div class="pg-spell-builder-preview-section">
             <h3>Броски влияний <span>{{compilation.spell.effects.length}}</span></h3>
             <ul class="pg-spell-builder-simple-list pg-spell-builder-effect-list">
               {{#each compilation.spell.effects}}
-                <li><strong>{{this.typeLabel}}</strong> · {{this.label}} · <code>{{this.formula}}</code></li>
+                <li><strong>{{this.typeLabel}}</strong> · {{this.label}} · <code>{{this.formula}}</code>{{#if this.damageTypeLabel}} · {{this.damageTypeLabel}}{{/if}}</li>
               {{/each}}
             </ul>
           </div>

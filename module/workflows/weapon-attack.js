@@ -1,3 +1,4 @@
+import {getItemDamageParts, rollDamageParts, serializeDamageResults, damageResultsHtml, applyTypedDamage} from "../damage/damage-types.js";
 import {
   consumeActorInspiration,
   openConfiguredD20RollDialog,
@@ -147,8 +148,8 @@ async function createAttackEffectResultMessage({
   });
 }
 
-async function createRollCardMessage({ roll, speaker, content, flags = {} }) {
-  const rollHtml = await roll.render();
+async function createRollCardMessage({ roll, additionalRolls = [], speaker, content, flags = {} }) {
+  const rollHtml = (await Promise.all([roll, ...additionalRolls].map(entry => entry.render()))).join("");
   return ChatMessage.create({
     user: game.user.id,
     speaker,
@@ -158,7 +159,7 @@ async function createRollCardMessage({ roll, speaker, content, flags = {} }) {
         <div class="pg-chat-card__roll">${rollHtml}</div>
       </div>
     `,
-    rolls: [JSON.stringify(roll.toJSON())],
+    rolls: [roll, ...additionalRolls].map(entry => JSON.stringify(entry.toJSON())),
     style: CONST.CHAT_MESSAGE_STYLES.ROLL,
     flags: {
       ParovGrad: flags
@@ -571,7 +572,8 @@ export async function handleDefenseButtonClick(message) {
     return;
   }
 
-  const damageDie = sourceItem.system?.damageDie;
+  const parts = getItemDamageParts(sourceItem);
+  const damageDie = parts[0]?.formula;
   if (!damageDie) {
     ui.notifications?.warn("У источника урона не задана кость урона.");
     return;
@@ -590,20 +592,19 @@ export async function handleDefenseButtonClick(message) {
     if (!spent) return;
   }
 
-  const damageRoll = game.parovgrad.dice.createRoll(damageDie, {}, {
-    addExtraDie: damageConfig.useInspiration
-  });
-  await damageRoll.evaluate();
+  const rolledDamage = await rollDamageParts(parts, {useInspiration: damageConfig.useInspiration});
+  const damageRoll = rolledDamage.primaryRoll;
 
   await createRollCardMessage({
     roll: damageRoll,
+    additionalRolls: rolledDamage.results.slice(1).map(part => part.roll),
     speaker,
     content: `
       <div class="pg-chat-card__header">
         <div class="pg-chat-card__title">${source.damageTitle}</div>
         <div class="pg-chat-card__subtitle">${attackData.itemName} наносит урон цели ${attackData.targetName}</div>
       </div>
-      <div class="pg-chat-card__meta">Кость урона: ${String(damageDie).toUpperCase()}${damageConfig.useInspiration ? " · Вдохновение" : ""}</div>
+      <div class="pg-chat-card__meta">Урон: ${damageResultsHtml(rolledDamage.results)} · Всего: ${rolledDamage.total}${damageConfig.useInspiration ? " · Вдохновение" : ""}</div>
       <div class="pg-chat-card__actions">
         <button type="button" class="pg-chat-button pg-chat-button--danger" data-action="apply-damage">Нанести урон</button>
       </div>
@@ -613,7 +614,8 @@ export async function handleDefenseButtonClick(message) {
       damage: {
         targetTokenUuid: attackData.targetTokenUuid,
         targetName: attackData.targetName,
-        amount: damageRoll.total,
+        amount: rolledDamage.total,
+        parts: serializeDamageResults(rolledDamage.results),
         sourceType: source.type,
         sourceName: attackData.itemName,
         weaponName: attackData.itemName,
@@ -755,13 +757,9 @@ export async function handleApplyDamageButtonClick(message) {
     return;
   }
 
-  const currentHealth = Number(targetActor.system?.health?.value) || 0;
-  const damageAmount = Math.max(Number(damageData.amount) || 0, 0);
-  const nextHealth = Math.max(currentHealth - damageAmount, 0);
-
-  await targetActor.update({
-    "system.health.value": nextHealth
-  });
+  const rolledParts = Array.isArray(damageData.parts) && damageData.parts.length
+    ? damageData.parts : [{amount: damageData.amount, category: "unspecified", damageType: null}];
+  const {amount: damageAmount, before: currentHealth, after: nextHealth} = await applyTypedDamage(targetActor, rolledParts);
 
   await setDamageApplied(message, true);
 

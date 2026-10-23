@@ -2491,3 +2491,10 @@
   .pg-learn-skill-workspace { grid-template-columns: minmax(0, 1fr) 255px; }
   .pg-learn-skill-header { flex-wrap: wrap; }
 }
+
+/* Damage parts editor, shared by weapons and skills. */
+.pg-damage-editor .pg-damage-row {display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:7px 0;}
+.pg-damage-editor .pg-damage-row input {flex:1 1 95px;min-width:80px;}
+.pg-damage-editor .pg-damage-row select {flex:1 1 130px;min-width:110px;}
+.pg-damage-editor .pg-damage-delete {flex:0 0 32px;padding:3px 7px;}
+.pg-damage-editor .pg-damage-add {margin-top:7px;width:auto;padding:6px 12px;}

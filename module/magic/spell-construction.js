@@ -43,15 +43,21 @@ export function getSpellConstruction(spell) {
   return {
     treeUuid: asTrimmedString(construction?.treeUuid),
     treeRevision: Math.max(0, Number(construction?.treeRevision) || 0),
-    selectedNodeIds: normalizeNodeIds(construction?.selectedNodeIds)
+    selectedNodeIds: normalizeNodeIds(construction?.selectedNodeIds),
+    damageBindings: Array.isArray(construction?.damageBindings) ? construction.damageBindings.map(binding => ({
+      influenceNodeId: asTrimmedString(binding.influenceNodeId),
+      damageTypeNodeId: asTrimmedString(binding.damageTypeNodeId),
+      category: binding.category === "typed" ? "typed" : "physical"
+    })) : []
   };
 }
 
-export function buildSpellConstruction(tree, selectedNodeIds) {
+export function buildSpellConstruction(tree, selectedNodeIds, damageBindings = []) {
   return {
     treeUuid: asTrimmedString(tree?.uuid),
     treeRevision: Math.max(0, Number(tree?.system?.revision) || 0),
-    selectedNodeIds: normalizeNodeIds(selectedNodeIds)
+    selectedNodeIds: normalizeNodeIds(selectedNodeIds),
+    damageBindings
   };
 }
 

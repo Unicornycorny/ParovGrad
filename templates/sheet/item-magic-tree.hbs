@@ -172,6 +172,9 @@
                       <div class="pg-magic-tree-node__output">{{this.output.value}}</div>
                     {{/if}}
                   {{/if}}
+                  {{#if this.damageTypeLabel}}
+                    <div class="pg-magic-tree-node__output">{{this.damageTypeLabel}}</div>
+                  {{/if}}
                 </article>
               {{/each}}
             </div>
@@ -272,6 +275,19 @@
                   <span class="pg-form-hint">Для урона и лечения здесь хранится формула броска, например <code>1d8 + 2d4</code>.</span>
                 {{/if}}
               </div>
+
+              {{#if selectedNode.isDamageType}}
+                <div class="pg-form-field pg-form-field--compact">
+                  <label>Тип урона (механика)</label>
+                  <select name="system.nodes.{{selectedNode.id}}.output.damageType">
+                    <option value="">— Выберите тип —</option>
+                    {{#each selectedNode.damageTypeOptions}}
+                      <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                    {{/each}}
+                  </select>
+                  <span class="pg-form-hint">В дереве можно создавать отдельные узлы урона и соединять их с типами при сборке заклинания. Силовой — энергетический тип.</span>
+                </div>
+              {{/if}}
 
               {{#if selectedNode.isInfluence}}
                 <div class="pg-form-field pg-form-field--compact">

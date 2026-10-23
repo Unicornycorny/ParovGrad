@@ -1,3 +1,4 @@
+import {damagePartLabel} from "../../damage/damage-types.js";
 import { attachItemPortraitListener } from "./item-portrait.js";
 import { ParovGradSpellBuilder } from "../spell-builder.js";
 import { getSpellConstructionStatus } from "../../magic/spell-construction.js";
@@ -83,7 +84,8 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
     const materials = normalizeMaterials(this.document.system?.materials);
     const spellEffects = getSpellEffects(this.document).map((effect) => ({
       ...effect,
-      typeLabel: SPELL_EFFECT_TYPE_LABELS[effect.type] ?? effect.type
+      typeLabel: SPELL_EFFECT_TYPE_LABELS[effect.type] ?? effect.type,
+      damageLabel: effect.damage?.parts?.map(part => `${part.formula} (${damagePartLabel(part)})`).join(" + ") ?? ""
     }));
     const constructionStatus = await getSpellConstructionStatus(this.document);
     const spellTemplate = getSpellTemplateConfig(this.document);

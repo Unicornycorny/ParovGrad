@@ -1,3 +1,4 @@
+import { DAMAGE_TYPES } from "../../damage/damage-types.js";
 import {
   MAGIC_TREE_EDGE_TYPES,
   MAGIC_TREE_NODE_TYPES
@@ -45,7 +46,15 @@ function createNodeField() {
     output: new SchemaField({
       name: new StringField({ required: false, initial: "" }),
       value: new StringField({ required: false, initial: "" }),
-      effectType: new StringField({ required: false, initial: "" })
+      effectType: new StringField({ required: false, initial: "" }),
+      // Each magic tree node shares this output schema, but only "damageType" nodes
+      // need a special damage type. Other nodes legitimately keep this value empty.
+      damageType: new StringField({
+        required: false,
+        blank: true,
+        initial: "",
+        choices: ["", ...Object.keys(DAMAGE_TYPES)]
+      })
     }),
     materials: new ArrayField(
       new StringField({ required: true, blank: false }),

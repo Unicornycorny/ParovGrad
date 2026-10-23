@@ -1,4 +1,7 @@
 import {
+  rollDamageParts, serializeDamageResults, damageResultsHtml, applyTypedDamage
+} from "../damage/damage-types.js";
+import {
   consumeActorInspiration,
   openConfiguredD20RollDialog
 } from "../dice/roll-dialog.js";
@@ -9,6 +12,20 @@ import {
   isValidSpellRollFormula
 } from "../magic/spell-effects.js";
 import { hasSpellTemplate, placeSpellTemplate } from "../canvas/spell-template.js";
+
+async function rollTypedSpellEffect(effect, rollData) {
+  if (effect.type === SPELL_EFFECT_TYPES.DAMAGE) {
+    const parts = effect.damage?.parts?.length ? effect.damage.parts
+      : [{id: "base", formula: effect.formula, category: "physical", damageType: null}];
+    const rolled = await rollDamageParts(parts, {rollData});
+    return {roll: rolled.primaryRoll, additionalRolls: rolled.results.slice(1).map(part => part.roll),
+      amount: rolled.total, parts: serializeDamageResults(rolled.results)};
+  }
+  const roll = game.parovgrad.dice.createRoll(effect.formula, rollData);
+  await roll.evaluate();
+  return {roll, additionalRolls: [], amount: Math.max(0, Number(roll.total) || 0), parts: []};
+}
+
 
 function getSingleTargetToken() {
   const targets = Array.from(game.user.targets ?? []);
@@ -208,17 +225,18 @@ async function createSpellAttackRollMessage({ actor, item, targetDocument, effec
         effects: effects.map((effect) => ({
           type: effect.type,
           label: effect.label,
-          formula: effect.formula
+          formula: effect.formula,
+          damage: effect.damage ?? {parts: []}
         }))
       }
     }
   });
 }
 
-async function createSpellEffectRollMessage({ actor, item, targetDocument, effect, roll, sourceAttackMessageId = null }) {
+async function createSpellEffectRollMessage({ actor, item, targetDocument, effect, roll, additionalRolls = [], rolledAmount = null, damageParts = [], sourceAttackMessageId = null }) {
   const isDamage = effect.type === SPELL_EFFECT_TYPES.DAMAGE;
   const typeLabel = SPELL_EFFECT_TYPE_LABELS[effect.type] ?? effect.label ?? effect.type;
-  const rollHtml = await roll.render();
+  const rollHtml = (await Promise.all([roll, ...additionalRolls].map(entry => entry.render()))).join("");
   const speaker = ChatMessage.getSpeaker({ actor });
 
   const actionHtml = isDamage
@@ -239,12 +257,12 @@ async function createSpellEffectRollMessage({ actor, item, targetDocument, effec
           <div class="pg-chat-card__title">${typeLabel}: ${item.name}</div>
           <div class="pg-chat-card__subtitle">${effect.label} для цели ${targetDocument.name}</div>
         </div>
-        <div class="pg-chat-card__meta">Формула: ${effect.formula}</div>
+        <div class="pg-chat-card__meta">Формула: ${effect.formula}${damageParts.length ? ` · ${damageResultsHtml(damageParts)}` : ""}</div>
         <div class="pg-chat-card__actions">${actionHtml}</div>
         <div class="pg-chat-card__roll">${rollHtml}</div>
       </div>
     `,
-    rolls: [JSON.stringify(roll.toJSON())],
+    rolls: [roll, ...additionalRolls].map(entry => JSON.stringify(entry.toJSON())),
     style: CONST.CHAT_MESSAGE_STYLES.ROLL,
     flags: {
       ParovGrad: {
@@ -258,7 +276,8 @@ async function createSpellEffectRollMessage({ actor, item, targetDocument, effec
           effectType: effect.type,
           effectLabel: effect.label,
           formula: effect.formula,
-          amount: Math.max(0, Number(roll.total) || 0),
+          amount: rolledAmount ?? Math.max(0, Number(roll.total) || 0),
+          parts: damageParts,
           sourceAttackMessageId,
           applied: false,
           appliedMode: null,
@@ -278,8 +297,7 @@ async function rollSpellEffectsWithoutAttack({ actor, item, targetDocument, effe
       continue;
     }
 
-    const roll = game.parovgrad.dice.createRoll(effect.formula, rollData);
-    await roll.evaluate();
+    const {roll, additionalRolls, amount, parts} = await rollTypedSpellEffect(effect, rollData);
 
     await createSpellEffectRollMessage({
       actor,
@@ -287,6 +305,9 @@ async function rollSpellEffectsWithoutAttack({ actor, item, targetDocument, effe
       targetDocument,
       effect,
       roll,
+      additionalRolls,
+      rolledAmount: amount,
+      damageParts: parts,
       sourceAttackMessageId: null
     });
   }
@@ -315,8 +336,7 @@ async function rollSpellEffectsAfterHit({ attackMessage, attackData, targetDocum
       continue;
     }
 
-    const roll = game.parovgrad.dice.createRoll(effect.formula, rollData);
-    await roll.evaluate();
+    const {roll, additionalRolls, amount, parts} = await rollTypedSpellEffect(effect, rollData);
 
     await createSpellEffectRollMessage({
       actor,
@@ -324,6 +344,9 @@ async function rollSpellEffectsAfterHit({ attackMessage, attackData, targetDocum
       targetDocument,
       effect,
       roll,
+      additionalRolls,
+      rolledAmount: amount,
+      damageParts: parts,
       sourceAttackMessageId: attackMessage.id
     });
   }
@@ -376,7 +399,7 @@ async function createMassSpellAttackMessage({ actor, item, targetDocuments, temp
     attackerActorUuid: actor.uuid, actorName: actor.name,
     itemUuid: item.uuid, itemName: item.name, templateUuid: templateDocument?.uuid ?? null,
     total: Number(roll.total) || 0, formula: attackFormula, mode: attackConfig.mode,
-    effects: effects.map(({ type, label, formula }) => ({ type, label, formula })),
+    effects: effects.map(({ type, label, formula, damage }) => ({ type, label, formula, damage: damage ?? {parts: []} })),
     targets: targetDocuments.map(doc => ({ tokenUuid: doc.uuid, name: doc.name, resolved: false, success: null, defenseTotal: null, effects: [] }))
   };
   return ChatMessage.create({
@@ -424,10 +447,9 @@ async function defendMassSpellTarget(message, index) {
       const rollData = caster?.getRollData?.() ?? caster?.system?.toObject?.() ?? caster?.system ?? {};
       for (const effect of data.effects ?? []) {
         if (!isValidSpellRollFormula(effect.formula)) { ui.notifications?.error(`Некорректная формула: ${effect.formula}`); continue; }
-        const effectRoll = game.parovgrad.dice.createRoll(effect.formula, rollData);
-        await effectRoll.evaluate();
+        const {amount, parts} = await rollTypedSpellEffect(effect, rollData);
         target.effects.push({ type: effect.type, label: effect.label, formula: effect.formula,
-          amount: Math.max(0, Number(effectRoll.total) || 0), applied: false, appliedMode: null, appliedAmount: null });
+          amount, parts, applied: false, appliedMode: null, appliedAmount: null });
 
       }
     }
@@ -456,10 +478,13 @@ async function applyMassSpellTargetEffect(message, index, effectIndex, mode) {
       next = Math.min(current + rolled, max);
       applied = Math.max(0, next - current);
     } else {
-      applied = mode === 'halfDamage' ? Math.floor(rolled / 2) : rolled;
-      next = Math.max(0, current - applied);
+      const result = await applyTypedDamage(actor,
+        effect.parts?.length ? effect.parts : [{amount: rolled}],
+        {half: mode === 'halfDamage'});
+      applied = result.amount;
+      next = result.after;
     }
-    await actor.update({ 'system.health.value': next });
+    if (mode === 'healing') await actor.update({ 'system.health.value': next });
     effect.applied = true;
     effect.appliedMode = mode;
     effect.appliedAmount = applied;
@@ -811,8 +836,11 @@ export async function handleApplySpellEffectButtonClick(message, mode) {
     }
 
     // Half damage is rounded down for odd totals.
-    appliedAmount = mode === "halfDamage" ? Math.floor(rolledAmount / 2) : rolledAmount;
-    nextHealth = Math.max(currentHealth - appliedAmount, 0);
+    const applied = await applyTypedDamage(targetActor,
+      effectData.parts?.length ? effectData.parts : [{amount: rolledAmount}],
+      {half: mode === "halfDamage"});
+    appliedAmount = applied.amount;
+    nextHealth = applied.after;
     actionTitle = mode === "halfDamage" ? "Половина урона применена" : "Урон применён";
     actionText = `${effectData.targetName} получает ${appliedAmount} урона от «${effectData.itemName}»`;
   } else if (mode === "healing") {
@@ -835,7 +863,7 @@ export async function handleApplySpellEffectButtonClick(message, mode) {
     return;
   }
 
-  await targetActor.update({
+  if (mode === "healing") await targetActor.update({
     "system.health.value": nextHealth
   });
 
