@@ -40,7 +40,12 @@
     </section>
 
     <section class="pg-dossier-section pg-dossier-resources">
-      <h2>Показатели</h2>
+      <div class="pg-section-header">
+        <h2>Показатели</h2>
+        <button type="button" class="pg-rest-button" {{#unless canEditProfile}}disabled{{/unless}}>
+          <i class="fa-solid fa-bed" aria-hidden="true"></i> Отдых
+        </button>
+      </div>
       <div class="pg-dossier-resource-grid">
 
       <div class="pg-dossier-field">

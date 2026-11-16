@@ -1,0 +1,65 @@
+<section class="pg-sheet pg-player-dossier pg-rest">
+  <div class="sheet-body">
+    <header class="pg-rest-header">
+      <div class="pg-dossier-kicker">Личное дело <span aria-hidden="true">◆</span> Восстановление</div>
+      <h1>{{actorName}}</h1>
+      <p class="pg-form-hint">Восстановите здоровье и при желании совершите проверку Самочувствия для снятия эффектов.</p>
+    </header>
+
+    {{#if failed}}
+    <p class="pg-rest-error" role="alert">Восстановление завершилось с ошибкой. Проверьте здоровье и эффекты в листе персонажа перед новым отдыхом.</p>
+    {{else}}
+      <section class="pg-dossier-section">
+        <h2>Здоровье</h2>
+        <p class="pg-form-hint">Сейчас: {{healthValue}} / {{healthMax}}. Лечение не требует броска Самочувствия и ограничено текущим максимумом здоровья.</p>
+        <label class="pg-rest-health-label">Восстановить здоровья
+          <input type="number" class="pg-rest-health" min="0" step="1" value="{{healthRecovery}}" {{#if busy}}disabled{{/if}}>
+        </label>
+        <button type="button" class="pg-rest-heal" {{#if busy}}disabled{{/if}}>Восстановить здоровье</button>
+      </section>
+
+      {{#if rolled}}
+      <section class="pg-dossier-section">
+        <h2>Самочувствие: D20 = {{d20}}</h2>
+        <p class="pg-rest-budget" role="status" aria-live="polite">Распределено пунктов: <strong class="pg-rest-spent">{{spentPoints}}</strong> / {{recoveryPoints}}</p>
+        <p class="pg-form-hint">Укажите, сколько пунктов снять с каждого эффекта. Это общий запас на все выбранные эффекты; тратить его целиком необязательно. При снижении до нуля эффект снимается.</p>
+        {{#if effects.length}}
+        <ul class="pg-rest-effects">
+          {{#each effects}}
+          <li class="pg-rest-effect">
+            <img src="{{this.img}}" alt="" loading="lazy">
+            <div>
+              <strong>{{this.name}}</strong>
+              <div class="pg-rest-effect-meta">Уровень: {{this.level}} · Снятие: {{this.removal}}</div>
+            </div>
+            <label>Снять пунктов
+              <input type="number" data-rest-effect-id="{{this.id}}" min="0" max="{{this.maxReduction}}" step="1" value="{{this.points}}" {{#if ../busy}}disabled{{/if}}>
+            </label>
+          </li>
+          {{/each}}
+        </ul>
+        {{else}}
+        <p class="pg-form-hint">Нет действующих эффектов со способом снятия «после отдыха».</p>
+        {{/if}}
+        {{#unless recoveryPoints}}
+        <p class="pg-form-hint">Результат D20 не позволяет уменьшить эффекты. Здоровье можно восстановить отдельно.</p>
+        {{/unless}}
+      </section>
+
+      {{else}}
+      <section class="pg-dossier-section">
+        <h2>Самочувствие</h2>
+        <p class="pg-form-hint">D20 без модификаторов. За каждые 2 значения выше 10 можно снять 1 пункт эффекта.</p>
+        <button type="button" class="pg-rest-roll" {{#if busy}}disabled{{/if}}>Бросить D20 — Самочувствие</button>
+      </section>
+      {{/if}}
+    {{/if}}
+
+    <footer class="pg-rest-footer">
+      {{#if rolled}}{{#unless failed}}
+      <button type="button" class="pg-rest-apply" {{#if busy}}disabled{{/if}}>Применить к эффектам</button>
+      {{/unless}}{{/if}}
+      <button type="button" class="pg-rest-cancel" {{#if busy}}disabled{{/if}}>Закрыть</button>
+    </footer>
+  </div>
+</section>

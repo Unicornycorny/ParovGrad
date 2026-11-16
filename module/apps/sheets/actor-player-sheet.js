@@ -11,6 +11,7 @@ import { openActorLevelUpDialog } from "../level-up-dialog.js";
 import { openLearnSkillFromTreeDialog } from "../learn-skill-dialog.js";
 import { openItemPreparationDialog } from "../item-preparation-dialog.js";
 import { getPreparedItemIds } from "../../actors/item-preparation.js";
+import { openActorRestDialog } from "../rest-recovery-dialog.js";
 
 export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.sheets.ActorSheetV2
@@ -96,6 +97,13 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
 
   _attachPartListeners(partId, htmlElement, options) {
     super._attachPartListeners(partId, htmlElement, options);
+
+    htmlElement.querySelector(".pg-rest-button")?.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!this.isEditable) return;
+      await openActorRestDialog(this.document);
+    });
 
     htmlElement.querySelector(".pg-portrait-edit")?.addEventListener("click", async (event) => {
       event.preventDefault();
