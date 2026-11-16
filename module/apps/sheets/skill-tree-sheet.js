@@ -1,6 +1,8 @@
 import { attachItemPortraitListener } from "./item-portrait.js";
 import { MagicTreeGraphView } from "../components/magic-tree-graph.js";
 import { validateSkillTreeStructure } from "../../skills/skill-tree-validator.js";
+import { canObserveDocument } from "../../skills/skill-learning.js";
+import { openLearnSkillFromTreeDialog } from "../learn-skill-dialog.js";
 
 const SKILL_TREE_EDGE_TYPE = "requirement";
 
@@ -66,7 +68,8 @@ async function resolveSkill(uuid) {
   if (!uuid) return null;
   try {
     const document = await foundry.utils.fromUuid(uuid);
-    return document?.documentName === "Item" && document.type === "skill" ? document : document ?? null;
+    return document?.documentName === "Item" && document.type === "skill"
+      && document.parent?.documentName !== "Actor" && canObserveDocument(document) ? document : null;
   } catch (error) {
     console.warn(`ParovGrad | Failed to resolve skill-tree node ${uuid}`, error);
     return null;
@@ -84,6 +87,9 @@ export class ParovGradSkillTreeSheet extends foundry.applications.api.Handlebars
   _viewState = null;
   _graphView = null;
   _selectedSkillUuid = "";
+  _selectedActorUuid = "";
+  _creatingSkill = false;
+  _itemHooks = [];
 
   static DEFAULT_OPTIONS = {
     classes: ["pg-item-window", "ParovGrad", "sheet", "item", "skill-tree"],
@@ -196,7 +202,7 @@ export class ParovGradSkillTreeSheet extends foundry.applications.api.Handlebars
     const markerSafeId = String(this.id ?? this.document.id ?? "skill-tree").replace(/[^A-Za-z0-9_-]/g, "-");
 
     const availableSkills = game.items
-      .filter((item) => item.type === "skill")
+      .filter((item) => item.type === "skill" && canObserveDocument(item))
       .map((item) => ({ uuid: item.uuid, name: item.name, img: item.img }))
       .sort((a, b) => a.name.localeCompare(b.name, "ru"));
 
@@ -210,7 +216,18 @@ export class ParovGradSkillTreeSheet extends foundry.applications.api.Handlebars
     }
 
     context.system = system;
-    context.isEditMode = this._isEditMode;
+    context.isEditMode = this._isEditMode && this.isEditable;
+    context.canCreateSkill = this.isEditable && Item.implementation.canUserCreate(game.user) && !this._creatingSkill;
+    const actors = game.actors.filter((actor) => actor.type === "Player" && actor.isOwner)
+      .sort((a, b) => a.name.localeCompare(b.name, "ru"));
+    if (!actors.some((actor) => actor.uuid === this._selectedActorUuid)) {
+      this._selectedActorUuid = actors.find((actor) => actor.id === game.user.character?.id)?.uuid ?? actors[0]?.uuid ?? "";
+    }
+    context.learnerOptions = actors.map((actor) => ({
+      uuid: actor.uuid, name: actor.name, selected: actor.uuid === this._selectedActorUuid
+    }));
+    context.hasLearners = actors.length > 0;
+    context.canOpenLearning = actors.length > 0 && nodes.length > 0;
     context.validation = validation;
     context.hasValidationMessages = Boolean(validation.errors.length || validation.warnings.length);
     context.branches = branches;
@@ -256,6 +273,41 @@ export class ParovGradSkillTreeSheet extends foundry.applications.api.Handlebars
     return submitData;
   }
 
+  async _onRender(context, options) {
+    await super._onRender(context, options);
+    // Observers can browse a shared tree and learn on their own character.
+    // DocumentSheetV2 disables every form control for them by default.
+    if (!this.isEditable) {
+      this.element.querySelectorAll([
+        ".pg-magic-tree-toolbar__group--view button", ".pg-magic-tree-edge-select",
+        "[data-open-skill-uuid]", ".pg-skill-tree-learner-select"
+      ].join(",")).forEach((control) => { control.disabled = false; });
+      const learn = this.element.querySelector(".pg-skill-tree-learn");
+      if (learn) learn.disabled = !context.canOpenLearning;
+    }
+  }
+
+  _watchLinkedSkills() {
+    if (this._itemHooks.length) return;
+    const refresh = (item) => {
+      if (!this.rendered || item.uuid === this.document.uuid) return;
+      if (Object.values(this.document.system?.nodes ?? {}).some((node) => node.skillUuid === item.uuid)) {
+        this.render({ force: true }).catch((error) => console.error("ParovGrad | Could not refresh skill tree", error));
+      }
+    };
+    for (const event of ["updateItem", "deleteItem"]) {
+      this._itemHooks.push([event, Hooks.on(event, refresh)]);
+    }
+  }
+
+  _onClose(options) {
+    this._graphView?.destroy();
+    this._graphView = null;
+    for (const [event, id] of this._itemHooks) Hooks.off(event, id);
+    this._itemHooks = [];
+    return super._onClose(options);
+  }
+
   _getHeaderControls() {
     const controls = super._getHeaderControls();
 
@@ -282,6 +334,16 @@ export class ParovGradSkillTreeSheet extends foundry.applications.api.Handlebars
     this._mountGraph(htmlElement);
     this._bindGraphNavigation(htmlElement);
     this._bindOpenSkillActions(htmlElement);
+    this._watchLinkedSkills();
+    const actorSelect = htmlElement.querySelector(".pg-skill-tree-learner-select");
+    actorSelect?.addEventListener("change", (event) => {
+      event.stopPropagation();
+      this._selectedActorUuid = actorSelect.value;
+    });
+    this._bindAddButton(htmlElement, ".pg-skill-tree-learn", async () => {
+      const actor = game.actors.find((entry) => entry.uuid === this._selectedActorUuid && entry.isOwner && entry.type === "Player");
+      if (actor) await openLearnSkillFromTreeDialog(actor, {treeUuid: this.document.uuid});
+    });
 
     htmlElement.querySelectorAll(".pg-magic-tree-edge-select").forEach((button) => {
       button.addEventListener("click", async (event) => {
@@ -292,9 +354,10 @@ export class ParovGradSkillTreeSheet extends foundry.applications.api.Handlebars
       });
     });
 
-    if (!this._isEditMode) return;
+    if (!this._isEditMode || !this.isEditable) return;
 
     this._bindSkillDrop(htmlElement);
+    this._bindAddButton(htmlElement, ".pg-skill-tree-create-skill", () => this._createSkill());
     const skillSelect = htmlElement.querySelector(".pg-skill-tree-skill-select");
     skillSelect?.addEventListener("change", (event) => {
       // submitOnChange on DocumentSheetV2 would otherwise rerender the form
@@ -348,7 +411,7 @@ export class ParovGradSkillTreeSheet extends foundry.applications.api.Handlebars
 
     this._graphView = new MagicTreeGraphView({
       root: htmlElement,
-      editable: this._isEditMode,
+      editable: this._isEditMode && this.isEditable,
       initialState: this._viewState,
       connectMode: this._edgeCreationMode,
       connectSourceId: this._edgeStartNodeId,
@@ -494,7 +557,7 @@ export class ParovGradSkillTreeSheet extends foundry.applications.api.Handlebars
   }
 
   async _moveNode(nodeId, position) {
-    if (!this._isEditMode || !Object.hasOwn(this.document.system?.nodes ?? {}, nodeId)) return;
+    if (!this.isEditable || !this._isEditMode || !Object.hasOwn(this.document.system?.nodes ?? {}, nodeId)) return;
 
     this._selectedNodeId = nodeId;
     this._selectedEdgeId = "";
@@ -507,7 +570,7 @@ export class ParovGradSkillTreeSheet extends foundry.applications.api.Handlebars
   }
 
   async _moveMilestone(milestoneId, x) {
-    if (!this._isEditMode || !Object.hasOwn(this.document.system?.milestones ?? {}, milestoneId)) return;
+    if (!this.isEditable || !this._isEditMode || !Object.hasOwn(this.document.system?.milestones ?? {}, milestoneId)) return;
     await this.document.update({
       [`system.milestones.${milestoneId}.x`]: Math.max(0, Math.round(Number(x) || 0)),
       "system.revision": Number(this.document.system?.revision ?? 1) + 1
@@ -515,7 +578,7 @@ export class ParovGradSkillTreeSheet extends foundry.applications.api.Handlebars
   }
 
   async _handleConnectionNode(nodeId) {
-    if (!this._isEditMode || !this._edgeCreationMode) return;
+    if (!this.isEditable || !this._isEditMode || !this._edgeCreationMode) return;
     if (!Object.hasOwn(this.document.system?.nodes ?? {}, nodeId)) return;
 
     if (!this._edgeStartNodeId) {
@@ -563,6 +626,7 @@ export class ParovGradSkillTreeSheet extends foundry.applications.api.Handlebars
   }
 
   async _addBranch() {
+    if (!this.isEditable || !this._isEditMode) return;
     const id = getRandomId();
     const branches = this.document.system?.branches ?? {};
 
@@ -576,6 +640,7 @@ export class ParovGradSkillTreeSheet extends foundry.applications.api.Handlebars
   }
 
   async _addMilestone() {
+    if (!this.isEditable || !this._isEditMode) return;
     const id = getRandomId();
     const center = this._graphView?.getViewportCenterWorldPosition() ?? { x: 0, y: 0 };
 
@@ -589,8 +654,86 @@ export class ParovGradSkillTreeSheet extends foundry.applications.api.Handlebars
     });
   }
 
-  async _addSkillNode(skillUuid, position = null) {
-    if (!this._isEditMode) return;
+  async _createSkill() {
+    if (this._creatingSkill || !this._isEditMode || !this.isEditable) return;
+    if (!Item.implementation.canUserCreate(game.user)) {
+      ui.notifications?.warn("Недостаточно прав для создания навыка в каталоге мира.");
+      return;
+    }
+
+    this._creatingSkill = true;
+    const selected = this.document.system?.nodes?.[this._selectedNodeId];
+    const branchId = selected?.branchId ?? null;
+    const center = this._graphView?.getViewportCenterWorldPosition() ?? { x: 180, y: 180 };
+    let skill = null;
+    try {
+      const content = await foundry.applications.handlebars.renderTemplate(
+        "systems/ParovGrad/templates/apps/create-tree-skill.hbs",
+        {level: Number(selected?.level ?? 1)}
+      );
+      const result = await foundry.applications.api.DialogV2.wait({
+        window: {title: "Создать навык в древе"},
+        classes: ["ParovGrad", "pg-item-window", "pg-tree-window", "pg-tree-dialog"],
+        position: {width: 540},
+        modal: true,
+        rejectClose: false,
+        content,
+        buttons: [
+          {
+            action: "create", label: "Создать навык", default: true,
+            callback: (_event, button) => {
+              const fields = button.form.elements;
+              return {
+                name: fields.namedItem("name").value.trim(),
+                description: fields.namedItem("description").value.trim(),
+                cost: Number(fields.namedItem("cost").value),
+                level: Number(fields.namedItem("level").value)
+              };
+            }
+          },
+          {action: "cancel", label: "Отмена"}
+        ]
+      });
+      if (!result || result === "cancel") return;
+      if (!result.name || !Number.isSafeInteger(result.cost) || result.cost < 0
+        || !Number.isSafeInteger(result.level) || result.level < 0) {
+        ui.notifications?.warn("Укажите название, целую неотрицательную стоимость и уровень навыка.");
+        return;
+      }
+      if (!this.isEditable || !this._isEditMode) return;
+
+      skill = await Item.implementation.create({
+        name: result.name,
+        type: "skill",
+        img: "icons/svg/upgrade.svg",
+        folder: this.document.pack ? null : this.document.folder?.id ?? null,
+        ownership: foundry.utils.deepClone(this.document.ownership),
+        system: {description: result.description, cost: result.cost}
+      }, {renderSheet: false});
+      if (!skill) return;
+      const added = await this._addSkillNode(skill.uuid,
+        {x: Math.max(0, center.x - 90), y: Math.max(0, center.y - 60)},
+        {branchId, level: result.level});
+      if (!added) {
+        ui.notifications?.warn(`Навык «${skill.name}» создан в каталоге мира. Добавьте его в древо из списка.`);
+        return;
+      }
+      const sheet = skill.sheet;
+      sheet._isEditMode = true;
+      await sheet.render({force: true});
+    } catch (error) {
+      console.error("ParovGrad | Failed to create skill from tree", error);
+      ui.notifications?.error(skill
+        ? `Навык «${skill.name}» сохранён в каталоге мира. Не удалось завершить добавление или открыть его лист.`
+        : "Не удалось создать навык. Подробности в консоли.");
+    } finally {
+      this._creatingSkill = false;
+      if (this.rendered) await this.render({force: true});
+    }
+  }
+
+  async _addSkillNode(skillUuid, position = null, {branchId = null, level = 1} = {}) {
+    if (!this.isEditable || !this._isEditMode) return false;
 
     const skill = await resolveSkill(skillUuid);
     if (!skill || skill.documentName !== "Item" || skill.type !== "skill") {
@@ -623,15 +766,17 @@ export class ParovGradSkillTreeSheet extends foundry.applications.api.Handlebars
     await this.document.update({
       [`system.nodes.${id}`]: {
         skillUuid: skill.uuid,
-        branchId: firstBranchId,
-        level: 1,
+        branchId: branchId !== null && Object.hasOwn(this.document.system?.branches ?? {}, branchId) ? branchId : firstBranchId,
+        level,
         position: { x, y }
       },
       "system.revision": Number(this.document.system?.revision ?? 1) + 1
     });
+    return true;
   }
 
   async _deleteEntry(collection, id) {
+    if (!this.isEditable || !this._isEditMode) return;
     if (!["branches", "milestones", "nodes", "edges"].includes(collection)) return;
 
     const current = this.document.system?.[collection] ?? {};

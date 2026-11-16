@@ -55,7 +55,7 @@ export class ParovGradSpellBuilder extends foundry.applications.api.HandlebarsAp
   _graphView = null;
 
   static DEFAULT_OPTIONS = {
-    classes: ["ParovGrad", "pg-spell-builder", "pg-magic-tree-sheet"],
+    classes: ["pg-item-window", "pg-tree-window", "ParovGrad", "pg-spell-builder", "pg-magic-tree-sheet"],
     position: { width: 1280, height: 860 },
     window: {
       title: "Конструктор заклинания",

@@ -21,6 +21,23 @@
       </div>
     </header>
 
+    <div class="pg-skill-tree-learning-bar">
+      {{#if hasLearners}}
+        <label>Персонаж
+          <select class="pg-skill-tree-learner-select" aria-label="Персонаж для изучения навыков">
+            {{#each learnerOptions}}
+              <option value="{{this.uuid}}" {{#if this.selected}}selected{{/if}}>{{this.name}}</option>
+            {{/each}}
+          </select>
+        </label>
+        <button type="button" class="pg-skill-tree-learn" {{#unless canOpenLearning}}disabled{{/unless}}>
+          <i class="fa-solid fa-graduation-cap"></i> Изучать навыки
+        </button>
+      {{else}}
+        <span>Для изучения навыков откройте лист своего персонажа → «Способности».</span>
+      {{/if}}
+    </div>
+
     {{#if hasValidationMessages}}
       <section class="pg-magic-tree-validation">
         {{#each validation.errors}}
@@ -37,6 +54,9 @@
         <div class="pg-magic-tree-toolbar">
           <div class="pg-magic-tree-toolbar__group pg-skill-tree-add-group">
             {{#if isEditMode}}
+              <button type="button" class="pg-skill-tree-create-skill" title="Создать новый навык в каталоге мира и добавить в древо" {{#unless canCreateSkill}}disabled{{/unless}}>
+                <i class="fa-solid fa-plus"></i> Создать навык
+              </button>
               <select class="pg-skill-tree-skill-select" title="Навык из каталога предметов мира" {{#unless hasAvailableSkills}}disabled{{/unless}}>
                 {{#if hasAvailableSkills}}
                   {{#each availableSkills}}
@@ -48,7 +68,7 @@
               </select>
               <button type="button" class="pg-skill-tree-add-skill" title="Добавить выбранный навык в центр текущей области" {{#unless hasAvailableSkills}}disabled{{/unless}}>
                 <i class="fa-solid fa-circle-plus"></i>
-                Навык
+                Добавить готовый
               </button>
               <button
                 type="button"
@@ -171,7 +191,7 @@
 
                   <div class="pg-magic-tree-node__meta">
                     <span>{{this.skillDamageDie}}</span>
-                    <span>Стоимость: {{this.skillCost}}</span>
+                    <span>Очки навыков: {{this.skillCost}}</span>
                   </div>
                 </article>
               {{/each}}
@@ -183,7 +203,7 @@
               <i class="fa-solid fa-sitemap"></i>
               <strong>В древе пока нет навыков</strong>
               {{#if isEditMode}}
-                <span>Выберите навык сверху или перетащите сущность «Навык» из каталога на полотно.</span>
+                <span>Создайте новый навык, выберите готовый из списка или перетащите его из каталога на полотно.</span>
               {{else}}
                 <span>Перейдите в режим редактирования, чтобы добавить навыки.</span>
               {{/if}}
@@ -246,8 +266,9 @@
               </div>
 
               <div class="pg-form-field pg-form-field--compact">
-                <label>Уровень</label>
+                <label>Требуемый уровень персонажа</label>
                 <input type="number" name="system.nodes.{{selectedNode.id}}.level" min="0" step="1" value="{{selectedNode.level}}" />
+                <p class="pg-form-hint">Все навыки, от которых ведут входящие связи, должны быть изучены.</p>
               </div>
 
               <div class="pg-form-field pg-form-field--compact">
@@ -260,9 +281,9 @@
             {{else}}
               <dl class="pg-magic-tree-readonly-list">
                 <div><dt>Ветка</dt><dd>{{selectedNode.branchName}}</dd></div>
-                <div><dt>Уровень</dt><dd>{{selectedNode.level}}</dd></div>
+                <div><dt>Требуемый уровень</dt><dd>{{selectedNode.level}}</dd></div>
                 <div><dt>Кость урона</dt><dd>{{selectedNode.skillDamageDie}}</dd></div>
-                <div><dt>Стоимость</dt><dd>{{selectedNode.skillCost}}</dd></div>
+                <div><dt>Очки навыков</dt><dd>{{selectedNode.skillCost}}</dd></div>
               </dl>
             {{/if}}
 

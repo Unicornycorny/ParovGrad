@@ -269,10 +269,12 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
   }
 
   async _onDropItem(event, item) {
-    if (item?.type === "magicTree" || item?.type === "skillTree") {
-      ui.notifications.warn(item.type === "skillTree"
-        ? "Древо навыков нельзя хранить у актёра. Используйте кнопку «Изучить навык» в разделе «Способности»."
-        : "Древо магии нельзя хранить у актёра. Добавьте созданное на его основе заклинание.");
+    if (item?.type === "skillTree") {
+      if (this.isEditable) await openLearnSkillFromTreeDialog(this.document, { treeUuid: item.uuid });
+      return;
+    }
+    if (item?.type === "magicTree") {
+      ui.notifications.warn("Древо магии нельзя хранить у актёра. Добавьте созданное на его основе заклинание.");
       return;
     }
 

@@ -1,0 +1,25 @@
+<div class="pg-item-dossier pg-tree-dialog-body pg-tree-skill-create">
+  <header class="pg-tree-dialog-heading">
+    <span class="pg-item-dossier-kicker">Паров-Град · Древо навыков</span>
+    <h2>Новый навык</h2>
+  </header>
+  <p>Навык появится в каталоге мира и в этом древе. После создания откроется его лист: там можно настроить урон, эффекты и область действия.</p>
+  <div class="pg-form-field">
+    <label>Название</label>
+    <input type="text" name="name" required autofocus placeholder="Новый навык" />
+  </div>
+  <div class="pg-form-field">
+    <label>Описание / действие навыка</label>
+    <textarea name="description" rows="4"></textarea>
+  </div>
+  <div class="pg-form-grid pg-form-grid--two-columns">
+    <div class="pg-form-field">
+      <label>Стоимость изучения (очки навыков)</label>
+      <input type="number" name="cost" min="0" step="1" value="1" required />
+    </div>
+    <div class="pg-form-field">
+      <label>Требуемый уровень персонажа</label>
+      <input type="number" name="level" min="0" step="1" value="{{level}}" required />
+    </div>
+  </div>
+</div>

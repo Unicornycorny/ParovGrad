@@ -1,25 +1,12 @@
 /** Visual skill-tree browser for learning a copy of a world Skill Item. */
 import { MagicTreeGraphView } from "./components/magic-tree-graph.js";
-
-function isKnownSkill(actor, skill) {
-  // Names are not unique. Match only the actual source UUID.
-  return actor.items.some((item) => item.type === "skill" && (
-    item.flags?.ParovGrad?.skillTreeSourceUuid === skill.uuid ||
-    item.flags?.core?.sourceId === skill.uuid
-  ));
-}
-
-async function resolveWorldSkill(uuid) {
-  if (!uuid) return null;
-  try {
-    const item = await foundry.utils.fromUuid(uuid);
-    return item?.documentName === "Item" && item.type === "skill" && item.parent?.documentName !== "Actor"
-      ? item : null;
-  } catch (error) {
-    console.warn(`ParovGrad | Cannot resolve skill ${uuid}`, error);
-    return null;
-  }
-}
+import {
+  canObserveDocument,
+  resolveAccessibleSkill,
+  getSkillNodeLearningState,
+  isActorLearningSkill,
+  learnSkillFromTree
+} from "../skills/skill-learning.js";
 
 function sortedBranches(branches) {
   return Object.entries(branches ?? {})
@@ -42,6 +29,11 @@ function safeMarkerId(value) {
   return String(value ?? "learn-skill").replace(/[^A-Za-z0-9_-]/g, "-");
 }
 
+function isAccessibleTree(item) {
+  return item?.documentName === "Item" && item.type === "skillTree" &&
+    item.parent?.documentName !== "Actor" && canObserveDocument(item);
+}
+
 /**
  * Uses the same read-only graph controller and Handlebars ApplicationV2
  * architecture as Spell Builder. Skill selection is done by clicking nodes,
@@ -57,9 +49,11 @@ export class ParovGradLearnSkillTreeApp extends foundry.applications.api.Handleb
   _graphView = null;
   _searchText = "";
   _learning = false;
+  _documentHooks = [];
+  _sourceTree = null;
 
   static DEFAULT_OPTIONS = {
-    classes: ["ParovGrad", "pg-magic-tree-sheet", "pg-learn-skill-window"],
+    classes: ["ParovGrad", "pg-item-window", "pg-tree-window", "pg-magic-tree-sheet", "pg-learn-skill-window"],
     position: { width: 1240, height: 820 },
     window: { title: "Изучить навык из древа", resizable: true }
   };
@@ -72,12 +66,31 @@ export class ParovGradLearnSkillTreeApp extends foundry.applications.api.Handleb
   };
 
   constructor(actor, options = {}) {
-    super(options);
+    const { treeUuid, sourceTree, ...applicationOptions } = options;
+    super(applicationOptions);
     if (actor?.documentName !== "Actor" || actor.type !== "Player") {
       throw new Error("ParovGradLearnSkillTreeApp requires a Player Actor.");
     }
     this.actor = actor;
-    this._treeUuid = game.items.filter((item) => item.type === "skillTree")[0]?.uuid ?? "";
+    // Compendium trees can be browsed directly without importing or modifying them.
+    this._sourceTree = sourceTree?.pack || sourceTree?.compendium ? sourceTree : null;
+    this._treeUuid = treeUuid ?? sourceTree?.uuid ?? this._getAvailableTrees()[0]?.uuid ?? "";
+    const refresh = () => {
+      if (this.rendered) this.render({ force: true }).catch((error) => console.error("ParovGrad | Could not refresh skill learning", error));
+    };
+    this._documentHooks.push(["updateActor", Hooks.on("updateActor", (document) => {
+      if (document.uuid === this.actor.uuid) refresh();
+    })]);
+    this._documentHooks.push(["parovgradSkillLearningComplete", Hooks.on("parovgradSkillLearningComplete", (document) => {
+      if (document?.uuid === this.actor.uuid) refresh();
+    })]);
+    for (const hook of ["createItem", "updateItem", "deleteItem"]) {
+      this._documentHooks.push([hook, Hooks.on(hook, (document) => {
+        if (hook === "deleteItem" && document.uuid === this._sourceTree?.uuid) this._sourceTree = null;
+        const isSource = Object.values(this._getTree()?.system?.nodes ?? {}).some((node) => node.skillUuid === document.uuid);
+        if (document.type === "skillTree" || document.parent?.uuid === this.actor.uuid || isSource) refresh();
+      })]);
+    }
   }
 
   get title() {
@@ -85,12 +98,18 @@ export class ParovGradLearnSkillTreeApp extends foundry.applications.api.Handleb
   }
 
   _getTree() {
-    return game.items.filter((item) => item.type === "skillTree" && item.uuid === this._treeUuid)[0] ?? null;
+    return this._getAvailableTrees().find((item) => item.uuid === this._treeUuid) ?? null;
+  }
+
+  _getAvailableTrees() {
+    const trees = game.items.filter(isAccessibleTree);
+    if (isAccessibleTree(this._sourceTree) && !trees.some((tree) => tree.uuid === this._sourceTree.uuid)) trees.push(this._sourceTree);
+    return trees;
   }
 
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
-    const trees = game.items.filter((item) => item.type === "skillTree")
+    const trees = this._getAvailableTrees()
       .sort((a, b) => a.name.localeCompare(b.name, "ru"));
     if (!trees.some((tree) => tree.uuid === this._treeUuid)) {
       this._treeUuid = trees[0]?.uuid ?? "";
@@ -106,13 +125,14 @@ export class ParovGradLearnSkillTreeApp extends foundry.applications.api.Handleb
       .sort((a, b) => Number(a.level ?? 0) - Number(b.level ?? 0) || Number(a.x ?? 0) - Number(b.x ?? 0));
     const entries = Object.entries(tree?.system?.nodes ?? {});
     const skillUuids = [...new Set(entries.map(([, node]) => String(node?.skillUuid ?? "")).filter(Boolean))];
-    const skills = new Map(await Promise.all(skillUuids.map(async (uuid) => [uuid, await resolveWorldSkill(uuid)])));
+    const skills = new Map(await Promise.all(skillUuids.map(async (uuid) => [uuid, await resolveAccessibleSkill(uuid)])));
     const nodes = entries.map(([id, node]) => {
       const skillUuid = String(node?.skillUuid ?? "");
       const skill = skills.get(skillUuid) ?? null;
-      const known = skill ? isKnownSkill(this.actor, skill) : false;
+      const learningState = getSkillNodeLearningState({ actor: this.actor, tree, nodeId: id, resolvedSkills: skills });
       return {
         id,
+        ...learningState,
         skillUuid,
         skill,
         skillName: skill?.name ?? "Навык недоступен",
@@ -126,7 +146,6 @@ export class ParovGradLearnSkillTreeApp extends foundry.applications.api.Handleb
         cost: skill ? Number(skill.system?.cost ?? 0) : null,
         damageDie: skill ? (String(skill.system?.damageDie ?? "").trim().toUpperCase() || "—") : "—",
         missing: !skill,
-        known,
         selected: id === this._selectedNodeId
       };
     });
@@ -145,7 +164,9 @@ export class ParovGradLearnSkillTreeApp extends foundry.applications.api.Handleb
     context.nodes = nodes;
     context.edges = Object.entries(tree?.system?.edges ?? {}).map(([id, edge]) => ({ id, ...edge }));
     context.selectedNode = selectedNode;
-    context.canLearn = Boolean(selectedNode?.skill && !selectedNode.known && this.actor.isOwner && !this._learning);
+    context.canLearn = Boolean(selectedNode?.available && !this._learning && !isActorLearningSkill(this.actor));
+    context.skillPoints = Number(this.actor.system?.skillPoints ?? 0);
+    context.actorLevel = Number(this.actor.system?.level ?? 0);
     context.searchText = this._searchText;
     context.graph = {
       width: graphSize.width,
@@ -240,44 +261,13 @@ export class ParovGradLearnSkillTreeApp extends foundry.applications.api.Handleb
 
   async _learnSelectedSkill() {
     if (this._learning) return;
-    if (!this.actor.isOwner) {
-      ui.notifications?.warn("Недостаточно прав для изменения навыков персонажа.");
-      return;
-    }
-    const tree = this._getTree();
-    const nodeId = this._selectedNodeId;
-    const node = tree?.system?.nodes?.[nodeId];
-    if (!node) {
-      ui.notifications?.warn("Выбранный узел больше не находится в древе.");
-      return;
-    }
-    const skill = await resolveWorldSkill(String(node.skillUuid ?? ""));
-    if (!skill) {
-      ui.notifications?.warn("Выбранный навык больше недоступен.");
-      await this.render({ force: true });
-      return;
-    }
-    if (isKnownSkill(this.actor, skill)) {
-      ui.notifications?.warn(`Персонаж уже знает навык «${skill.name}».`);
-      await this.render({ force: true });
-      return;
-    }
-
     this._learning = true;
     try {
-      const data = skill.toObject();
-      delete data._id;
-      delete data.folder;
-      foundry.utils.setProperty(data, "flags.ParovGrad.skillTreeSourceUuid", skill.uuid);
-      foundry.utils.setProperty(data, "flags.ParovGrad.skillTreeUuid", tree.uuid);
-      foundry.utils.setProperty(data, "flags.ParovGrad.skillTreeNodeId", nodeId);
-      const created = await this.actor.createEmbeddedDocuments("Item", [data]);
-      if (created?.length) {
-        ui.notifications?.info(`«${skill.name}» изучен персонажем «${this.actor.name}».`);
-      }
+      const { created, cost } = await learnSkillFromTree({ actor: this.actor, tree: this._getTree(), nodeId: this._selectedNodeId });
+      ui.notifications?.info(`«${created[0].name}» изучен персонажем «${this.actor.name}». Потрачено очков навыков: ${cost}.`);
     } catch (error) {
       console.error("ParovGrad | Failed to learn skill from tree", error);
-      ui.notifications?.error("Не удалось добавить навык персонажу. Подробности в консоли.");
+      ui.notifications?.warn(error.message || "Не удалось добавить навык персонажу. Подробности в консоли.");
     } finally {
       this._learning = false;
       if (this.rendered) await this.render({ force: true });
@@ -287,21 +277,37 @@ export class ParovGradLearnSkillTreeApp extends foundry.applications.api.Handleb
   _onClose(options) {
     this._graphView?.destroy();
     this._graphView = null;
+    for (const [hook, id] of this._documentHooks) Hooks.off(hook, id);
+    this._documentHooks = [];
     super._onClose(options);
   }
 }
 
-export async function openLearnSkillFromTreeDialog(actor) {
+export async function openLearnSkillFromTreeDialog(actor, options = {}) {
   if (!actor || actor.documentName !== "Actor" || actor.type !== "Player") return;
   if (!actor.isOwner) {
     ui.notifications?.warn("Недостаточно прав для изменения навыков персонажа.");
     return;
   }
-  if (!game.items.filter((item) => item.type === "skillTree").length) {
-    ui.notifications?.warn("Сначала создайте древо навыков в каталоге предметов мира.");
+  let sourceTree = options.sourceTree ?? null;
+  if (options.treeUuid && sourceTree?.uuid !== options.treeUuid) {
+    try { sourceTree = await foundry.utils.fromUuid(options.treeUuid); }
+    catch { sourceTree = null; }
+  }
+  if ((options.treeUuid || sourceTree) && !isAccessibleTree(sourceTree)) {
+    ui.notifications?.warn("Выбранное древо навыков недоступно для просмотра.");
     return;
   }
-  const application = new ParovGradLearnSkillTreeApp(actor);
-  await application.render({ force: true });
+  if (!sourceTree && !game.items.filter(isAccessibleTree).length) {
+    ui.notifications?.warn("Нет доступных для просмотра древ навыков в каталоге предметов мира.");
+    return;
+  }
+  const application = new ParovGradLearnSkillTreeApp(actor, { ...options, sourceTree });
+  try { await application.render({ force: true }); }
+  catch (error) {
+    for (const [hook, id] of application._documentHooks) Hooks.off(hook, id);
+    application._documentHooks = [];
+    throw error;
+  }
   return application;
 }

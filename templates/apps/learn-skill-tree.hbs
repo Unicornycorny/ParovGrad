@@ -1,9 +1,9 @@
-<section class="pg-spell-builder-shell pg-magic-tree-shell pg-learn-skill-shell">
-  <header class="pg-spell-builder-header pg-learn-skill-header">
-    <div>
-      <span class="pg-magic-tree-inspector-kicker">Паров-Град · Изучение навыков</span>
+<section class="pg-item-dossier pg-tree-app pg-magic-tree-sheet pg-spell-builder-shell pg-magic-tree-shell pg-learn-skill-shell">
+  <header class="pg-spell-builder-header pg-tree-app-header pg-learn-skill-header">
+    <div class="pg-item-dossier-heading">
+      <span class="pg-item-dossier-kicker pg-magic-tree-inspector-kicker">Паров-Град · Изучение навыков</span>
       <h1>Древо навыков</h1>
-      <span class="pg-learn-skill-subtitle">Персонаж: {{actor.name}} · Выберите навык нажатием на его узел</span>
+      <span class="pg-learn-skill-subtitle">Персонаж: {{actor.name}} · Уровень: {{actorLevel}} · Очки навыков: {{skillPoints}}</span>
     </div>
     <div class="pg-spell-builder-tree-field">
       <label for="pg-learn-skill-tree-select">Древо</label>
@@ -69,7 +69,7 @@
           <div class="pg-magic-tree-nodes">
             {{#each nodes}}
               <article
-                class="pg-magic-tree-node pg-skill-tree-node pg-learn-skill-node is-type-skill {{#if this.missing}}is-missing{{/if}} {{#if this.known}}is-learned{{/if}} {{#if this.selected}}is-selected{{/if}}"
+                class="pg-magic-tree-node pg-skill-tree-node pg-learn-skill-node is-type-skill {{#if this.missing}}is-missing{{/if}} {{#if this.known}}is-learned{{/if}} {{#if this.locked}}is-locked{{/if}} {{#if this.available}}is-available{{/if}} {{#if this.selected}}is-selected{{/if}}"
                 data-node-id="{{this.id}}" data-node-x="{{this.x}}" data-node-y="{{this.y}}" data-search-text="{{this.skillName}} {{this.branchName}}"
                 data-branch-id="{{this.branchId}}" style="left: {{this.x}}px; top: {{this.y}}px;"
                 title="{{this.skillName}} — {{this.branchName}} · Уровень {{this.level}}"
@@ -82,13 +82,17 @@
                 <div class="pg-magic-tree-node__branch">{{this.branchName}}</div>
                 <div class="pg-magic-tree-node__meta">
                   <span>{{this.damageDie}}</span>
-                  {{#unless this.missing}}<span>Стоимость: {{this.cost}}</span>{{/unless}}
+                  {{#unless this.missing}}<span>Очки навыков: {{this.cost}}</span>{{/unless}}
                 </div>
                 {{#if this.known}}
                   <div class="pg-learn-skill-status-mark" title="Уже изучен"><i class="fa-solid fa-check"></i></div>
                 {{/if}}
                 {{#if this.missing}}
                   <div class="pg-learn-skill-status-mark is-missing" title="Исходный навык недоступен"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                {{else}}
+                  {{#if this.locked}}
+                    <div class="pg-learn-skill-status-mark is-locked" title="Требования не выполнены"><i class="fa-solid fa-lock"></i></div>
+                  {{/if}}
                 {{/if}}
               </article>
             {{/each}}
@@ -124,7 +128,11 @@
                 {{#if selectedNode.missing}}
                   <span class="pg-learn-skill-state is-missing"><i class="fa-solid fa-triangle-exclamation"></i> Навык недоступен</span>
                 {{else}}
-                  <span class="pg-learn-skill-state"><i class="fa-solid fa-book-open"></i> Доступен для изучения</span>
+                  {{#if selectedNode.available}}
+                    <span class="pg-learn-skill-state"><i class="fa-solid fa-book-open"></i> Доступен для изучения</span>
+                  {{else}}
+                    <span class="pg-learn-skill-state is-locked"><i class="fa-solid fa-lock"></i> Требования не выполнены</span>
+                  {{/if}}
                 {{/if}}
               {{/if}}
             </div>
@@ -134,9 +142,24 @@
             <div><dt>Уровень</dt><dd>{{selectedNode.level}}</dd></div>
             {{#unless selectedNode.missing}}
               <div><dt>Кость урона</dt><dd>{{selectedNode.damageDie}}</dd></div>
-              <div><dt>Стоимость</dt><dd>{{selectedNode.cost}}</dd></div>
+              <div><dt>Очки навыков</dt><dd>{{selectedNode.cost}}</dd></div>
             {{/unless}}
           </dl>
+          {{#if selectedNode.requiredSkills.length}}
+            <div class="pg-magic-tree-readonly-block">
+              <strong>Предшествующие навыки — требуются все</strong>
+              {{#each selectedNode.requiredSkills}}
+                <span><i class="fa-solid {{#if this.known}}fa-check{{else}}fa-lock{{/if}}" aria-hidden="true"></i> {{this.name}}</span>
+              {{/each}}
+            </div>
+          {{/if}}
+          {{#unless selectedNode.known}}
+            {{#if selectedNode.reasons.length}}
+              <ul class="pg-learn-skill-reasons">
+                {{#each selectedNode.reasons}}<li>{{this}}</li>{{/each}}
+              </ul>
+            {{/if}}
+          {{/unless}}
           {{#if selectedNode.description}}
             <div class="pg-magic-tree-readonly-block pg-learn-skill-description">
               <strong>Описание навыка</strong>
@@ -156,7 +179,7 @@
           <i class="fa-solid fa-graduation-cap"></i> Изучить навык
         </button>
         <button type="button" class="pg-learn-skill-cancel"><i class="fa-solid fa-xmark"></i> Закрыть</button>
-        <p>Навык копируется в «Способности» персонажа. Уже изученные навыки повторно добавить нельзя.</p>
+        <p>Очки навыков: <strong>{{skillPoints}}</strong>. Изучение добавляет навык в «Способности» и списывает его стоимость. Уровень персонажа и все предшествующие навыки должны соответствовать требованиям.</p>
       </div>
     </aside>
   </div>

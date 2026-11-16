@@ -1,3 +1,5 @@
+import { isKnownSkill, createOwnedSkillSource, withActorSkillLock, canObserveDocument } from "../skills/skill-learning.js";
+
 const ROOT_FOLDER_ID = "__root__";
 
 const SKILL_POINTS_BY_LEVEL = {
@@ -29,6 +31,10 @@ const SKILL_POINTS_BY_LEVEL = {
 };
 
 export async function openActorLevelUpDialog(actor) {
+  if (!actor?.isOwner || actor.type !== "Player") {
+    ui.notifications?.warn("Недостаточно прав для повышения уровня персонажа.");
+    return;
+  }
   const currentLevel = Number(actor.system?.level) || 0;
   const nextLevel = currentLevel + 1;
   const gainedSkillPoints = getSkillPointsForLevel(nextLevel);
@@ -43,16 +49,22 @@ export async function openActorLevelUpDialog(actor) {
 
   const proceed = await foundry.applications.api.DialogV2.confirm({
     window: { title: "Повышение уровня" },
+    classes: ["ParovGrad", "pg-item-window", "pg-tree-window", "pg-tree-dialog"],
+    position: {width: 540},
     modal: true,
     rejectClose: false,
-    ok: {
+    yes: {
       label: "Далее"
     },
-    cancel: {
+    no: {
       label: "Отмена"
     },
     content: `
-      <div class="pg-level-up-dialog">
+      <div class="pg-item-dossier pg-tree-dialog-body pg-level-up-dialog">
+        <header class="pg-tree-dialog-heading">
+          <span class="pg-item-dossier-kicker">Паров-Град · Развитие персонажа</span>
+          <h2>Повышение уровня</h2>
+        </header>
         <p>Персонаж перейдёт с уровня <strong>${currentLevel}</strong> на уровень <strong>${nextLevel}</strong>.</p>
         <p>За этот уровень персонаж получает <strong>${gainedSkillPoints}</strong> ${pluralizeSkillPoints(gainedSkillPoints)}.</p>
         <p>Сейчас у персонажа <strong>${currentSkillPoints}</strong> ${pluralizeSkillPoints(currentSkillPoints)}, после повышения будет <strong>${totalSkillPoints}</strong>.</p>
@@ -72,24 +84,90 @@ export async function openActorLevelUpDialog(actor) {
     totalSkillPoints
   });
 
-  if (!selection) return;
+  if (!selection || typeof selection !== "object") return;
 
-  const updates = {
-    "system.level": nextLevel,
-    "system.skillPoints": totalSkillPoints - selection.totalSpent
-  };
+  try {
+    await withActorSkillLock(actor, async () => {
+      if (!actor.isOwner) throw new Error("Недостаточно прав для повышения уровня персонажа.");
+      if (Number(actor.system?.level ?? 0) !== currentLevel ||
+          Number(actor.system?.skillPoints ?? 0) !== currentSkillPoints) {
+        throw new Error("Уровень или очки навыков изменились. Откройте повышение уровня заново.");
+      }
+      if (selection.skills.some((skill) => isKnownSkill(actor, skill))) {
+        throw new Error("Один из выбранных навыков уже изучен. Откройте повышение уровня заново.");
+      }
+      if (hasDuplicateSkillSources(selection.skills)) {
+        throw new Error("Один и тот же навык нельзя приобрести несколько раз в рамках одного повышения уровня.");
+      }
+      if (selection.skills.some((skill) => !canObserveDocument(skill))) {
+        throw new Error("Один из выбранных навыков больше недоступен. Откройте повышение уровня заново.");
+      }
 
-  if (selection.skillSources.length) {
-    await actor.createEmbeddedDocuments("Item", selection.skillSources);
+      const updates = {
+        "system.level": nextLevel,
+        "system.skillPoints": totalSkillPoints - selection.totalSpent
+      };
+      await saveLevelUpState(actor, nextLevel, updates["system.skillPoints"],
+        "Не удалось сохранить уровень и списать очки навыков.");
+
+      const transactionId = foundry.utils.randomID();
+      const sources = selection.skillSources.map((source, index) => ({
+        ...source,
+        flags: {
+          ...source.flags,
+          ParovGrad: { ...source.flags?.ParovGrad, levelUpTransactionId: transactionId, levelUpSourceIndex: index }
+        }
+      }));
+      let created = [];
+      let creationError = null;
+      if (sources.length) {
+        try {
+          created = await actor.createEmbeddedDocuments("Item", sources) ?? [];
+        } catch (error) {
+          creationError = error;
+        }
+        // A hook can fail after persistence or cancel individual documents. Charge
+        // only the selected skills actually created by this level-up operation.
+        const createdIndices = new Set([...created, ...Array.from(actor.items)]
+          .filter((item) => item.flags?.ParovGrad?.levelUpTransactionId === transactionId)
+          .map((item) => item.flags.ParovGrad.levelUpSourceIndex)
+          .filter((index) => Number.isInteger(index) && index >= 0 && index < sources.length));
+        if (createdIndices.size !== sources.length) {
+          const spent = [...createdIndices].reduce((sum, index) => sum + selection.costs[index], 0);
+          const restoredLevel = createdIndices.size ? nextLevel : currentLevel;
+          const restoredPoints = createdIndices.size ? totalSkillPoints - spent : currentSkillPoints;
+          await saveLevelUpState(actor, restoredLevel, restoredPoints,
+            "Не удалось вернуть очки за несозданные навыки — обратитесь к ведущему.");
+          if (creationError) console.error("ParovGrad | Skill creation failed during level-up", creationError);
+          throw new Error(createdIndices.size
+            ? `Уровень повышен до ${nextLevel}. Создано навыков: ${createdIndices.size} из ${sources.length}; очки за остальные возвращены.`
+            : "Навыки не созданы. Повышение отменено, очки навыков возвращены.");
+        }
+      }
+
+      ui.notifications?.info(
+        selection.skillSources.length
+          ? `Уровень персонажа повышен до ${nextLevel}. Куплено навыков: ${selection.skillSources.length}.`
+          : `Уровень персонажа повышен до ${nextLevel}. Очки навыков начислены.`
+      );
+    });
+  } catch (error) {
+    console.error("ParovGrad | Failed to finish level-up", error);
+    ui.notifications?.warn(error.message || "Не удалось завершить повышение уровня.");
   }
+}
 
-  await actor.update(updates);
-
-  ui.notifications?.info(
-    selection.skillSources.length
-      ? `Уровень персонажа повышен до ${nextLevel}. Куплено навыков: ${selection.skillSources.length}.`
-      : `Уровень персонажа повышен до ${nextLevel}. Очки навыков начислены.`
-  );
+async function saveLevelUpState(actor, level, points, failureMessage) {
+  let updateError;
+  try {
+    await actor.update({ "system.level": level, "system.skillPoints": points });
+  } catch (error) {
+    updateError = error;
+  }
+  // Treat a hook error after persistence according to the observed actor state.
+  if (Number(actor.system.level) !== level || Number(actor.system.skillPoints) !== points) {
+    throw new Error(failureMessage, { cause: updateError });
+  }
 }
 
 function getSkillPointsForLevel(level) {
@@ -106,9 +184,11 @@ async function openSkillPurchaseDialog({ actor, catalogue, currentLevel, nextLev
 
   return foundry.applications.api.DialogV2.wait({
     window: { title: "Повышение уровня: покупка навыков" },
+    classes: ["ParovGrad", "pg-item-window", "pg-tree-window", "pg-tree-dialog", "pg-skill-purchase-window"],
+    position: {width: 720},
     modal: true,
     rejectClose: false,
-    content: '<div class="pg-level-up-root"></div>',
+    content: '<div class="pg-item-dossier pg-tree-dialog-body pg-level-up-root"></div>',
     buttons: [
       {
         action: "confirm",
@@ -215,6 +295,10 @@ function renderPurchaseStepContent({ currentLevel, nextLevel, gainedSkillPoints,
 
   return `
     <div class="pg-level-up-dialog">
+      <header class="pg-tree-dialog-heading">
+        <span class="pg-item-dossier-kicker">Паров-Град · Развитие персонажа</span>
+        <h2>Изучение навыков</h2>
+      </header>
       <p>Повышение с уровня <strong>${currentLevel}</strong> до уровня <strong>${nextLevel}</strong>.</p>
       <p>Получено очков навыков: <strong>${gainedSkillPoints}</strong>. Всего доступно для траты сейчас: <strong>${totalSkillPoints}</strong>.</p>
 
@@ -315,11 +399,13 @@ function summarizeSelection(actor, catalogue, rows, totalSkillPoints) {
     errors.push("Недостаточно очков навыков для покупки выбранных навыков.");
   }
 
-  if (selectedSkills.some((skill) => skill.alreadyOwned)) {
+  // A skill may have been learned in another window since this catalogue opened.
+  if (selectedSkills.some((skill) => isKnownSkill(actor, skill.document))) {
     errors.push("Среди выбранных навыков есть навык, который уже есть у персонажа.");
   }
 
-  if (Array.from(selectedSkillMap.values()).some((count) => count > 1)) {
+  if (Array.from(selectedSkillMap.values()).some((count) => count > 1) ||
+      hasDuplicateSkillSources(selectedSkills.map((skill) => skill.document))) {
     errors.push("Один и тот же навык нельзя выбрать несколько раз в рамках одного повышения уровня.");
   }
 
@@ -332,6 +418,15 @@ function summarizeSelection(actor, catalogue, rows, totalSkillPoints) {
   };
 }
 
+function hasDuplicateSkillSources(skills) {
+  const earlierSkills = [];
+  for (const skill of skills) {
+    if (isKnownSkill({ items: earlierSkills }, skill)) return true;
+    earlierSkills.push(skill);
+  }
+  return false;
+}
+
 function buildDialogResult(actor, catalogue, rows, totalSkillPoints) {
   const summary = summarizeSelection(actor, catalogue, rows, totalSkillPoints);
   if (summary.errors.length) {
@@ -341,20 +436,15 @@ function buildDialogResult(actor, catalogue, rows, totalSkillPoints) {
 
   return {
     totalSpent: summary.totalSpent,
-    skillSources: summary.selectedSkills.map((skill) => buildOwnedSkillSource(skill.document, skill.key))
+    skills: summary.selectedSkills.map((skill) => skill.document),
+    costs: summary.selectedSkills.map((skill) => skill.cost),
+    skillSources: summary.selectedSkills.map((skill) => createOwnedSkillSource(skill.document, {
+      sourceSkillKey: skill.key
+    }))
   };
 }
 
 async function loadSkillCompendiumCatalogue(actor) {
-  const ownedSkillKeys = new Set();
-  const ownedSkillNames = new Set();
-
-  for (const item of actor.items.filter((entry) => entry.type === "skill")) {
-    const storedKey = item.getFlag("ParovGrad", "sourceSkillKey");
-    if (storedKey) ownedSkillKeys.add(String(storedKey));
-    if (item.name) ownedSkillNames.add(String(item.name).trim().toLocaleLowerCase("ru"));
-  }
-
   const packs = Array.from(game.packs)
     .filter((pack) => pack.documentName === "Item" && pack.visible)
     .sort((left, right) => left.title.localeCompare(right.title, "ru"));
@@ -374,7 +464,7 @@ async function loadSkillCompendiumCatalogue(actor) {
       continue;
     }
 
-    const skills = documents.filter((entry) => entry.type === "skill");
+    const skills = documents.filter((entry) => entry.type === "skill" && canObserveDocument(entry));
     if (!skills.length) continue;
 
     const folders = new Map();
@@ -382,8 +472,7 @@ async function loadSkillCompendiumCatalogue(actor) {
     for (const document of skills) {
       const folderId = document.folder?.id ?? ROOT_FOLDER_ID;
       const skillKey = buildSkillKey(pack.collection, document.id);
-      const alreadyOwned = ownedSkillKeys.has(skillKey)
-        || ownedSkillNames.has(String(document.name).trim().toLocaleLowerCase("ru"));
+      const alreadyOwned = isKnownSkill(actor, document);
 
       if (!folders.has(folderId)) {
         folders.set(folderId, {
@@ -482,29 +571,6 @@ function buildFolderPath(folder) {
   const names = [...folder.ancestors].reverse().map((entry) => entry.name);
   names.push(folder.name);
   return names.join(" / ");
-}
-
-function buildOwnedSkillSource(document, sourceSkillKey) {
-  const source = document.toObject();
-  delete source._id;
-  delete source.folder;
-  delete source.sort;
-
-  source.flags = foundry.utils.mergeObject(
-    foundry.utils.deepClone(source.flags ?? {}),
-    {
-      core: {
-        sourceId: document.uuid
-      },
-      ParovGrad: {
-        sourceSkillKey,
-        sourceSkillUuid: document.uuid
-      }
-    },
-    { inplace: false }
-  );
-
-  return source;
 }
 
 function pluralizeSkillPoints(value) {
