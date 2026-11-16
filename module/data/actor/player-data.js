@@ -1,6 +1,6 @@
 import { buildActorInfluenceState } from "../../effects/effect-utils.js";
 
-const { SchemaField, NumberField } = foundry.data.fields;
+const { SchemaField, NumberField, ArrayField, StringField } = foundry.data.fields;
 
 export class PlayerDataModel extends foundry.abstract.TypeDataModel {
   static defineSchema() {
@@ -23,6 +23,14 @@ export class PlayerDataModel extends foundry.abstract.TypeDataModel {
       skillPoints: new NumberField({ required: true, integer: true, min: 0, initial: 0 }),
       experience: new NumberField({ required: true, integer: true, min: 0, initial: 0 }),
       level: new NumberField({ required: true, integer: true, min: 0, initial: 1 }),
+
+      // Подготовка хранит ссылки на известные предметы персонажа.
+      preparedSpells: new ArrayField(new StringField({ required: true, blank: false }), {
+        required: true, nullable: false, initial: []
+      }),
+      preparedSkills: new ArrayField(new StringField({ required: true, blank: false }), {
+        required: true, nullable: false, initial: []
+      }),
 
       // Здоровье (текущее/макс)
       health: new SchemaField({

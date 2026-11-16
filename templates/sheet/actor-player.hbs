@@ -150,6 +150,14 @@
 
     <section class="pg-dossier-section pg-dossier-items">
       <h2>Предметы</h2>
+      <div class="pg-preparation-controls">
+        <button type="button" class="pg-prepare-items-button" data-item-type="spell">
+          <i class="fa-solid fa-book-open" aria-hidden="true"></i> Подготовить заклинания
+        </button>
+        <button type="button" class="pg-prepare-items-button" data-item-type="skill">
+          <i class="fa-solid fa-list-check" aria-hidden="true"></i> Подготовить навыки
+        </button>
+      </div>
       <div class="pg-item-category-menu">
         <label>Категория
           <select class="pg-item-category" aria-label="Категория предметов">
@@ -159,6 +167,10 @@
           </select>
         </label>
       </div>
+
+      {{#if isPreparationCategory}}
+      <p class="pg-form-hint pg-preparation-summary">Подготовлено: {{preparationPreparedCount}} из {{preparationKnownCount}} известных.</p>
+      {{/if}}
 
       {{#if isAbilitiesCategory}}
         {{#if canLearnSkill}}
@@ -179,6 +191,7 @@
           </button>
 
           <div class="pg-item-tile-name" title="{{this.name}}">{{this.name}}</div>
+          {{#if this.showPreparedBadge}}<span class="pg-item-prepared-badge">Подготовлено</span>{{/if}}
 
           <button type="button" class="pg-item-roll" data-item-id="{{this.id}}" aria-label="Использовать предмет"
             title="Использовать предмет">

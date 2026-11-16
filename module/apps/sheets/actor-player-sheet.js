@@ -9,6 +9,8 @@ import {
 } from "../../effects/effect-utils.js";
 import { openActorLevelUpDialog } from "../level-up-dialog.js";
 import { openLearnSkillFromTreeDialog } from "../learn-skill-dialog.js";
+import { openItemPreparationDialog } from "../item-preparation-dialog.js";
+import { getPreparedItemIds } from "../../actors/item-preparation.js";
 
 export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.sheets.ActorSheetV2
@@ -41,32 +43,44 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
     context.derivedHealthMax = Number(this.document.system.derivedHealthMax) || 0;
 
     const categories = [
-      { key: "spells", label: "Заклинания", types: ["spell"], empty: "Нет заклинаний" },
-      { key: "abilities", label: "Способности", types: ["skill"], empty: "Нет способностей" },
+      { key: "spells", label: "Известные заклинания", types: ["spell"], empty: "Нет известных заклинаний" },
+      { key: "preparedSpells", label: "Подготовленные заклинания", types: ["spell"], preparedOnly: true, empty: "Нет подготовленных заклинаний" },
+      { key: "abilities", label: "Известные навыки", types: ["skill"], empty: "Нет известных навыков" },
+      { key: "preparedSkills", label: "Подготовленные навыки", types: ["skill"], preparedOnly: true, empty: "Нет подготовленных навыков" },
       { key: "inventory", label: "Инвентарь", types: ["item", "weapon"], empty: "Инвентарь пуст" }
     ];
-    const selected = categories.find((category) => category.key === this._itemCategory) ?? categories[2];
+    const selected = categories.find((category) => category.key === this._itemCategory) ?? categories.at(-1);
     const allItems = Array.from(this.document.items);
+    const preparedIds = new Set([
+      ...getPreparedItemIds(this.document, "spell"),
+      ...getPreparedItemIds(this.document, "skill")
+    ]);
+    const matchesCategory = (item, category) => category.types.includes(item.type)
+      && (!category.preparedOnly || preparedIds.has(item.id));
     context.itemCategories = categories.map((category) => ({
       key: category.key,
       label: category.label,
       selected: category.key === selected.key,
-      count: allItems.filter((item) => category.types.includes(item.type)).length
+      count: allItems.filter((item) => matchesCategory(item, category)).length
     }));
     context.itemCategoryEmpty = selected.empty;
-    context.isAbilitiesCategory = selected.key === "abilities";
+    context.isAbilitiesCategory = selected.types.includes("skill");
+    context.isPreparationCategory = selected.key !== "inventory";
+    context.preparationKnownCount = allItems.filter((item) => selected.types.includes(item.type)).length;
+    context.preparationPreparedCount = allItems.filter((item) => selected.types.includes(item.type) && preparedIds.has(item.id)).length;
     context.canLearnSkill = this.isEditable;
     // Keep legacy embedded trees accessible for manual export/removal; never silently delete data.
     context.legacyMagicTrees = allItems.filter((item) => item.type === "magicTree")
       .map((item) => ({ id: item.id, name: item.name, img: item.img }));
     context.items = allItems
-      .filter((item) => selected.types.includes(item.type))
+      .filter((item) => matchesCategory(item, selected))
       .map((item) => ({
         id: item.id,
         name: item.name,
         type: item.type,
         img: item.img,
-        isWeapon: item.type === "weapon"
+        isWeapon: item.type === "weapon",
+        showPreparedBadge: !selected.preparedOnly && preparedIds.has(item.id)
       }));
 
     context.effects = Array.from(this.document.effects)
@@ -93,9 +107,17 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
       // UI-only state: do not submit the category as an Actor field.
       event.stopPropagation();
       const category = event.currentTarget.value;
-      if (!["spells", "abilities", "inventory"].includes(category)) return;
+      if (!["spells", "preparedSpells", "abilities", "preparedSkills", "inventory"].includes(category)) return;
       this._itemCategory = category;
       this.render({ parts: ["form"] });
+    });
+
+    htmlElement.querySelectorAll(".pg-prepare-items-button").forEach((button) => {
+      button.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        await openItemPreparationDialog(this.document, button.dataset.itemType);
+      });
     });
 
     htmlElement.querySelector(".pg-learn-skill-button")?.addEventListener("click", async (event) => {

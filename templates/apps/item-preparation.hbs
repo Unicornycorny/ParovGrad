@@ -1,0 +1,34 @@
+<section class="pg-sheet pg-player-dossier pg-preparation">
+  <div class="sheet-body">
+    <header class="pg-preparation-header">
+      <div class="pg-dossier-kicker">Личное дело <span aria-hidden="true">◆</span> Подготовка</div>
+      <h1>{{actorName}}</h1>
+      <p class="pg-form-hint">Отметьте записи, которые хотите подготовить. Можно выбрать любое количество и изменить выбор в любой момент.</p>
+    </header>
+
+    <section class="pg-dossier-section">
+      <h2>{{knownLabel}}</h2>
+      <p class="pg-preparation-count" role="status" aria-live="polite">Подготовлено: <span class="pg-preparation-selected-count">{{selectedCount}}</span> / {{totalCount}}</p>
+      {{#if items.length}}
+      <ul class="pg-preparation-list">
+        {{#each items}}
+        <li>
+          <label class="pg-preparation-choice">
+            <input type="checkbox" name="preparedItems" value="{{this.id}}" {{#if this.prepared}}checked{{/if}} {{#if ../saving}}disabled{{/if}}>
+            <img src="{{this.img}}" alt="" loading="lazy">
+            <span>{{this.name}}</span>
+          </label>
+        </li>
+        {{/each}}
+      </ul>
+      {{else}}
+      <p class="pg-preparation-empty">{{emptyLabel}}</p>
+      {{/if}}
+    </section>
+
+    <footer class="pg-preparation-footer">
+      <button type="button" class="pg-preparation-save" {{#if saving}}disabled{{/if}}>Сохранить подготовку</button>
+      <button type="button" class="pg-preparation-cancel">Отмена</button>
+    </footer>
+  </div>
+</section>
