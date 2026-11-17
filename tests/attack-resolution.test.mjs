@@ -26,7 +26,7 @@ let source = await readFile(new URL("../module/workflows/weapon-attack.js", impo
 for (const [path, dependency] of Object.entries(dependencies)) {
   source = source.replace(JSON.stringify(path), JSON.stringify(moduleUrl(dependency)));
 }
-const { startItemAttack, handleDefenseButtonClick, handleAttackDamageButtonClick,
+const { startItemAttack, startWeaponAttack, startItemUse, handleDefenseButtonClick, handleAttackDamageButtonClick,
   handleApplyItemEffectsButtonClick, renderAttackChatButtons } = await import(moduleUrl(source));
 
 let messages, documents, warnings, applications, rollTotals, damageDialogs, d20Dialogs, damageRolls, serial, forbiddenWrites;
@@ -318,4 +318,81 @@ test("owning only the target cannot open the attacker's damage dialog after a hi
   });
   assert.equal(button.hidden, false);
   assert.equal(button.disabled, true);
+});
+
+function observeAnimations() {
+  const contexts = [];
+  const events = [];
+  game.parovgrad.animations = {
+    createContext(options) {
+      contexts.push(options);
+      return { useId: `use-${contexts.length}`, sourceTokenUuid: options.sourceToken?.uuid ?? null,
+        preset: { projectile: "jb2a.test.projectile" } };
+    },
+    async play(event) {
+      assert.ok(messages.length, "animation starts after its chat message is committed");
+      if (event.phase === "hit" || event.phase === "miss") {
+        assert.equal(byType("defense-result").length, 1, "resolution exists before the impact animation");
+      }
+      events.push(structuredClone(event));
+    }
+  };
+  return { contexts, events };
+}
+
+test("weapon animations retain the source token and original target through a later hit", async () => {
+  reset();
+  const { contexts, events } = observeAnimations();
+  const source = actor("source");
+  const sourceToken = { uuid: "Scene.scene.Token.source" };
+  const victim = target();
+  const physical = weapon({ effects: false });
+  game.user.targets.add(victim);
+  rollTotals.push(15, 10);
+  const message = await startWeaponAttack({ actor: source, item: physical, sourceToken });
+  assert.equal(contexts.length, 1);
+  assert.equal(contexts[0].sourceToken, sourceToken);
+  assert.deepEqual(message.getFlag("ParovGrad", "attack.animation"), events[0].context);
+  game.user.targets = new Set([target("different")]);
+  documents.delete(physical.uuid);
+  await handleDefenseButtonClick(message);
+  assert.deepEqual(events.map(event => [event.phase, event.targetTokenUuids]), [
+    ["use", [victim.document.uuid]], ["hit", [victim.document.uuid]]
+  ]);
+  assert.deepEqual(events[1].context, events[0].context);
+  await handleDefenseButtonClick(message);
+  await renderAttackChatButtons(message, { querySelector: () => null });
+  assert.equal(events.length, 2, "retrying and rendering never replay the committed animation");
+});
+
+test("a missed attack plays its miss phase once and never plays an impact", async () => {
+  reset();
+  const { events } = observeAnimations();
+  const { message } = await attack({ hit: false, effects: false });
+  await handleDefenseButtonClick(message);
+  await handleDefenseButtonClick(message);
+  assert.deepEqual(events.map(event => event.phase), ["use", "miss"]);
+});
+
+test("cancelled attacks create no animation context or visual", async () => {
+  reset();
+  const { contexts, events } = observeAnimations();
+  game.user.targets.add(target());
+  attackMocks.d20Dialog = async () => null;
+  await startItemAttack({ actor: actor("source"), item: weapon() });
+  assert.equal(messages.length, 0);
+  assert.equal(contexts.length, 0);
+  assert.equal(events.length, 0);
+});
+
+test("an untargeted utility item records and plays one use animation", async () => {
+  reset();
+  const { contexts, events } = observeAnimations();
+  const sourceToken = { uuid: "Scene.scene.Token.source" };
+  const physical = { ...weapon({ effects: false, damage: false }), type: "item" };
+  const message = await startItemUse({ actor: actor("source"), item: physical, sourceToken });
+  assert.equal(contexts.length, 1);
+  assert.equal(contexts[0].sourceToken, sourceToken);
+  assert.deepEqual(message.getFlag("ParovGrad", "itemUse.animation"), events[0].context);
+  assert.deepEqual(events.map(event => [event.phase, event.targetTokenUuids]), [["use", []]]);
 });

@@ -328,17 +328,17 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
 
   async _useItem(item) {
     if (item.type === "weapon" || item.type === "skill") {
-      await startItemAttack({ actor: this.document, item });
+      await startItemAttack({ actor: this.document, item, sourceToken: this.token ?? this.document.token ?? null });
       return;
     }
 
     if (item.type === "item") {
-      await startItemUse({ actor: this.document, item });
+      await startItemUse({ actor: this.document, item, sourceToken: this.token ?? this.document.token ?? null });
       return;
     }
 
     if (item.type === "spell") {
-      await startSpellUse({ actor: this.document, item });
+      await startSpellUse({ actor: this.document, item, sourceToken: this.token ?? this.document.token ?? null });
       return;
     }
 

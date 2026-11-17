@@ -117,11 +117,11 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
         if (!item) return;
 
         if (item.type === "weapon" || item.type === "skill") {
-          await startItemAttack({ actor: this.document, item });
+          await startItemAttack({ actor: this.document, item, sourceToken: this.token ?? this.document.token ?? null });
         } else if (item.type === "item") {
-          await startItemUse({ actor: this.document, item });
+          await startItemUse({ actor: this.document, item, sourceToken: this.token ?? this.document.token ?? null });
         } else if (item.type === "spell") {
-          await startSpellUse({ actor: this.document, item });
+          await startSpellUse({ actor: this.document, item, sourceToken: this.token ?? this.document.token ?? null });
         }
       });
     });

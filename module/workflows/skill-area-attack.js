@@ -47,7 +47,7 @@ async function cleanup(templateDocument) {
   catch (error) { console.warn("ParovGrad | Could not remove skill area template", error); ui.notifications?.warn("Не удалось удалить шаблон навыка."); }
 }
 
-export async function startMassSkillAttack({ actor, item }) {
+export async function startMassSkillAttack({ actor, item, sourceToken = null }) {
   const placement = await placeSpellTemplate({ actor, item, targetTokens: true });
   if (!placement) return;
   const { templateDocument } = placement;
@@ -59,8 +59,10 @@ export async function startMassSkillAttack({ actor, item }) {
   }
   const attack = await rollConfigured(actor, `Массовая атака навыком: ${item.name}`);
   if (!attack) { await cleanup(templateDocument); return; }
+  const animation = game.parovgrad?.animations?.createContext?.({ actor, item, sourceToken, templateDocument }) ?? null;
   const state = {
     itemUuid: item.uuid, itemName: item.name, actorUuid: actor.uuid, actorName: actor.name,
+    animation,
     attackTotal: attack.roll.total, attackFormula: attack.roll.formula,
     hasEffect: !!String(item.system?.effectCheckDie || "").match(/^d(2|4|6|8|12|20|100)$/i) && !!item.system?.effectRanges?.length,
     targets: targets.map(doc => ({ uuid: doc.uuid, name: doc.name, defended: false, defenseTotal: null,
@@ -70,6 +72,11 @@ export async function startMassSkillAttack({ actor, item }) {
     await ChatMessage.create({ user: game.user.id, speaker: ChatMessage.getSpeaker({ actor }), content: renderCard(state),
       rolls: [JSON.stringify(attack.roll.toJSON())], style: CONST.CHAT_MESSAGE_STYLES.ROLL,
       flags: { ParovGrad: { cardType: "mass-skill-attack", [FLAG]: state } } });
+    await game.parovgrad?.animations?.play?.({
+      context: animation,
+      phase: "use",
+      targetTokenUuids: targets.map(document => document.uuid)
+    });
   } finally { await cleanup(templateDocument); }
 }
 
@@ -107,6 +114,11 @@ async function performAction(message, action, i, half) {
     // Commit defense before opening the next dialog, so cancelling it does not
     // discard the successful defense or block damage from being rolled later.
     await updateState(message, state);
+    await game.parovgrad?.animations?.play?.({
+      context: state.animation,
+      phase: target.hit ? "hit" : "miss",
+      targetTokenUuids: [target.uuid]
+    });
     if (target.hit) {
       try {
         if (await rollTargetDamage(state, target)) await updateState(message, state);

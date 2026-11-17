@@ -429,15 +429,15 @@ function getAttackSourceConfig(itemType) {
   };
 }
 
-export async function startWeaponAttack({ actor, item }) {
-  return startItemAttack({ actor, item, sourceType: "weapon" });
+export async function startWeaponAttack({ actor, item, sourceToken = null }) {
+  return startItemAttack({ actor, item, sourceToken, sourceType: "weapon" });
 }
 
-export async function startSkillAttack({ actor, item }) {
-  return startItemAttack({ actor, item, sourceType: "skill" });
+export async function startSkillAttack({ actor, item, sourceToken = null }) {
+  return startItemAttack({ actor, item, sourceToken, sourceType: "skill" });
 }
 
-export async function startItemUse({ actor, item }) {
+export async function startItemUse({ actor, item, sourceToken = null }) {
   const hasSourceEffect = hasConfiguredEffect(item);
   const activeEffects = foundry.utils.deepClone(getActiveItemEffectData(item));
   let targetDocument = null;
@@ -452,6 +452,7 @@ export async function startItemUse({ actor, item }) {
   }
   const description = String(item?.system?.description ?? "").trim();
   const speaker = ChatMessage.getSpeaker({ actor });
+  const animation = game.parovgrad?.animations?.createContext?.({ actor, item, sourceToken }) ?? null;
 
   const message = await createInfoCardMessage({
     speaker,
@@ -479,6 +480,7 @@ export async function startItemUse({ actor, item }) {
       itemUse: {
         actorUuid: actor.uuid,
         itemUuid: item.uuid,
+        animation,
         itemName: item.name,
         sourceType: "item",
         description,
@@ -491,22 +493,27 @@ export async function startItemUse({ actor, item }) {
       }
     }
   });
+  await game.parovgrad?.animations?.play?.({
+    context: animation,
+    phase: "use",
+    targetTokenUuids: targetDocument?.uuid ? [targetDocument.uuid] : []
+  });
   if (activeEffects.length && getItemEffectAction(message)?.allowed) {
     await handleApplyItemEffectsButtonClick(message);
   }
   return message;
 }
 
-export async function startItemAttack({ actor, item, sourceType = null }) {
+export async function startItemAttack({ actor, item, sourceToken = null, sourceType = null }) {
   if (item?.type === "skill") {
     const { hasSpellTemplate } = await import("../canvas/spell-template.js");
     if (hasSpellTemplate(item)) {
       const { startMassSkillAttack } = await import("./skill-area-attack.js");
-      return startMassSkillAttack({ actor, item });
+      return startMassSkillAttack({ actor, item, sourceToken });
     }
   }
   if ((sourceType ?? item?.type) === "item") {
-    return startItemUse({ actor, item });
+    return startItemUse({ actor, item, sourceToken });
   }
 
   const source = getAttackSourceConfig(sourceType ?? item?.type);
@@ -541,8 +548,9 @@ export async function startItemAttack({ actor, item, sourceType = null }) {
   await roll.evaluate();
 
   const speaker = ChatMessage.getSpeaker({ actor });
+  const animation = game.parovgrad?.animations?.createContext?.({ actor, item, sourceToken }) ?? null;
 
-  return createRollCardMessage({
+  const message = await createRollCardMessage({
     roll,
     speaker,
     content: `
@@ -565,6 +573,7 @@ export async function startItemAttack({ actor, item, sourceType = null }) {
       attack: {
         attackerActorUuid: actor.uuid,
         itemUuid: item.uuid,
+        animation,
         itemName: item.name,
         sourceType: source.type,
         targetTokenUuid: targetDocument.uuid,
@@ -586,6 +595,12 @@ export async function startItemAttack({ actor, item, sourceType = null }) {
       }
     }
   });
+  await game.parovgrad?.animations?.play?.({
+    context: animation,
+    phase: "use",
+    targetTokenUuids: [targetDocument.uuid]
+  });
+  return message;
 }
 
 export async function renderAttackChatButtons(message, html) {
@@ -797,6 +812,11 @@ async function resolveAttackDefense(message) {
   });
 
   await saveChatFlagIfAllowed(message, "attack", resolvedAttack);
+  await game.parovgrad?.animations?.play?.({
+    context: attackData.animation,
+    phase: success ? "hit" : "miss",
+    targetTokenUuids: [attackData.targetTokenUuid]
+  });
   if (success && attackData.activeEffects?.length) {
     await handleApplyItemEffectsButtonClick(result);
   }

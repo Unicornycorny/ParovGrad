@@ -1,0 +1,31 @@
+<section class="pg-animation-config">
+  <header>
+    <h2>{{itemName}}</h2>
+    <p>Выберите анимации для нужных событий. Пустое поле пропускает событие.</p>
+    <label class="pg-animation-enabled"><input type="checkbox" name="enabled" {{checked preset.enabled}} {{#unless canEdit}}disabled{{/unless}}> Включить анимации для этого предмета</label>
+  </header>
+  {{#unless hasEntries}}
+  <p class="pg-animation-notice" role="status">Каталог JB2A пока недоступен. Включите JB2A и Sequencer и перезагрузите мир. Настройки можно сохранить заранее.</p>
+  {{/unless}}
+  <div class="pg-animation-fields">
+    <p class="pg-animation-hint">Начните вводить название, чтобы найти анимацию. Можно вставить ключ вида <code>jb2a.…</code> или путь к видео <code>.webm</code>.</p>
+    <datalist id="{{listId}}">
+      {{#each entries}}<option value="{{this}}"></option>{{/each}}
+    </datalist>
+    {{#each fields}}
+    <label class="pg-animation-field">
+      <span>{{label}}</span>
+      <input type="text" name="{{key}}" value="{{value}}" list="{{../listId}}" autocomplete="off" spellcheck="false" placeholder="Не использовать" {{#unless ../canEdit}}disabled{{/unless}}>
+      <small>{{hint}}</small>
+    </label>
+    {{/each}}
+    <div class="pg-animation-numbers">
+      <label>Масштаб<input type="number" name="scale" value="{{preset.scale}}" min="0.1" max="10" step="0.1" required {{#unless canEdit}}disabled{{/unless}}></label>
+      <label>Непрозрачность<input type="number" name="opacity" value="{{preset.opacity}}" min="0" max="1" step="0.05" required {{#unless canEdit}}disabled{{/unless}}></label>
+    </div>
+  </div>
+  <footer>
+    <button type="button" class="pg-animation-save" {{#unless canEdit}}disabled{{/unless}}><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Сохранить</button>
+    <button type="button" class="pg-animation-cancel">Отмена</button>
+  </footer>
+</section>

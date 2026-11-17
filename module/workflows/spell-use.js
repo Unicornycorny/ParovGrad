@@ -26,6 +26,11 @@ async function rollTypedSpellEffect(effect, rollData) {
   return {roll, additionalRolls: [], amount: Math.max(0, Number(roll.total) || 0), parts: []};
 }
 
+async function playSpellAnimation(context, phase, targetTokenUuids, eventId = null) {
+  if (!context) return;
+  await game.parovgrad?.animations?.play?.({ context, phase, targetTokenUuids, eventId });
+}
+
 
 function getSingleTargetToken() {
   const targets = Array.from(game.user.targets ?? []);
@@ -130,7 +135,8 @@ async function createInfoCardMessage({
   targetDocuments = [],
   effects = [],
   templateDocument = null,
-  massPending = false
+  massPending = false,
+  animation = null
 }) {
   const speaker = ChatMessage.getSpeaker({ actor });
   const documents = Array.isArray(targetDocuments) && targetDocuments.length
@@ -173,6 +179,7 @@ async function createInfoCardMessage({
       ParovGrad: {
         cardType: "spell-use",
         spellUse: {
+          animation,
           actorUuid: actor.uuid,
           itemUuid: item.uuid,
           itemName: item.name,
@@ -189,7 +196,7 @@ async function createInfoCardMessage({
   });
 }
 
-async function createSpellAttackRollMessage({ actor, item, targetDocument, effects, attackConfig, attackFormula, roll }) {
+async function createSpellAttackRollMessage({ actor, item, targetDocument, effects, attackConfig, attackFormula, roll, animation = null }) {
   const speaker = ChatMessage.getSpeaker({ actor });
 
   return createRollCardMessage({
@@ -210,6 +217,7 @@ async function createSpellAttackRollMessage({ actor, item, targetDocument, effec
     flags: {
       cardType: "spell-attack",
       spellAttack: {
+        animation,
         attackerActorUuid: actor.uuid,
         itemUuid: item.uuid,
         itemName: item.name,
@@ -233,7 +241,7 @@ async function createSpellAttackRollMessage({ actor, item, targetDocument, effec
   });
 }
 
-async function createSpellEffectRollMessage({ actor, item, targetDocument, effect, roll, additionalRolls = [], rolledAmount = null, damageParts = [], sourceAttackMessageId = null }) {
+async function createSpellEffectRollMessage({ actor, item, targetDocument, effect, roll, additionalRolls = [], rolledAmount = null, damageParts = [], sourceAttackMessageId = null, animation = null }) {
   const isDamage = effect.type === SPELL_EFFECT_TYPES.DAMAGE;
   const typeLabel = SPELL_EFFECT_TYPE_LABELS[effect.type] ?? effect.label ?? effect.type;
   const rollHtml = (await Promise.all([roll, ...additionalRolls].map(entry => entry.render()))).join("");
@@ -268,6 +276,7 @@ async function createSpellEffectRollMessage({ actor, item, targetDocument, effec
       ParovGrad: {
         cardType: "spell-effect",
         spellEffect: {
+          animation,
           actorUuid: actor.uuid,
           itemUuid: item.uuid,
           itemName: item.name,
@@ -288,7 +297,7 @@ async function createSpellEffectRollMessage({ actor, item, targetDocument, effec
   });
 }
 
-async function rollSpellEffectsWithoutAttack({ actor, item, targetDocument, effects }) {
+async function rollSpellEffectsWithoutAttack({ actor, item, targetDocument, effects, animation = null }) {
   const rollData = actor.getRollData?.() ?? actor.system?.toObject?.() ?? actor.system ?? {};
 
   for (const effect of effects) {
@@ -308,6 +317,7 @@ async function rollSpellEffectsWithoutAttack({ actor, item, targetDocument, effe
       additionalRolls,
       rolledAmount: amount,
       damageParts: parts,
+      animation,
       sourceAttackMessageId: null
     });
   }
@@ -347,6 +357,7 @@ async function rollSpellEffectsAfterHit({ attackMessage, attackData, targetDocum
       additionalRolls,
       rolledAmount: amount,
       damageParts: parts,
+      animation: attackData.animation ?? null,
       sourceAttackMessageId: attackMessage.id
     });
   }
@@ -394,8 +405,9 @@ async function massSpellContent(data, roll) {
   </div>`;
 }
 
-async function createMassSpellAttackMessage({ actor, item, targetDocuments, templateDocument, effects, attackConfig, attackFormula, roll }) {
+async function createMassSpellAttackMessage({ actor, item, targetDocuments, templateDocument, effects, attackConfig, attackFormula, roll, animation = null }) {
   const data = {
+    animation,
     attackerActorUuid: actor.uuid, actorName: actor.name,
     itemUuid: item.uuid, itemName: item.name, templateUuid: templateDocument?.uuid ?? null,
     total: Number(roll.total) || 0, formula: attackFormula, mode: attackConfig.mode,
@@ -454,6 +466,7 @@ async function defendMassSpellTarget(message, index) {
       }
     }
     await updateMassSpellCard(message, data);
+    await playSpellAnimation(data.animation, success ? 'hit' : 'miss', [target.tokenUuid]);
   });
 }
 
@@ -489,7 +502,9 @@ async function applyMassSpellTargetEffect(message, index, effectIndex, mode) {
     effect.appliedMode = mode;
     effect.appliedAmount = applied;
     await updateMassSpellCard(message, data);
-
+    if (mode === 'healing' && applied > 0) {
+      await playSpellAnimation(data.animation, 'heal', [target.tokenUuid], String(effectIndex));
+    }
   });
 }
 
@@ -515,7 +530,7 @@ function renderMassSpellChatButtons(message, html) {
   }
 }
 
-export async function startSpellUse({ actor, item }) {
+export async function startSpellUse({ actor, item, sourceToken = null }) {
   if (!actor || !item || item.type !== "spell") return;
 
   const effects = getSpellEffects(item);
@@ -526,7 +541,6 @@ export async function startSpellUse({ actor, item }) {
   if (usesTemplate) {
     const placement = await placeSpellTemplate({ actor, item, targetTokens: true });
     if (!placement) return;
-
     templateDocument = placement.templateDocument;
     targetTokens = placement.targets;
   } else if (effects.length) {
@@ -538,57 +552,17 @@ export async function startSpellUse({ actor, item }) {
   const targetDocuments = targetTokens
     .map((token) => getTokenDocument(token))
     .filter((document) => document?.actor);
+  const targetTokenUuids = targetDocuments.map(document => document.uuid).filter(Boolean);
+  const createAnimation = () => game.parovgrad?.animations?.createContext?.({
+    actor, item, sourceToken, templateDocument
+  }) ?? null;
 
-  // Spells without rollable damage/healing effects keep their informational use flow.
-  // Area spells still place their template first so the selected targets are recorded.
-  if (!effects.length) {
-    await createInfoCardMessage({
-      actor,
-      item,
-      targetDocuments,
-      effects,
-      templateDocument
-    });
-    return;
-  }
-
-  if (usesTemplate && !targetDocuments.length) {
-    await createInfoCardMessage({ actor, item, targetDocuments, effects, templateDocument });
-    ui.notifications?.warn("Шаблон размещён, но в его области нет целей.");
-    return;
-  }
-
-  if (usesTemplate && targetDocuments.length > 1) {
-    for (const effect of effects) {
-      if (!isValidSpellRollFormula(effect.formula)) {
-        ui.notifications?.error(`У влияния «${effect.label}» некорректная формула: ${effect.formula || "—"}.`);
-        return;
-      }
-    }
-    const healingEffects = effects.filter(effect => effect.type === SPELL_EFFECT_TYPES.HEALING);
-    const attackEffects = effects.filter(effect => effect.type !== SPELL_EFFECT_TYPES.HEALING);
-    for (const targetDocument of targetDocuments) {
-      if (healingEffects.length) await rollSpellEffectsWithoutAttack({ actor, item, targetDocument, effects: healingEffects });
-    }
-    if (!attackEffects.length) return;
-    const attackConfig = await openConfiguredD20RollDialog({ title: `Массовая атака: ${item.name}`, actor });
-    if (!attackConfig) return;
-    if (attackConfig.useInspiration && !(await consumeActorInspiration(actor))) return;
-    const attackFormula = buildFormula(getD20Formula(attackConfig.mode), attackConfig.modifier);
-    const attackRoll = game.parovgrad.dice.createRoll(attackFormula, {}, { addExtraDie: attackConfig.useInspiration });
-    await attackRoll.evaluate();
-    await createMassSpellAttackMessage({ actor, item, targetDocuments, templateDocument,
-      effects: attackEffects, attackConfig, attackFormula, roll: attackRoll });
-    // The template is only needed while collecting targets. Keep the snapshot of
-    // target UUIDs in the chat card, but remove this cast's template from the scene.
-    if (templateDocument?.id && templateDocument.parent) {
-      try {
-        await templateDocument.parent.deleteEmbeddedDocuments("MeasuredTemplate", [templateDocument.id]);
-      } catch (error) {
-        console.warn("ParovGrad | Failed to remove mass spell template", error);
-        ui.notifications?.warn("Атака выполнена, но удалить шаблон заклинания не удалось.");
-      }
-    }
+  // Informational casts and empty areas still have a committed use and a location.
+  if (!effects.length || (usesTemplate && !targetDocuments.length)) {
+    const animation = createAnimation();
+    await createInfoCardMessage({ actor, item, targetDocuments, effects, templateDocument, animation });
+    await playSpellAnimation(animation, 'use', targetTokenUuids);
+    if (effects.length) ui.notifications?.warn("Шаблон размещён, но в его области нет целей.");
     return;
   }
 
@@ -597,7 +571,6 @@ export async function startSpellUse({ actor, item }) {
     ui.notifications?.warn("У выбранной цели нет актора.");
     return;
   }
-
   for (const effect of effects) {
     if (!isValidSpellRollFormula(effect.formula)) {
       ui.notifications?.error(`У влияния «${effect.label}» задана некорректная формула: ${effect.formula || "—"}.`);
@@ -605,49 +578,56 @@ export async function startSpellUse({ actor, item }) {
     }
   }
 
-  // Healing never requires an attack/defense roll. If a spell contains both healing
-  // and offensive rollable effects, healing resolves immediately while only the
-  // remaining effects continue through the normal attack -> defense pipeline.
-  const healingEffects = effects.filter((effect) => effect.type === SPELL_EFFECT_TYPES.HEALING);
-  const attackEffects = effects.filter((effect) => effect.type !== SPELL_EFFECT_TYPES.HEALING);
+  const healingEffects = effects.filter(effect => effect.type === SPELL_EFFECT_TYPES.HEALING);
+  const attackEffects = effects.filter(effect => effect.type !== SPELL_EFFECT_TYPES.HEALING);
+  const isMassAttack = usesTemplate && targetDocuments.length > 1;
+  let attackConfig = null;
+  let attackFormula = null;
+  let attackRoll = null;
 
-  if (healingEffects.length) {
-    await rollSpellEffectsWithoutAttack({
-      actor,
-      item,
-      targetDocument,
-      effects: healingEffects
+  // Confirm the offensive part before creating any cards for a mixed cast.
+  if (attackEffects.length) {
+    attackConfig = await openConfiguredD20RollDialog({
+      title: `${isMassAttack ? "Массовая атака" : "Атака заклинанием"}: ${item.name}`, actor
     });
+    if (!attackConfig) return;
+    if (attackConfig.useInspiration && !(await consumeActorInspiration(actor))) return;
+    attackFormula = buildFormula(getD20Formula(attackConfig.mode), attackConfig.modifier);
+    attackRoll = game.parovgrad.dice.createRoll(attackFormula, {}, {
+      addExtraDie: attackConfig.useInspiration
+    });
+    await attackRoll.evaluate();
   }
 
-  if (!attackEffects.length) return;
-
-  const attackConfig = await openConfiguredD20RollDialog({
-    title: `Атака заклинанием: ${item.name}`,
-    actor
-  });
-  if (!attackConfig) return;
-
-  if (attackConfig.useInspiration) {
-    const spent = await consumeActorInspiration(actor);
-    if (!spent) return;
+  // Snapshot the source, preset and template while this cast's template still exists.
+  const animation = createAnimation();
+  for (const document of targetDocuments) {
+    if (healingEffects.length) {
+      await rollSpellEffectsWithoutAttack({
+        actor, item, targetDocument: document, effects: healingEffects, animation
+      });
+    }
   }
+  if (attackEffects.length) {
+    if (isMassAttack) {
+      await createMassSpellAttackMessage({ actor, item, targetDocuments, templateDocument,
+        effects: attackEffects, attackConfig, attackFormula, roll: attackRoll, animation });
+    } else {
+      await createSpellAttackRollMessage({ actor, item, targetDocument,
+        effects: attackEffects, attackConfig, attackFormula, roll: attackRoll, animation });
+    }
+  }
+  await playSpellAnimation(animation, 'use', targetTokenUuids);
 
-  const attackFormula = buildFormula(getD20Formula(attackConfig.mode), attackConfig.modifier);
-  const attackRoll = game.parovgrad.dice.createRoll(attackFormula, {}, {
-    addExtraDie: attackConfig.useInspiration
-  });
-  await attackRoll.evaluate();
-
-  await createSpellAttackRollMessage({
-    actor,
-    item,
-    targetDocument,
-    effects: attackEffects,
-    attackConfig,
-    attackFormula,
-    roll: attackRoll
-  });
+  // The mass attack retains the template snapshot and target UUIDs in its card.
+  if (isMassAttack && attackEffects.length && templateDocument?.id && templateDocument.parent) {
+    try {
+      await templateDocument.parent.deleteEmbeddedDocuments("MeasuredTemplate", [templateDocument.id]);
+    } catch (error) {
+      console.warn("ParovGrad | Failed to remove mass spell template", error);
+      ui.notifications?.warn("Атака выполнена, но удалить шаблон заклинания не удалось.");
+    }
+  }
 }
 
 export function renderSpellChatButtons(message, html) {
@@ -792,6 +772,7 @@ export async function handleSpellDefenseButtonClick(message) {
 
   await message.setFlag("ParovGrad", "spellAttack.resolved", true);
   await message.setFlag("ParovGrad", "spellAttack.success", success);
+  await playSpellAnimation(attackData.animation, success ? 'hit' : 'miss', [attackData.targetTokenUuid]);
 
   if (!success) return;
 
@@ -870,6 +851,9 @@ export async function handleApplySpellEffectButtonClick(message, mode) {
   await message.setFlag("ParovGrad", "spellEffect.applied", true);
   await message.setFlag("ParovGrad", "spellEffect.appliedMode", mode);
   await message.setFlag("ParovGrad", "spellEffect.appliedAmount", appliedAmount);
+  if (mode === "healing" && appliedAmount > 0) {
+    await playSpellAnimation(effectData.animation, 'heal', [effectData.targetTokenUuid], message.id);
+  }
 
   await ChatMessage.create({
     user: game.user.id,

@@ -1,6 +1,7 @@
 import {DAMAGE_TYPES, DAMAGE_CATEGORIES, getItemDamageParts, applyTypedDamage} from "./damage/damage-types.js";
 import { PlayerDataModel } from "./data/actor/player-data.js";
 import { NpcDataModel } from "./data/actor/npc-data.js";
+import { animationAPI, registerAnimationHooks } from "./animations/animation-player.js";
 import { normalizeActorResources } from "./actors/actor-resources.js";
 import { ItemDataModel } from "./data/item/item-data.js";
 import { WeaponDataModel } from "./data/item/weapon-data.js";
@@ -32,6 +33,7 @@ import {
 } from "./canvas/spell-template.js";
 
 Hooks.once("init", () => {
+  registerAnimationHooks();
   CONFIG.Actor.dataModels.Player = PlayerDataModel;
   CONFIG.Actor.dataModels.NPC = NpcDataModel;
   CONFIG.Item.dataModels.item = ItemDataModel;
@@ -105,6 +107,7 @@ Hooks.once("init", () => {
 Hooks.once("setup", () => {
   game.parovgrad = {
     ...(game.parovgrad ?? {}),
+    animations: animationAPI,
     dice: {
       createRoll: createParovgradRoll,
       rollToMessage

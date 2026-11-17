@@ -79,6 +79,7 @@ export function getParovgradEffectFlagData(effect) {
     removal: String(stored.removal ?? "").trim(),
     modifiers,
     damageModifiers: normalizeDamageModifiers(stored.damageModifiers),
+    animation: stored.animation && typeof stored.animation === "object" ? foundry.utils.deepClone(stored.animation) : null,
     sourceItemUuid: stored.sourceItemUuid ?? "",
     sourceItemName: stored.sourceItemName ?? ""
   };
@@ -98,6 +99,7 @@ export function getEffectItemTemplateData(item) {
     removal: String(item.system?.removal ?? "").trim(),
     modifiers,
     damageModifiers,
+    animation: item.flags?.[EFFECT_FLAG_SCOPE]?.animation ? foundry.utils.deepClone(item.flags[EFFECT_FLAG_SCOPE].animation) : null,
     modifierSummary: [getEffectModifierSummary(modifiers), getDamageModifierSummary(damageModifiers)].filter(Boolean).join(", "),
     sourceItemUuid: item.uuid,
     sourceItemName: item.name || ""
@@ -509,6 +511,7 @@ function getEffectDialogSeedFromActiveEffect(effect) {
     removal: flagData.removal,
     modifiers: flagData.modifiers,
     damageModifiers: flagData.damageModifiers,
+    animation: flagData.animation,
     sourceItemUuid: flagData.sourceItemUuid,
     sourceItemName: flagData.sourceItemName
   };
@@ -552,6 +555,9 @@ function buildActiveEffectCreateData(source, { origin = "", disabled = false, ba
     sourceItemUuid: String(source.sourceItemUuid ?? "").trim(),
     sourceItemName: String(source.sourceItemName ?? "").trim()
   };
+  if (source.animation && typeof source.animation === "object") {
+    parovgradFlags.animation = foundry.utils.deepClone(source.animation);
+  }
 
   return {
     name: String(source.name ?? "").trim() || "Новый эффект",

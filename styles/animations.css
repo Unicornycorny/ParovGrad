@@ -1,0 +1,16 @@
+.pg-animation-window .window-content { overflow: hidden; }
+.pg-animation-config { display: flex; flex-direction: column; gap: 12px; min-height: 0; height: 100%; }
+.pg-animation-config header h2 { margin: 0 0 6px; }
+.pg-animation-config header p { margin: 0 0 10px; }
+.pg-animation-enabled { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.pg-animation-fields { overflow-y: auto; min-height: 0; flex: 1; padding-right: 6px; }
+.pg-animation-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.pg-animation-field > span { font-weight: 600; }
+.pg-animation-field input { width: 100%; }
+.pg-animation-field small, .pg-animation-hint { opacity: .8; }
+.pg-animation-hint { margin-top: 0; font-size: .9em; }
+.pg-animation-notice { padding: 8px 10px; margin: 0; border: 1px solid var(--color-border-light-primary, #999); border-radius: 4px; }
+.pg-animation-numbers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 8px; }
+.pg-animation-numbers label { display: flex; flex-direction: column; gap: 4px; }
+.pg-animation-config footer { display: flex; gap: 8px; }
+.pg-animation-config footer button { flex: 1; }

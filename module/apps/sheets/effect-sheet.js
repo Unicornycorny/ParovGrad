@@ -1,4 +1,5 @@
 import { attachItemPortraitListener } from "./item-portrait.js";
+import { animationHeaderControl } from "../animation-config.js";
 import {
   getDamageModifierModeOptions,
   getDamageModifierTypeOptions,
@@ -72,6 +73,7 @@ export class ParovGradEffectSheet extends foundry.applications.api.HandlebarsApp
 
   _getHeaderControls() {
     const controls = super._getHeaderControls();
+    controls.unshift(animationHeaderControl(this));
 
     controls.unshift({
       action: "toggleEditMode",

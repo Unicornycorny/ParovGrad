@@ -1,5 +1,6 @@
 import {damagePartLabel} from "../../damage/damage-types.js";
 import { attachItemPortraitListener } from "./item-portrait.js";
+import { animationHeaderControl } from "../animation-config.js";
 import { ParovGradSpellBuilder } from "../spell-builder.js";
 import { getSpellConstructionStatus } from "../../magic/spell-construction.js";
 import {
@@ -169,6 +170,7 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
 
   _getHeaderControls() {
     const controls = super._getHeaderControls();
+    controls.unshift(animationHeaderControl(this));
 
     controls.unshift({
       action: "useSpell",
@@ -176,7 +178,11 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
       label: "Применить",
       visible: () => this.document.parent?.documentName === "Actor",
       onClick: async () => {
-        await startSpellUse({ actor: this.document.parent, item: this.document });
+        await startSpellUse({
+          actor: this.document.parent,
+          item: this.document,
+          sourceToken: this.document.parent?.token ?? null
+        });
       }
     });
 

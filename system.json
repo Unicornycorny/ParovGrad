@@ -11,7 +11,8 @@
         "module/Parovgrad.js"
     ],
     "styles": [
-        "styles/system-styles.css"
+        "styles/system-styles.css",
+        "styles/animations.css"
     ],
     "documentTypes": {
         "Actor": {

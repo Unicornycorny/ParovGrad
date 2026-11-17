@@ -1,6 +1,7 @@
 import { getItemDamageParts, damagePartOptions, damagePartLabel } from "../../damage/damage-types.js";
 import { attachDamageEditor } from "../../damage/damage-editor.js";
 import { attachItemPortraitListener } from "./item-portrait.js";
+import { animationHeaderControl } from "../animation-config.js";
 import { prepareItemEffectsContext, attachItemEffectsEditor } from "./item-effects-editor.js";
 const STANDARD_EFFECT_DICE = ["", "d2", "d4", "d6", "d8", "d12", "d20", "d100"];
 
@@ -116,6 +117,7 @@ export class ParovGradWeaponSheet extends foundry.applications.api.HandlebarsApp
 
   _getHeaderControls() {
     const controls = super._getHeaderControls();
+    controls.unshift(animationHeaderControl(this));
 
     controls.unshift({
       action: "toggleEditMode",
