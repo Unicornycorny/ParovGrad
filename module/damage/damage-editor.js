@@ -1,5 +1,5 @@
 import {
-  DAMAGE_TYPES, getItemDamageParts, normalizedDamagePart, makeDamagePart,
+  getItemDamageParts, normalizedDamagePart, makeDamagePart,
   validateDamageParts
 } from "./damage-types.js";
 
@@ -32,18 +32,17 @@ export function attachDamageEditor(sheet, root) {
       parts.splice(index, 1);
       await commit(parts);
     });
-    for (const element of row.querySelectorAll(".pg-damage-formula, .pg-damage-category, .pg-damage-type")) {
+    for (const element of row.querySelectorAll(".pg-damage-formula, .pg-damage-type")) {
       element.addEventListener("change", async (event) => {
         event.preventDefault(); event.stopPropagation();
         const parts = getItemDamageParts(sheet.document);
         const part = parts[index];
         if (!part) return;
         if (element.classList.contains("pg-damage-formula")) part.formula = element.value.trim();
-        if (element.classList.contains("pg-damage-category")) {
-          part.category = element.value;
-          part.damageType = element.value === "typed" ? (part.damageType || "fire") : null;
+        if (element.classList.contains("pg-damage-type")) {
+          part.category = "typed";
+          part.damageType = element.value;
         }
-        if (element.classList.contains("pg-damage-type")) part.damageType = element.value;
         await commit(parts.map((value) => normalizedDamagePart(value)));
       });
     }

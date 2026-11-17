@@ -2,6 +2,16 @@ function asTrimmedString(value) {
   return String(value ?? "").trim();
 }
 
+function normalizeDamageBinding(binding) {
+  const legacyPhysical = binding?.category === "physical";
+  return {
+    influenceNodeId: asTrimmedString(binding?.influenceNodeId),
+    damageTypeNodeId: legacyPhysical ? "" : asTrimmedString(binding?.damageTypeNodeId),
+    damageType: legacyPhysical ? "bludgeoning" : asTrimmedString(binding?.damageType),
+    category: "typed"
+  };
+}
+
 function normalizeNodeIds(values) {
   if (!Array.isArray(values)) return [];
 
@@ -44,11 +54,8 @@ export function getSpellConstruction(spell) {
     treeUuid: asTrimmedString(construction?.treeUuid),
     treeRevision: Math.max(0, Number(construction?.treeRevision) || 0),
     selectedNodeIds: normalizeNodeIds(construction?.selectedNodeIds),
-    damageBindings: Array.isArray(construction?.damageBindings) ? construction.damageBindings.map(binding => ({
-      influenceNodeId: asTrimmedString(binding.influenceNodeId),
-      damageTypeNodeId: asTrimmedString(binding.damageTypeNodeId),
-      category: binding.category === "typed" ? "typed" : "physical"
-    })) : []
+    damageBindings: Array.isArray(construction?.damageBindings)
+      ? construction.damageBindings.map(normalizeDamageBinding) : []
   };
 }
 
@@ -57,7 +64,7 @@ export function buildSpellConstruction(tree, selectedNodeIds, damageBindings = [
     treeUuid: asTrimmedString(tree?.uuid),
     treeRevision: Math.max(0, Number(tree?.system?.revision) || 0),
     selectedNodeIds: normalizeNodeIds(selectedNodeIds),
-    damageBindings
+    damageBindings: Array.isArray(damageBindings) ? damageBindings.map(normalizeDamageBinding) : []
   };
 }
 

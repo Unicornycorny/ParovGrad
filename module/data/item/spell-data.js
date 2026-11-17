@@ -1,4 +1,4 @@
-import { damageSchema } from "../../damage/damage-types.js";
+import { damageSchema, PHYSICAL_DAMAGE_TYPES } from "../../damage/damage-types.js";
 
 const {
   ArrayField,
@@ -107,7 +107,8 @@ export class SpellDataModel extends foundry.abstract.TypeDataModel {
           new SchemaField({
             influenceNodeId: new StringField({required: true, blank: false}),
             damageTypeNodeId: new StringField({required: false, initial: ""}),
-            category: new StringField({required: true, initial: "physical", choices: ["physical", "typed"]})
+            damageType: new StringField({required: false, blank: true, initial: "", choices: ["", ...Object.keys(PHYSICAL_DAMAGE_TYPES)]}),
+            category: new StringField({required: true, initial: "typed", choices: ["physical", "typed"]})
           }),
           {required: true, initial: []}
         ),

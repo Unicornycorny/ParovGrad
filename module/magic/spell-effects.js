@@ -116,7 +116,8 @@ export function getSpellEffects(spellOrSystem) {
   // Compatibility for spells compiled before structured spell effects existed.
   return (Array.isArray(system.influences) ? system.influences : [])
     .map(parseLegacyInfluenceEffect)
-    .filter(Boolean);
+    .filter(Boolean)
+    .map(normalizeSpellEffect);
 }
 
 export function isValidSpellRollFormula(formula) {

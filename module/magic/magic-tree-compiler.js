@@ -7,7 +7,7 @@ import {
   getMagicTreeNodeSpellEffect,
   isValidSpellRollFormula
 } from "./spell-effects.js";
-import {DAMAGE_TYPES, damagePartLabel, makeDamagePart} from "../damage/damage-types.js";
+import {DAMAGE_TYPES, PHYSICAL_DAMAGE_TYPES, damagePartLabel, makeDamagePart} from "../damage/damage-types.js";
 
 export const MAX_SPELL_INFLUENCES = 4;
 
@@ -138,24 +138,34 @@ export class MagicTreeCompiler {
 
       if (effect.type === "damage") {
         const binding = explicitBindings.get(id);
-        let typeNodeId = binding?.category === "physical" ? "__physical" : binding?.damageTypeNodeId;
+        const directType = binding?.category === "physical" ? "bludgeoning" : asTrimmedString(binding?.damageType);
+        let typeNodeId = binding?.category === "physical" ? "" : asTrimmedString(binding?.damageTypeNodeId);
         if (!binding && automaticTypeId) typeNodeId = automaticTypeId;
-        if (!typeNodeId) errors.push(`Укажите тип урона для влияния «${effect.label}» (либо «Физический»).`);
-        if (typeNodeId && typeNodeId !== "__physical" && !selectedDamageTypes.has(typeNodeId)) {
+        const selection = directType ? `__${directType}` : typeNodeId;
+        if (!selection) errors.push(`Укажите тип урона для влияния «${effect.label}».`);
+        if (directType && !Object.hasOwn(PHYSICAL_DAMAGE_TYPES, directType)) {
+          errors.push(`Для влияния «${effect.label}» выберите дробящий, колющий или режущий урон либо узел типа урона.`);
+        }
+        if (directType && typeNodeId) {
+          errors.push(`Для влияния «${effect.label}» выберите только один тип урона.`);
+        }
+        if (typeNodeId && !selectedDamageTypes.has(typeNodeId)) {
           errors.push(`Тип урона для влияния «${effect.label}» не выбран в дереве.`);
         }
-        const damageType = typeNodeId === "__physical" ? null : selectedDamageTypes.get(typeNodeId)?.output?.damageType;
-        effect.damage = {parts: [makeDamagePart(effect.formula, typeNodeId === "__physical" ? "physical" : "typed", damageType)]};
+        const damageType = directType || selectedDamageTypes.get(typeNodeId)?.output?.damageType;
+        effect.damage = {parts: [makeDamagePart(effect.formula, "typed", damageType ?? null)]};
         damageControls.push({
           influenceNodeId: id, label: effect.label,
-          selectedTypeNodeId: typeNodeId || "",
+          selectedTypeNodeId: selection || "",
           typeOptions: [
-            {value: "", label: "— Выберите тип —", selected: !typeNodeId},
-            {value: "__physical", label: "Физический", selected: typeNodeId === "__physical"},
+            {value: "", label: "— Выберите тип —", selected: !selection},
+            ...Object.entries(PHYSICAL_DAMAGE_TYPES).map(([value, label]) => ({
+              value: `__${value}`, label, selected: selection === `__${value}`
+            })),
             ...damageTypeNodes.map(({id: typeId, node: typeNode}) => ({
               value: typeId,
               label: `${typeNode.name || DAMAGE_TYPES[typeNode.output?.damageType]} (${DAMAGE_TYPES[typeNode.output?.damageType] || "Не задан"})`,
-              selected: typeNodeId === typeId
+              selected: selection === typeId
             }))
           ]
         });

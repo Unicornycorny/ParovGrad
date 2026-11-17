@@ -1,5 +1,5 @@
 import {
-  rollDamageParts, serializeDamageResults, damageResultsHtml, applyTypedDamage
+  makeDamagePart, rollDamageParts, serializeDamageResults, damageResultsHtml, applyTypedDamage
 } from "../damage/damage-types.js";
 import {
   consumeActorInspiration,
@@ -16,7 +16,7 @@ import { hasSpellTemplate, placeSpellTemplate } from "../canvas/spell-template.j
 async function rollTypedSpellEffect(effect, rollData) {
   if (effect.type === SPELL_EFFECT_TYPES.DAMAGE) {
     const parts = effect.damage?.parts?.length ? effect.damage.parts
-      : [{id: "base", formula: effect.formula, category: "physical", damageType: null}];
+      : [makeDamagePart(effect.formula)];
     const rolled = await rollDamageParts(parts, {rollData});
     return {roll: rolled.primaryRoll, additionalRolls: rolled.results.slice(1).map(part => part.roll),
       amount: rolled.total, parts: serializeDamageResults(rolled.results)};

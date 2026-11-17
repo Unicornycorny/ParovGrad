@@ -1,4 +1,4 @@
-import { DAMAGE_TYPES } from "../damage/damage-types.js";
+import { DAMAGE_TYPES, PHYSICAL_DAMAGE_TYPES } from "../damage/damage-types.js";
 import { MagicTreeGraphView } from "./components/magic-tree-graph.js";
 import {
   MAGIC_TREE_NODE_TYPE_LABELS
@@ -260,11 +260,14 @@ export class ParovGradSpellBuilder extends foundry.applications.api.HandlebarsAp
       select.addEventListener("change", async () => {
         const influenceNodeId = select.dataset.influenceId;
         if (!influenceNodeId) return;
+        const directType = select.value.startsWith("__") && Object.hasOwn(PHYSICAL_DAMAGE_TYPES, select.value.slice(2))
+          ? select.value.slice(2) : "";
         if (!select.value) this._damageBindings.delete(influenceNodeId);
         else this._damageBindings.set(influenceNodeId, {
           influenceNodeId,
-          damageTypeNodeId: select.value === "__physical" ? "" : select.value,
-          category: select.value === "__physical" ? "physical" : "typed"
+          damageTypeNodeId: directType ? "" : select.value,
+          damageType: directType,
+          category: "typed"
         });
         await this.render({force: true});
       });

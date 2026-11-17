@@ -1,5 +1,11 @@
-/** ParovGrad damage types. Physical is the base category, NOT force energy. */
+/** Physical damage uses the same typed parts as energy and other damage. */
+export const PHYSICAL_DAMAGE_TYPES = Object.freeze({
+  bludgeoning: "Дробящий",
+  piercing: "Колющий",
+  slashing: "Режущий"
+});
 export const DAMAGE_TYPES = Object.freeze({
+  ...PHYSICAL_DAMAGE_TYPES,
   fire: "Огонь",
   cold: "Холод",
   sonic: "Звук",
@@ -11,8 +17,9 @@ export const DAMAGE_TYPES = Object.freeze({
   holy: "Святой"
 });
 export const DAMAGE_CATEGORIES = Object.freeze({
+  // Accepted in saved data only; normalized to typed bludgeoning on read.
   physical: "Физический",
-  typed: "Особый тип",
+  typed: "Тип урона",
   unspecified: "Не определён"
 });
 export const DAMAGE_TYPE_OPTIONS = Object.entries(DAMAGE_TYPES).map(([value, label]) => ({value, label}));
@@ -22,20 +29,22 @@ export function damagePartSchema() {
   return new SchemaField({
     id: new StringField({required: true, blank: false, initial: () => foundry.utils.randomID()}),
     formula: new StringField({required: true, blank: false, initial: "d4"}),
-    category: new StringField({required: true, choices: Object.keys(DAMAGE_CATEGORIES), initial: "physical"}),
-    damageType: new StringField({required: false, blank: true, nullable: true, initial: null, choices: Object.keys(DAMAGE_TYPES)})
+    category: new StringField({required: true, choices: Object.keys(DAMAGE_CATEGORIES), initial: "typed"}),
+    damageType: new StringField({required: false, blank: true, nullable: true, initial: "bludgeoning", choices: Object.keys(DAMAGE_TYPES)})
   });
 }
 export function damageSchema() {
   const { SchemaField, ArrayField } = foundry.data.fields;
   return new SchemaField({parts: new ArrayField(damagePartSchema(), {required: true, initial: []})});
 }
-export function makeDamagePart(formula = "d4", category = "physical", damageType = null) {
-  return {id: foundry.utils.randomID(), formula, category, damageType: category === "typed" ? damageType : null};
+export function makeDamagePart(formula = "d4", category = "typed", damageType = "bludgeoning") {
+  return normalizedDamagePart({formula, category, damageType});
 }
 export function normalizedDamagePart(part, fallback = "d4") {
-  const category = Object.hasOwn(DAMAGE_CATEGORIES, part?.category) ? part.category : "physical";
-  const damageType = category === "typed" && Object.hasOwn(DAMAGE_TYPES, part?.damageType) ? part.damageType : null;
+  const legacyPhysical = part?.category === "physical" || !Object.hasOwn(DAMAGE_CATEGORIES, part?.category);
+  const category = legacyPhysical ? "typed" : part.category;
+  const damageType = legacyPhysical ? "bludgeoning"
+    : category === "typed" && Object.hasOwn(DAMAGE_TYPES, part?.damageType) ? part.damageType : null;
   return {
     id: String(part?.id || foundry.utils.randomID()),
     formula: String(part?.formula || fallback).trim(),
@@ -44,6 +53,7 @@ export function normalizedDamagePart(part, fallback = "d4") {
   };
 }
 export function damagePartLabel(part) {
+  if (part?.category === "physical") return PHYSICAL_DAMAGE_TYPES.bludgeoning;
   if (part?.category === "typed") return DAMAGE_TYPES[part.damageType] ?? DAMAGE_CATEGORIES.unspecified;
   return DAMAGE_CATEGORIES[part?.category] ?? DAMAGE_CATEGORIES.unspecified;
 }
@@ -56,12 +66,11 @@ export function getItemDamageParts(itemOrSystem, {fallback = "d4"} = {}) {
     : [makeDamagePart(system.damageDie || fallback)];
 }
 export function damagePartOptions(part) {
+  part = normalizedDamagePart(part);
   return {
     ...part,
     typeLabel: damagePartLabel(part),
-    categoryOptions: Object.entries(DAMAGE_CATEGORIES).filter(([value]) => value !== "unspecified").map(([value, label]) => ({value, label, selected: value === part.category})),
-    damageTypeOptions: DAMAGE_TYPE_OPTIONS.map(option => ({...option, selected: option.value === part.damageType})),
-    isTyped: part.category === "typed"
+    damageTypeOptions: DAMAGE_TYPE_OPTIONS.map(option => ({...option, selected: option.value === part.damageType}))
   };
 }
 export function validateDamageParts(parts) {
@@ -70,7 +79,7 @@ export function validateDamageParts(parts) {
       throw new Error(`Некорректная формула урона: ${part.formula || "—"}`);
     }
     if (part.category === "typed" && !Object.hasOwn(DAMAGE_TYPES, part.damageType)) {
-      throw new Error("Для типизированного урона необходимо выбрать один из девяти типов.");
+      throw new Error("Для компонента урона необходимо выбрать допустимый тип урона.");
     }
   }
 }
