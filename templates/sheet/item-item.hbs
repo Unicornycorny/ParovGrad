@@ -15,6 +15,63 @@
       </div>
     </header>
 
+    <div class="pg-item-equipped-field">
+      <label>
+        <input type="checkbox" class="pg-item-equipped" {{#if equipped}}checked{{/if}} {{#unless canToggleEquipped}}disabled{{/unless}}>
+        <strong>Надет / используется</strong>
+      </label>
+      <p class="pg-form-hint">Включает пассивные эффекты у носителя. Хранение в инвентаре их не включает.</p>
+    </div>
+
+    <div class="pg-item-effects">
+      {{#each itemEffectGroups}}
+        <section class="pg-item-effect-group {{#if this.isEditable}}pg-item-effect-group--editable{{/if}}" data-item-effect-application="{{this.application}}">
+          <div class="pg-item-effect-group__heading">
+            <h2>{{this.label}}</h2>
+            {{#if this.isEditable}}
+              <button type="button" class="pg-item-effect-create"><i class="fa-solid fa-plus"></i> Создать эффект</button>
+            {{/if}}
+          </div>
+          <p class="pg-form-hint">{{this.hint}}</p>
+          {{#if this.isEditable}}
+            <p class="pg-item-effect-drop-hint"><i class="fa-solid fa-hand"></i> Перетащите сюда готовый эффект</p>
+          {{/if}}
+          {{#if this.effects.length}}
+            <div class="pg-item-effect-list">
+              {{#each this.effects}}
+                <article class="pg-item-effect-row {{#if this.disabled}}pg-item-effect-row--disabled{{/if}}" data-effect-id="{{this.id}}">
+                  <img class="pg-item-effect-row__icon" src="{{this.img}}" alt="">
+                  <div class="pg-item-effect-row__body">
+                    <strong>{{this.name}}</strong>
+                    {{#if this.disabled}}<span class="pg-item-effect-status">Отключён</span>{{/if}}
+                    {{#if this.modifierSummary}}<p>{{this.modifierSummary}}</p>{{/if}}
+                    {{#if this.impact}}<p>{{this.impact}}</p>{{/if}}
+                    {{#if this.removal}}<p>Снятие: {{this.removal}}</p>{{/if}}
+                    {{#if this.description}}<p>{{this.description}}</p>{{/if}}
+                    {{#if ../isEditable}}
+                      <select class="pg-item-effect-mode" aria-label="Способ применения эффекта {{this.name}}">
+                        <option value="passive" {{#if this.isPassive}}selected{{/if}}>Пассивный — носителю</option>
+                        <option value="active" {{#unless this.isPassive}}selected{{/unless}}>Активный — цели</option>
+                      </select>
+                    {{/if}}
+                  </div>
+                  {{#if ../isEditable}}
+                    <div class="pg-item-effect-row__actions">
+                      <button type="button" class="pg-item-effect-edit" title="Редактировать эффект" aria-label="Редактировать {{this.name}}"><i class="fa-solid fa-pen"></i></button>
+                      <button type="button" class="pg-item-effect-toggle" title="{{#if this.disabled}}Включить{{else}}Отключить{{/if}} эффект" aria-label="{{#if this.disabled}}Включить{{else}}Отключить{{/if}} {{this.name}}"><i class="fa-solid {{#if this.disabled}}fa-toggle-off{{else}}fa-toggle-on{{/if}}"></i></button>
+                      <button type="button" class="pg-item-effect-delete" title="Удалить привязку" aria-label="Удалить {{this.name}}"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                  {{/if}}
+                </article>
+              {{/each}}
+            </div>
+          {{else}}
+            <div class="pg-effect-modifier-empty">Эффекты не добавлены</div>
+          {{/if}}
+        </section>
+      {{/each}}
+    </div>
+
     {{#if isEditMode}}
       <div class="pg-form-field">
         <label>Название</label>

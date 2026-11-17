@@ -1,4 +1,5 @@
 import { attachItemPortraitListener } from "./item-portrait.js";
+import { prepareItemEffectsContext, attachItemEffectsEditor } from "./item-effects-editor.js";
 const STANDARD_EFFECT_DICE = ["", "d2", "d4", "d6", "d8", "d12", "d20", "d100"];
 
 function getDieFaces(die) {
@@ -59,6 +60,7 @@ export class ParovGradItemSheet extends foundry.applications.api.HandlebarsAppli
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.canEditPortrait = this.isEditable;
+    Object.assign(context, prepareItemEffectsContext(this));
 
     const currentEffectDie = String(this.document.system?.effectCheckDie || "").toLowerCase();
     const effectDice = STANDARD_EFFECT_DICE.includes(currentEffectDie)
@@ -114,6 +116,7 @@ export class ParovGradItemSheet extends foundry.applications.api.HandlebarsAppli
   _attachPartListeners(partId, htmlElement, options) {
     super._attachPartListeners(partId, htmlElement, options);
     attachItemPortraitListener(this, htmlElement);
+    attachItemEffectsEditor(this, htmlElement);
     if (!this._isEditMode) return;
 
     const addButton = htmlElement.querySelector(".pg-weapon-effect-add");

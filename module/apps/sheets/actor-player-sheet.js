@@ -6,6 +6,7 @@ import {
   applyEffectItemToActor,
   cloneActiveEffectToActor,
   getActorEffectView,
+  getActorPassiveItemEffectViews,
   openActorEffectDialog
 } from "../../effects/effect-utils.js";
 import { openActorLevelUpDialog } from "../level-up-dialog.js";
@@ -83,12 +84,14 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
         type: item.type,
         img: item.img,
         isWeapon: item.type === "weapon",
+        equipped: item.system?.equipped === true,
         showPreparedBadge: !selected.preparedOnly && preparedIds.has(item.id)
       }));
 
     context.effects = Array.from(this.document.effects)
       .sort((left, right) => left.sort - right.sort || left.name.localeCompare(right.name, "ru"))
-      .map((effect) => getActorEffectView(effect));
+      .map((effect) => getActorEffectView(effect))
+      .concat(getActorPassiveItemEffectViews(this.document));
 
     return context;
   }

@@ -1,4 +1,4 @@
-const { StringField, ArrayField, SchemaField, NumberField } = foundry.data.fields;
+const { StringField, ArrayField, SchemaField, NumberField, BooleanField } = foundry.data.fields;
 
 import { damageSchema } from "../../damage/damage-types.js";
 
@@ -6,6 +6,7 @@ export class WeaponDataModel extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     return {
       description: new StringField({ required: false, initial: "" }),
+      equipped: new BooleanField({ required: true, initial: false }),
       damage: damageSchema(),
       damageDie: new StringField({ required: false, initial: "d4" }),
       effectCheckDie: new StringField({ required: false, initial: "" }),

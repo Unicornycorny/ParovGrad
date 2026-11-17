@@ -5,6 +5,7 @@ import {
   applyEffectItemToActor,
   cloneActiveEffectToActor,
   getActorEffectView,
+  getActorPassiveItemEffectViews,
   openActorEffectDialog
 } from "../../effects/effect-utils.js";
 
@@ -62,12 +63,14 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
         name: item.name,
         type: item.type,
         img: item.img,
-        isSpell: item.type === "spell"
+        isSpell: item.type === "spell",
+        equipped: item.system?.equipped === true
       }));
 
     context.effects = Array.from(this.document.effects)
       .sort((left, right) => left.sort - right.sort || left.name.localeCompare(right.name, "ru"))
-      .map((effect) => getActorEffectView(effect));
+      .map((effect) => getActorEffectView(effect))
+      .concat(getActorPassiveItemEffectViews(this.document));
 
     return context;
   }

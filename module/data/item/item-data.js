@@ -1,9 +1,10 @@
-const { StringField, NumberField, ArrayField, SchemaField } = foundry.data.fields;
+const { StringField, NumberField, ArrayField, SchemaField, BooleanField } = foundry.data.fields;
 
 export class ItemDataModel extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     return {
       description: new StringField({ required: false, initial: "" }),
+      equipped: new BooleanField({ required: true, initial: false }),
       effectCheckDie: new StringField({ required: false, initial: "" }),
       effectRanges: new ArrayField(
         new SchemaField({

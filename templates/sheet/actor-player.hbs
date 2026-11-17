@@ -130,13 +130,18 @@
       {{#if effects.length}}
       <ul class="pg-effect-list">
         {{#each effects}}
-        <li class="pg-effect-row {{#if this.disabled}}is-disabled{{/if}}" data-effect-id="{{this.id}}" draggable="true">
+        <li class="pg-effect-row {{#if this.disabled}}is-disabled{{/if}}" data-effect-id="{{this.id}}" draggable="{{#if this.isItemPassive}}false{{else}}true{{/if}}">
           <img class="pg-effect-row__icon" src="{{this.img}}" alt="{{this.name}}">
 
           <div class="pg-effect-row__content">
             <div class="pg-effect-row__title-line">
+              {{#if this.isItemPassive}}
+              <button type="button" class="pg-item-link pg-effect-row__name" data-item-id="{{this.sourceItemId}}">{{this.name}}</button>
+              <span class="pg-effect-badge">От надетого предмета</span>
+              {{else}}
               <button type="button" class="pg-effect-edit pg-effect-row__name"
                 data-effect-id="{{this.id}}">{{this.name}}</button>
+              {{/if}}
               {{#if this.disabled}}<span class="pg-effect-badge">Выключен</span>{{/if}}
             </div>
 
@@ -159,15 +164,19 @@
             {{/if}}
 
             {{#if this.sourceLabel}}
-            <div class="pg-effect-row__source">Шаблон: {{this.sourceLabel}}</div>
+            <div class="pg-effect-row__source">Источник: {{this.sourceLabel}}</div>
             {{/if}}
           </div>
 
           <div class="pg-effect-row__actions">
+            {{#if this.isItemPassive}}
+            <button type="button" class="pg-item-link" data-item-id="{{this.sourceItemId}}">Открыть предмет</button>
+            {{else}}
             <button type="button" class="pg-effect-toggle" data-effect-id="{{this.id}}">{{#if
               this.disabled}}Включить{{else}}Выключить{{/if}}</button>
             <button type="button" class="pg-effect-edit" data-effect-id="{{this.id}}">Изменить</button>
             <button type="button" class="pg-effect-delete" data-effect-id="{{this.id}}">Удалить</button>
+            {{/if}}
           </div>
         </li>
         {{/each}}
@@ -220,6 +229,7 @@
           </button>
 
           <div class="pg-item-tile-name" title="{{this.name}}">{{this.name}}</div>
+          {{#if this.equipped}}<span class="pg-item-prepared-badge">Надет</span>{{/if}}
           {{#if this.showPreparedBadge}}<span class="pg-item-prepared-badge">Подготовлено</span>{{/if}}
 
           <button type="button" class="pg-item-roll" data-item-id="{{this.id}}" aria-label="Использовать предмет"

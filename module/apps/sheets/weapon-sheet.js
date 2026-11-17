@@ -1,6 +1,7 @@
 import { getItemDamageParts, damagePartOptions, damagePartLabel } from "../../damage/damage-types.js";
 import { attachDamageEditor } from "../../damage/damage-editor.js";
 import { attachItemPortraitListener } from "./item-portrait.js";
+import { prepareItemEffectsContext, attachItemEffectsEditor } from "./item-effects-editor.js";
 const STANDARD_EFFECT_DICE = ["", "d2", "d4", "d6", "d8", "d12", "d20", "d100"];
 
 function getDieFaces(die) {
@@ -63,6 +64,7 @@ export class ParovGradWeaponSheet extends foundry.applications.api.HandlebarsApp
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.canEditPortrait = this.isEditable;
+    Object.assign(context, prepareItemEffectsContext(this));
     const currentDamageDie = String(this.document.system?.damageDie || "d4").toLowerCase();
     const baseDamageDice = ["d4", "d6", "d8", "d12"];
     const damageDice = baseDamageDice.includes(currentDamageDie)
@@ -132,6 +134,7 @@ export class ParovGradWeaponSheet extends foundry.applications.api.HandlebarsApp
   _attachPartListeners(partId, htmlElement, options) {
     super._attachPartListeners(partId, htmlElement, options);
     attachItemPortraitListener(this, htmlElement);
+    attachItemEffectsEditor(this, htmlElement);
     if (!this._isEditMode) return;
     attachDamageEditor(this, htmlElement);
 

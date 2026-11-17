@@ -1,14 +1,15 @@
-import {getItemDamageParts, rollDamageParts, serializeDamageResults, damageResultsHtml, applyTypedDamage} from "../damage/damage-types.js";
+import {getItemDamageParts, rollDamageParts, serializeDamageResults, damageResultsHtml, applyTypedDamage, getAppliedDamage} from "../damage/damage-types.js";
+import { getActiveItemEffectData, applyItemEffectDataToActor } from "../effects/effect-utils.js";
 import {
   consumeActorInspiration,
   openConfiguredD20RollDialog,
   openConfiguredDamageRollDialog
 } from "../dice/roll-dialog.js";
 
-function getSingleTargetToken() {
+function getSingleTargetToken(warning = "Для атаки выберите ровно одну цель.") {
   const targets = Array.from(game.user.targets ?? []);
   if (targets.length !== 1) {
-    ui.notifications?.warn("Для атаки выберите ровно одну цель.");
+    ui.notifications?.warn(warning);
     return null;
   }
 
@@ -211,12 +212,183 @@ function canRollItemEffect(message) {
   return game.user.isGM || ownerActor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER);
 }
 
-async function setAttackResolved(message, resolved = true) {
-  await message.setFlag("ParovGrad", "attack.resolved", resolved);
+const activeEffectApplications = new Set();
+const defenseResolutions = new Set();
+const attackDamageRolls = new Set();
+const damageApplications = new Set();
+
+function getChatMessages() {
+  return Array.from(game.messages?.contents ?? []);
 }
 
-async function setDamageApplied(message, applied = true) {
-  await message.setFlag("ParovGrad", "damage.applied", applied);
+function getAttackContext(message) {
+  const cardType = message.getFlag("ParovGrad", "cardType");
+  if (cardType !== "attack" && cardType !== "defense-result") return null;
+  const defense = cardType === "defense-result" ? message.getFlag("ParovGrad", "defense") ?? {} : null;
+  const original = defense
+    ? game.messages?.get?.(defense.attackMessageId) ?? (defense.attackMessageUuid ? fromUuidSync(defense.attackMessageUuid) : null)
+    : message;
+  const stored = original?.getFlag("ParovGrad", "attack") ?? defense?.attack;
+  if (!stored?.targetTokenUuid) return null;
+  const result = defense ? message : getChatMessages().find((entry) => {
+    if (entry.getFlag("ParovGrad", "cardType") !== "defense-result") return false;
+    const candidate = entry.getFlag("ParovGrad", "defense") ?? {};
+    return candidate.attackMessageId === message.id && candidate.targetTokenUuid === stored.targetTokenUuid;
+  });
+  const resolution = result?.getFlag("ParovGrad", "defense");
+  const data = resolution
+    ? {
+      ...stored, ...resolution.attack, resolved: true, success: resolution.success === true,
+      damageRolled: Boolean(stored.damageRolled || resolution.attack?.damageRolled),
+      activeEffectsApplied: Boolean(stored.activeEffectsApplied || resolution.attack?.activeEffectsApplied)
+    }
+    : stored;
+  const applicationId = original?.uuid || defense?.attackMessageUuid || message.uuid;
+  return { data, original, result, applicationId, attackMessageId: original?.id || defense?.attackMessageId };
+}
+
+function getAttackDamageParts(data) {
+  if (Array.isArray(data.damageParts)) return data.damageParts;
+  const source = data.itemUuid ? fromUuidSync(data.itemUuid) : null;
+  return source ? getItemDamageParts(source) : [];
+}
+
+function getAttackDamageMessage(context) {
+  return getChatMessages().find((entry) => {
+    if (entry.getFlag("ParovGrad", "cardType") !== "damage") return false;
+    const damage = entry.getFlag("ParovGrad", "damage") ?? {};
+    return damage.attackMessageUuid === context.applicationId
+      || (context.attackMessageId && damage.sourceAttackMessageId === context.attackMessageId);
+  });
+}
+
+function canRollAttackDamage(context) {
+  const actor = context?.data.attackerActorUuid ? fromUuidSync(context.data.attackerActorUuid) : null;
+  return Boolean(actor && (game.user.isGM || actor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)));
+}
+
+async function saveChatFlagIfAllowed(message, path, value) {
+  if (!message?.canUserModify?.(game.user, "update")) return;
+  try {
+    await message.setFlag("ParovGrad", path, value);
+  } catch (error) {
+    console.warn("ParovGrad | Action completed but chat status could not be updated", error);
+  }
+}
+
+function renderAttackDamageAction(message, html) {
+  const button = html.querySelector('[data-action="roll-attack-damage"]');
+  if (!button) return;
+  const context = getAttackContext(message);
+  if (!context) return;
+  const ready = context.data.resolved && context.data.success === true;
+  const rolled = Boolean(context.data.damageRolled || getAttackDamageMessage(context));
+  button.hidden = !ready || !getAttackDamageParts(context.data).length;
+  button.disabled = !ready || rolled || !canRollAttackDamage(context);
+  button.textContent = rolled ? "Урон уже брошен" : "Нанести урон";
+  if (!canRollAttackDamage(context)) button.title = "Кнопка доступна ведущему или владельцу атакующего.";
+  button.addEventListener("click", async (event) => {
+    event.preventDefault();
+    button.disabled = true;
+    try {
+      await handleAttackDamageButtonClick(message);
+    } finally {
+      const updated = getAttackContext(message);
+      const done = updated && (updated.data.damageRolled || getAttackDamageMessage(updated));
+      button.disabled = !updated?.data.success || Boolean(done) || !canRollAttackDamage(updated);
+      button.textContent = done ? "Урон уже брошен" : "Нанести урон";
+    }
+  });
+}
+
+/** Refresh related cards locally; this never changes another user's messages. */
+export function refreshAttackChatCards(message) {
+  const cardType = message.getFlag("ParovGrad", "cardType");
+  const attackId = cardType === "defense-result"
+    ? message.getFlag("ParovGrad", "defense")?.attackMessageId
+    : cardType === "damage" ? message.getFlag("ParovGrad", "damage")?.sourceAttackMessageId : null;
+  if (!attackId) return;
+  for (const related of getChatMessages()) {
+    if (related.id === message.id) continue;
+    const isRelated = related.id === attackId
+      || (related.getFlag("ParovGrad", "cardType") === "defense-result"
+        && related.getFlag("ParovGrad", "defense")?.attackMessageId === attackId);
+    if (isRelated) ui.chat?.updateMessage(related);
+  }
+}
+
+function getItemEffectAction(message) {
+  const cardType = message.getFlag("ParovGrad", "cardType");
+  const namespace = cardType === "item-use" ? "itemUse" : cardType === "attack" ? "attack" : cardType === "defense-result" ? "defense.attack" : null;
+  if (!namespace) return null;
+  const context = cardType === "item-use" ? null : getAttackContext(message);
+  const storedData = context?.data ?? message.getFlag("ParovGrad", namespace) ?? {};
+  const effects = Array.isArray(storedData.activeEffects) ? storedData.activeEffects : [];
+  const targetActor = getActorFromTokenUuid(storedData.targetTokenUuid);
+  const applicationId = String(context?.applicationId ?? message.uuid ?? message.id ?? "");
+  const appliedIndices = new Set(Array.from(targetActor?.effects ?? [])
+    .filter(effect => applicationId && effect.flags?.ParovGrad?.applicationId === applicationId)
+    .map(effect => effect.flags.ParovGrad.applicationIndex));
+  const appliedToTarget = effects.length > 0 && effects.every((_effect, index) => appliedIndices.has(index));
+  const data = { ...storedData, activeEffectsApplied: storedData.activeEffectsApplied || appliedToTarget };
+  const allowed = Boolean(targetActor && (game.user.isGM
+    || targetActor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)));
+  const ready = namespace === "itemUse" || (data.resolved && data.success === true);
+  return { namespace, data, effects, targetActor, allowed, ready, applicationId };
+}
+
+function renderItemEffectAction(message, html) {
+  const button = html.querySelector('[data-action="apply-item-effects"]');
+  if (!button) return;
+  const action = getItemEffectAction(message);
+  if (!action) return;
+  button.hidden = !action.effects.length || !action.ready;
+  button.disabled = !action.allowed || !action.ready || Boolean(action.data.activeEffectsApplied);
+  button.textContent = action.data.activeEffectsApplied ? "Активные эффекты применены" : "Применить активные эффекты";
+  if (!action.allowed) button.title = "Кнопка доступна только GM или владельцу цели.";
+  button.addEventListener("click", async (event) => {
+    event.preventDefault();
+    button.disabled = true;
+    await handleApplyItemEffectsButtonClick(message);
+    const updated = getItemEffectAction(message);
+    button.disabled = !updated?.allowed || !updated?.ready || Boolean(updated?.data.activeEffectsApplied);
+    if (updated?.data.activeEffectsApplied) button.textContent = "Активные эффекты применены";
+  });
+}
+
+export async function handleApplyItemEffectsButtonClick(message) {
+  const action = getItemEffectAction(message);
+  const key = action?.applicationId || message.uuid || message.id || message;
+  if (activeEffectApplications.has(key)) return;
+  if (!action?.effects.length || action.data.activeEffectsApplied) return;
+  if (!action.ready) {
+    ui.notifications?.warn("Активные эффекты оружия применяются только после успешной атаки.");
+    return;
+  }
+  if (!action.targetActor) {
+    ui.notifications?.warn("Не удалось найти цель применения предмета.");
+    return;
+  }
+  if (!action.allowed) {
+    ui.notifications?.warn("Применить активные эффекты может только GM или владелец цели.");
+    return;
+  }
+
+  activeEffectApplications.add(key);
+  try {
+    await applyItemEffectDataToActor(action.targetActor, foundry.utils.deepClone(action.effects), {
+      applicationId: action.applicationId
+    });
+    // A target owner can apply effects without owning the source's chat message.
+    // The created effects retain the application ID, so status also survives a denied chat update.
+    await saveChatFlagIfAllowed(message, `${action.namespace}.activeEffectsApplied`, true);
+    ui.notifications?.info(`Активные эффекты предмета «${action.data.itemName}» применены к ${action.targetActor.name}.`);
+  } catch (error) {
+    console.error("ParovGrad | Failed to apply item effects", error);
+    ui.notifications?.error(error.message || "Не удалось применить активные эффекты предмета.");
+  } finally {
+    activeEffectApplications.delete(key);
+  }
 }
 
 function getButtonStateText({ disabled, doneLabel, activeLabel }) {
@@ -267,17 +439,33 @@ export async function startSkillAttack({ actor, item }) {
 
 export async function startItemUse({ actor, item }) {
   const hasSourceEffect = hasConfiguredEffect(item);
+  const activeEffects = foundry.utils.deepClone(getActiveItemEffectData(item));
+  let targetDocument = null;
+  if (activeEffects.length) {
+    const targetToken = getSingleTargetToken("Для применения активных эффектов предмета выберите ровно одну цель.");
+    if (!targetToken) return;
+    targetDocument = getTokenDocument(targetToken);
+    if (!targetDocument?.actor) {
+      ui.notifications?.warn("У выбранной цели нет актора.");
+      return;
+    }
+  }
   const description = String(item?.system?.description ?? "").trim();
   const speaker = ChatMessage.getSpeaker({ actor });
 
-  await createInfoCardMessage({
+  const message = await createInfoCardMessage({
     speaker,
     content: `
       <div class="pg-chat-card__header">
         <div class="pg-chat-card__title">Использование предмета</div>
-        <div class="pg-chat-card__subtitle">${actor.name} использует «${item.name}»</div>
+        <div class="pg-chat-card__subtitle">${actor.name} использует «${item.name}»${targetDocument ? ` на цель ${targetDocument.name}` : ""}</div>
       </div>
       <div class="pg-chat-card__meta">Описание: ${description || "—"}</div>
+      ${activeEffects.length ? `
+        <div class="pg-chat-card__actions">
+          <button type="button" class="pg-chat-button" data-action="apply-item-effects">Применить активные эффекты</button>
+        </div>
+      ` : ""}
       ${hasSourceEffect
         ? `
           <div class="pg-chat-card__actions">
@@ -295,10 +483,18 @@ export async function startItemUse({ actor, item }) {
         sourceType: "item",
         description,
         hasSourceEffect,
-        effectRolled: false
+        effectRolled: false,
+        targetTokenUuid: targetDocument?.uuid ?? null,
+        targetName: targetDocument?.name ?? "",
+        activeEffects,
+        activeEffectsApplied: false
       }
     }
   });
+  if (activeEffects.length && getItemEffectAction(message)?.allowed) {
+    await handleApplyItemEffectsButtonClick(message);
+  }
+  return message;
 }
 
 export async function startItemAttack({ actor, item, sourceType = null }) {
@@ -315,6 +511,8 @@ export async function startItemAttack({ actor, item, sourceType = null }) {
 
   const source = getAttackSourceConfig(sourceType ?? item?.type);
   const hasSourceEffect = hasConfiguredEffect(item);
+  const activeEffects = foundry.utils.deepClone(getActiveItemEffectData(item));
+  const damageParts = foundry.utils.deepClone(getItemDamageParts(item));
   const targetToken = getSingleTargetToken();
   if (!targetToken) return;
 
@@ -344,7 +542,7 @@ export async function startItemAttack({ actor, item, sourceType = null }) {
 
   const speaker = ChatMessage.getSpeaker({ actor });
 
-  await createRollCardMessage({
+  return createRollCardMessage({
     roll,
     speaker,
     content: `
@@ -355,6 +553,8 @@ export async function startItemAttack({ actor, item, sourceType = null }) {
       <div class="pg-chat-card__meta">Режим: ${getRollModeLabel(attackConfig.mode)}${attackConfig.modifier ? ` · Модификатор: ${attackConfig.modifier >= 0 ? "+" : "-"}${Math.abs(attackConfig.modifier)}` : ""}${attackConfig.useInspiration ? " · Вдохновение" : ""}</div>
       <div class="pg-chat-card__actions">
         <button type="button" class="pg-chat-button" data-action="roll-defense">Защита от атаки</button>
+        <button type="button" class="pg-chat-button" data-action="roll-attack-damage" hidden>Нанести урон</button>
+        ${activeEffects.length ? '<button type="button" class="pg-chat-button" data-action="apply-item-effects" hidden>Применить активные эффекты</button>' : ""}
         ${hasSourceEffect
           ? '<button type="button" class="pg-chat-button" data-action="roll-weapon-effect">Проверить доп. эффект</button>'
           : ""}
@@ -378,7 +578,11 @@ export async function startItemAttack({ actor, item, sourceType = null }) {
         success: null,
         hasSourceEffect,
         hasWeaponEffect: hasSourceEffect,
-        effectRolled: false
+        effectRolled: false,
+        damageParts,
+        damageRolled: false,
+        activeEffects,
+        activeEffectsApplied: false
       }
     }
   });
@@ -387,6 +591,8 @@ export async function startItemAttack({ actor, item, sourceType = null }) {
 export async function renderAttackChatButtons(message, html) {
   const cardType = message.getFlag("ParovGrad", "cardType");
   if (!cardType) return;
+  renderItemEffectAction(message, html);
+  renderAttackDamageAction(message, html);
 
   if (cardType === "item-use") {
     const effectButton = html.querySelector('[data-action="roll-item-effect"]');
@@ -418,7 +624,7 @@ export async function renderAttackChatButtons(message, html) {
   if (cardType === "attack") {
     const defenseButton = html.querySelector('[data-action="roll-defense"]');
     const effectButton = html.querySelector('[data-action="roll-weapon-effect"]');
-    const attackData = message.getFlag("ParovGrad", "attack") ?? {};
+    const attackData = getAttackContext(message)?.data ?? {};
 
     if (defenseButton) {
       const allowed = canControlDefense(message);
@@ -471,28 +677,49 @@ export async function renderAttackChatButtons(message, html) {
 
     const damageData = message.getFlag("ParovGrad", "damage") ?? {};
     const allowed = canApplyDamage(message);
-    const disabled = !allowed || damageData.applied;
+    const targetActor = getActorFromTokenUuid(damageData.targetTokenUuid);
+    const applied = damageData.applied || getAppliedDamage(targetActor, message.uuid ?? message.id);
+    const disabled = !allowed || Boolean(applied);
 
     button.disabled = disabled;
     button.textContent = getButtonStateText({
-      disabled: damageData.applied,
+      disabled: applied,
       doneLabel: "Урон нанесён",
       activeLabel: "Нанести урон"
     });
 
-    if (!allowed && !damageData.applied) {
+    if (!allowed && !applied) {
       button.title = "Кнопка доступна только GM или владельцу цели.";
     }
 
     button.addEventListener("click", async (event) => {
       event.preventDefault();
-      await handleApplyDamageButtonClick(message);
+      button.disabled = true;
+      try {
+        await handleApplyDamageButtonClick(message);
+      } finally {
+        const done = message.getFlag("ParovGrad", "damage")?.applied
+          || getAppliedDamage(targetActor, message.uuid ?? message.id);
+        button.disabled = !canApplyDamage(message) || Boolean(done);
+        if (done) button.textContent = "Урон нанесён";
+      }
     });
   }
 }
 
 export async function handleDefenseButtonClick(message) {
-  const attackData = foundry.utils.deepClone(message.getFlag("ParovGrad", "attack") ?? {});
+  const key = message.uuid ?? message.id ?? message;
+  if (defenseResolutions.has(key)) return;
+  defenseResolutions.add(key);
+  try {
+    return await resolveAttackDefense(message);
+  } finally {
+    defenseResolutions.delete(key);
+  }
+}
+
+async function resolveAttackDefense(message) {
+  const attackData = foundry.utils.deepClone(getAttackContext(message)?.data ?? {});
   if (!attackData || !attackData.targetTokenUuid) return;
 
   if (attackData.resolved) {
@@ -530,8 +757,9 @@ export async function handleDefenseButtonClick(message) {
 
   const speaker = ChatMessage.getSpeaker({ actor: targetToken.actor, token: targetToken.document ?? targetToken });
   const success = Number(attackData.total) >= Number(defenseRoll.total);
+  const resolvedAttack = { ...attackData, resolved: true, success };
 
-  await createRollCardMessage({
+  const result = await createRollCardMessage({
     roll: defenseRoll,
     speaker,
     content: `
@@ -547,32 +775,57 @@ export async function handleDefenseButtonClick(message) {
       <div class="pg-chat-card__result ${success ? "is-success" : "is-failure"}">
         ${success ? "Атака успешна" : "Атака отбита"}
       </div>
+      ${success ? `
+        <div class="pg-chat-card__actions">
+          ${getAttackDamageParts(attackData).length ? '<button type="button" class="pg-chat-button" data-action="roll-attack-damage">Нанести урон</button>' : ""}
+          ${attackData.activeEffects?.length ? '<button type="button" class="pg-chat-button" data-action="apply-item-effects">Применить активные эффекты</button>' : ""}
+        </div>
+      ` : ""}
     `,
     flags: {
       cardType: "defense-result",
       defense: {
         attackMessageId: message.id,
+        attackMessageUuid: message.uuid,
         targetTokenUuid: attackData.targetTokenUuid,
         total: defenseRoll.total,
         success,
-        usedInspiration: defenseConfig.useInspiration
+        usedInspiration: defenseConfig.useInspiration,
+        attack: resolvedAttack
       }
     }
   });
 
-  await setAttackResolved(message, true);
-  await message.setFlag("ParovGrad", "attack.success", success);
+  await saveChatFlagIfAllowed(message, "attack", resolvedAttack);
+  if (success && attackData.activeEffects?.length) {
+    await handleApplyItemEffectsButtonClick(result);
+  }
+  return result;
+}
 
-  if (!success) return;
-
-  const source = getAttackSourceConfig(attackData.sourceType);
-  const sourceItem = fromUuidSync(attackData.itemUuid);
-  if (!sourceItem) {
-    ui.notifications?.warn("Не удалось найти источник урона для броска урона.");
+export async function handleAttackDamageButtonClick(message) {
+  const context = getAttackContext(message);
+  if (!context?.data.resolved || context.data.success !== true) {
+    ui.notifications?.warn("Урон доступен только после успешной атаки.");
     return;
   }
+  if (!canRollAttackDamage(context)) {
+    ui.notifications?.warn("Бросить урон может ведущий или владелец атакующего.");
+    return;
+  }
+  if (context.data.damageRolled || getAttackDamageMessage(context) || attackDamageRolls.has(context.applicationId)) return;
+  attackDamageRolls.add(context.applicationId);
+  try {
+    return await rollAttackDamage(context);
+  } finally {
+    attackDamageRolls.delete(context.applicationId);
+  }
+}
 
-  const parts = getItemDamageParts(sourceItem);
+async function rollAttackDamage(context) {
+  const attackData = foundry.utils.deepClone(context.data);
+  const source = getAttackSourceConfig(attackData.sourceType);
+  const parts = foundry.utils.deepClone(getAttackDamageParts(attackData));
   const damageDie = parts[0]?.formula;
   if (!damageDie) {
     ui.notifications?.warn("У источника урона не задана кость урона.");
@@ -595,10 +848,10 @@ export async function handleDefenseButtonClick(message) {
   const rolledDamage = await rollDamageParts(parts, {useInspiration: damageConfig.useInspiration});
   const damageRoll = rolledDamage.primaryRoll;
 
-  await createRollCardMessage({
+  const message = await createRollCardMessage({
     roll: damageRoll,
     additionalRolls: rolledDamage.results.slice(1).map(part => part.roll),
-    speaker,
+    speaker: ChatMessage.getSpeaker({ actor: attackerActor }),
     content: `
       <div class="pg-chat-card__header">
         <div class="pg-chat-card__title">${source.damageTitle}</div>
@@ -619,13 +872,16 @@ export async function handleDefenseButtonClick(message) {
         sourceType: source.type,
         sourceName: attackData.itemName,
         weaponName: attackData.itemName,
-        sourceAttackMessageId: message.id,
+        sourceAttackMessageId: context.attackMessageId,
+        attackMessageUuid: context.applicationId,
         usedInspiration: damageConfig.useInspiration,
         applied: false
       }
     }
   });
-
+  await saveChatFlagIfAllowed(context.original, "attack.damageRolled", true);
+  if (context.result) await saveChatFlagIfAllowed(context.result, "defense.attack.damageRolled", true);
+  return message;
 }
 
 export async function handleWeaponEffectButtonClick(message) {
@@ -738,10 +994,22 @@ export async function handleItemEffectButtonClick(message) {
 }
 
 export async function handleApplyDamageButtonClick(message) {
+  const key = message.uuid ?? message.id ?? message;
+  if (damageApplications.has(key)) return;
+  damageApplications.add(key);
+  try {
+    return await applyAttackDamage(message);
+  } finally {
+    damageApplications.delete(key);
+  }
+}
+
+async function applyAttackDamage(message) {
   const damageData = foundry.utils.deepClone(message.getFlag("ParovGrad", "damage") ?? {});
   if (!damageData || !damageData.targetTokenUuid) return;
 
-  if (damageData.applied) {
+  const targetActor = getActorFromTokenUuid(damageData.targetTokenUuid);
+  if (damageData.applied || getAppliedDamage(targetActor, message.uuid ?? message.id)) {
     ui.notifications?.info("Урон по этому сообщению уже был нанесён.");
     return;
   }
@@ -751,7 +1019,6 @@ export async function handleApplyDamageButtonClick(message) {
     return;
   }
 
-  const targetActor = getActorFromTokenUuid(damageData.targetTokenUuid);
   if (!targetActor) {
     ui.notifications?.warn("Не удалось найти цель для нанесения урона.");
     return;
@@ -759,13 +1026,15 @@ export async function handleApplyDamageButtonClick(message) {
 
   const rolledParts = Array.isArray(damageData.parts) && damageData.parts.length
     ? damageData.parts : [{amount: damageData.amount, category: "unspecified", damageType: null}];
-  const {amount: damageAmount, before: currentHealth, after: nextHealth} = await applyTypedDamage(targetActor, rolledParts);
+  const {amount: damageAmount, before: currentHealth, after: nextHealth} = await applyTypedDamage(targetActor, rolledParts, {
+    applicationId: message.uuid ?? message.id
+  });
 
-  await setDamageApplied(message, true);
+  await saveChatFlagIfAllowed(message, "damage.applied", true);
 
   const sourceName = damageData.sourceName ?? damageData.weaponName ?? "источника";
 
-  await ChatMessage.create({
+  return ChatMessage.create({
     user: game.user.id,
     speaker: ChatMessage.getSpeaker({ actor: targetActor }),
     content: `

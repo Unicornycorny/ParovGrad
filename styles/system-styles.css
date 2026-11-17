@@ -3022,3 +3022,41 @@
 @container (max-width: 450px) {
   .pg-player-dossier .pg-dossier-pool-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Item effects use the same two application modes on equipment and weapons. */
+.pg-item-dossier .pg-item-equipped-field {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--pg-rule, #a18b6c);
+  background: #f7eedc66;
+}
+.pg-item-dossier .pg-item-equipped-field label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--pg-ink, #302b25);
+}
+.pg-item-dossier .pg-item-equipped-field input[type="checkbox"] { flex: 0 0 auto; width: 18px; height: 18px; margin: 0; }
+.pg-item-dossier .pg-item-effects { display: grid; gap: 12px; margin-bottom: 18px; }
+.pg-item-dossier .pg-item-effect-group {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--pg-rule, #a18b6c);
+  border-top: 3px double var(--pg-brass, #8e6b38);
+  background: #faf5e944;
+}
+.pg-item-dossier .pg-item-effect-group--editable { border-style: dashed; border-top-style: double; }
+.pg-item-dossier .pg-item-effect-group__heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.pg-item-dossier .pg-item-effect-group__heading h2 { margin: 0; border: 0; font-size: 16px; }
+.pg-item-dossier .pg-item-effect-group__heading button { flex: 0 0 auto; width: auto; padding: 2px 8px; font-size: 12px; }
+.pg-item-dossier .pg-item-effect-drop-hint { margin: 8px 0; padding: 8px; border: 1px dashed var(--pg-rule, #a18b6c); color: var(--pg-muted, #71614d); font-size: 12px; text-align: center; }
+.pg-item-dossier .pg-item-effect-list { display: grid; gap: 8px; margin-top: 8px; }
+.pg-item-dossier .pg-item-effect-row { display: flex; align-items: flex-start; gap: 8px; min-width: 0; padding: 8px; background: #f6efdf99; border: 1px solid #a18b6c66; }
+.pg-item-dossier .pg-item-effect-row--disabled { opacity: .6; }
+.pg-item-dossier .pg-item-effect-row__icon { flex: 0 0 30px; width: 30px; height: 30px; object-fit: cover; border: 0; }
+.pg-item-dossier .pg-item-effect-row__body { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.pg-item-dossier .pg-item-effect-row__body p { margin: 3px 0; white-space: pre-wrap; font-size: 12px; }
+.pg-item-dossier .pg-item-effect-row__body select { width: 100%; margin-top: 6px; font-size: 12px; }
+.pg-item-dossier .pg-item-effect-status { margin-left: 5px; font-size: 11px; color: var(--pg-muted, #71614d); }
+.pg-item-dossier .pg-item-effect-row__actions { display: flex; flex: 0 0 auto; gap: 3px; }
+.pg-item-dossier .pg-item-effect-row__actions button { width: 27px; min-height: 27px; padding: 2px; font-size: 12px; }

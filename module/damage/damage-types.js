@@ -106,7 +106,60 @@ export function calculateDamage(parts, {half = false} = {}) {
   const total = (parts ?? []).reduce((sum, part) => sum + Math.max(0, Number(part.amount) || 0), 0);
   return half ? Math.floor(total / 2) : total;
 }
-export async function applyTypedDamage(actor, parts, {half = false} = {}) {
+const damageApplicationsInFlight = new WeakMap();
+
+function damageApplicationKey(applicationId) {
+  // Flag paths cannot contain dots. Fixed-width Unicode hex also keeps distinct IDs distinct.
+  return `id_${Array.from(String(applicationId), character => character.codePointAt(0).toString(16).padStart(6, "0")).join("")}`;
+}
+
+export function getAppliedDamage(actor, applicationId) {
+  if (!applicationId) return null;
+  const receipt = actor?.flags?.ParovGrad?.damageApplications?.[damageApplicationKey(applicationId)];
+  if (!receipt || ![receipt.amount, receipt.before, receipt.after].every(value => Number.isFinite(value) && value >= 0)) {
+    return null;
+  }
+  return {amount: receipt.amount, before: receipt.before, after: receipt.after};
+}
+
+async function applyTrackedDamage(actor, parts, {half, applicationId}) {
+  const amount = calculateDamage(parts, {half});
+  const before = Math.max(0, Number(actor.system?.health?.value) || 0);
+  const after = Math.max(0, before - amount);
+  const receipt = {amount, before, after};
+  try {
+    await actor.update({
+      "system.health.value": after,
+      [`flags.ParovGrad.damageApplications.${damageApplicationKey(applicationId)}`]: receipt
+    });
+  } catch (error) {
+    // A hook may throw after the whole update persisted. The receipt proves damage was applied.
+    const applied = getAppliedDamage(actor, applicationId);
+    if (applied) return applied;
+    throw error;
+  }
+  const applied = getAppliedDamage(actor, applicationId);
+  if (!applied) throw new Error("Не удалось подтвердить нанесение урона.");
+  return applied;
+}
+
+export async function applyTypedDamage(actor, parts, {half = false, applicationId = ""} = {}) {
+  if (applicationId) {
+    applicationId = String(applicationId);
+    const applied = getAppliedDamage(actor, applicationId);
+    if (applied) return applied;
+    const pending = damageApplicationsInFlight.get(actor) ?? new Map();
+    if (pending.has(applicationId)) return pending.get(applicationId);
+    damageApplicationsInFlight.set(actor, pending);
+    const application = applyTrackedDamage(actor, parts, {half, applicationId});
+    pending.set(applicationId, application);
+    try {
+      return await application;
+    } finally {
+      pending.delete(applicationId);
+      if (!pending.size) damageApplicationsInFlight.delete(actor);
+    }
+  }
   const amount = calculateDamage(parts, {half});
   const before = Math.max(0, Number(actor.system?.health?.value) || 0);
   const after = Math.max(0, before - amount);

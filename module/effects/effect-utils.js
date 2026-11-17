@@ -1,6 +1,7 @@
 const EFFECT_FLAG_SCOPE = "ParovGrad";
 const DEFAULT_EFFECT_ICON = "icons/svg/aura.svg";
 const DEFAULT_EFFECT_TARGET = "constitution";
+const EQUIPMENT_ITEM_TYPES = new Set(["item", "weapon"]);
 
 const EFFECT_MODIFIER_TARGETS = [
   { key: "constitution", label: "Телосложение", path: "system.stats.constitution" },
@@ -92,13 +93,111 @@ export function getEffectItemTemplateData(item) {
   };
 }
 
+export function getItemEffectApplication(effect) {
+  return effect?.flags?.[EFFECT_FLAG_SCOPE]?.itemApplication === "active" ? "active" : "passive";
+}
+
+export function getItemEffectViews(item, application) {
+  return Array.from(item?.effects ?? [])
+    .filter((effect) => getItemEffectApplication(effect) === application)
+    .map((effect) => getActorEffectView(effect));
+}
+
+function getWornItemEffectEntries(actor) {
+  return Array.from(actor?.items ?? [])
+    .filter((item) => EQUIPMENT_ITEM_TYPES.has(item.type) && item.system?.equipped === true)
+    .flatMap((item) => Array.from(item.effects ?? [])
+      .filter((effect) => getItemEffectApplication(effect) === "passive")
+      .map((effect) => ({ effect, item })));
+}
+
+export function getActorPassiveItemEffectViews(actor) {
+  return getWornItemEffectEntries(actor).map(({ effect, item }) => ({
+    ...getActorEffectView(effect),
+    sourceLabel: item.name,
+    sourceItemId: item.id,
+    isItemPassive: true
+  }));
+}
+
+/** Store a local copy so compendium templates need not be resolved during preparation. */
+export async function addEffectToItem(item, source, application = "passive") {
+  if (!EQUIPMENT_ITEM_TYPES.has(item?.type)) throw new Error("Эффекты можно привязать к предмету или оружию.");
+  if (!item.isOwner) throw new Error("Недостаточно прав для изменения предмета.");
+  if (!["passive", "active"].includes(application)) throw new Error("Неизвестный способ применения эффекта.");
+
+  let seed;
+  if (source?.documentName === "Item" && source.type === "effect") {
+    seed = getEffectItemTemplateData(source);
+  } else if (source?.documentName === "ActiveEffect") {
+    seed = getEffectDialogSeedFromActiveEffect(source);
+  } else {
+    throw new Error("Перетащите шаблон эффекта или существующий эффект.");
+  }
+
+  const data = buildActiveEffectCreateData(seed, { origin: source.uuid || "", disabled: Boolean(source.disabled) });
+  data.flags[EFFECT_FLAG_SCOPE].itemApplication = application;
+  const created = await item.createEmbeddedDocuments("ActiveEffect", [data]);
+  return created[0] ?? null;
+}
+
+export function getActiveItemEffectData(item) {
+  if (!EQUIPMENT_ITEM_TYPES.has(item?.type)) return [];
+  return Array.from(item.effects ?? [])
+    .filter((effect) => getItemEffectApplication(effect) === "active" && !effect.disabled && !effect.isSuppressed)
+    .map((effect) => buildActiveEffectCreateData({
+      ...getEffectDialogSeedFromActiveEffect(effect),
+      sourceItemUuid: item.uuid || "",
+      sourceItemName: item.name || ""
+    }, { origin: item.uuid || "" }));
+}
+
+/** A use keeps its snapshot and index, allowing a partial application to be retried. */
+export async function applyItemEffectDataToActor(actor, effectData, { applicationId = "" } = {}) {
+  if (actor?.documentName !== "Actor") throw new Error("У выбранной цели нет персонажа.");
+  if (!globalThis.game?.user?.isGM && !actor.isOwner) {
+    throw new Error("Применить эффекты может ведущий или владелец цели.");
+  }
+  if (!Array.isArray(effectData)) throw new Error("Неверный список эффектов предмета.");
+
+  const existing = Array.from(actor.effects ?? []);
+  const pending = [];
+  const result = [];
+  for (const [index, snapshot] of effectData.entries()) {
+    const match = applicationId && existing.find((effect) => {
+      const flags = effect.flags?.[EFFECT_FLAG_SCOPE];
+      return flags?.applicationId === applicationId && flags.applicationIndex === index;
+    });
+    if (match) {
+      result.push(match);
+      continue;
+    }
+    const data = buildActiveEffectCreateData(getEffectDialogSeedFromActiveEffect(snapshot), {
+      origin: snapshot.origin || ""
+    });
+    if (applicationId) {
+      Object.assign(data.flags[EFFECT_FLAG_SCOPE], { applicationId, applicationIndex: index });
+    }
+    pending.push(data);
+  }
+  if (pending.length) {
+    const created = await actor.createEmbeddedDocuments("ActiveEffect", pending);
+    if (created.length !== pending.length) throw new Error("Не все эффекты удалось применить. Повторите применение.");
+    result.push(...created);
+  }
+  return result;
+}
+
 export function buildActorInfluenceState(actor) {
   const entriesByTarget = Object.fromEntries(EFFECT_MODIFIER_TARGETS.map((target) => [target.key, []]));
   const totalsByTarget = { ...EMPTY_INFLUENCE_STATE };
   const tooltipsByTarget = Object.fromEntries(EFFECT_MODIFIER_TARGETS.map((target) => [target.key, "Нет внешних влияний"]));
 
-  const effects = Array.from(actor?.effects ?? []);
-  for (const effect of effects) {
+  const effects = [
+    ...Array.from(actor?.effects ?? []).map((effect) => ({ effect, item: null })),
+    ...getWornItemEffectEntries(actor)
+  ];
+  for (const { effect, item } of effects) {
     if (!effect || effect.disabled || effect.isSuppressed) continue;
 
     const flagData = getParovgradEffectFlagData(effect);
@@ -110,11 +209,11 @@ export function buildActorInfluenceState(actor) {
       const entry = {
         effectId: effect.id,
         effectName: effect.name || "Безымянный эффект",
-        sourceItemName: flagData.sourceItemName || "",
+        sourceItemName: item?.name || flagData.sourceItemName || "",
         target: modifier.target,
         value: modifier.value,
         signedValue: formatSignedValue(modifier.value),
-        summary: `${effect.name || "Безымянный эффект"}: ${formatSignedValue(modifier.value)}`
+        summary: `${effect.name || "Безымянный эффект"}${item ? ` (${item.name})` : ""}: ${formatSignedValue(modifier.value)}`
       };
 
       entriesByTarget[modifier.target].push(entry);
@@ -140,7 +239,7 @@ export function getModifierTotalForTargetFromEffect(effect, target) {
   }, 0);
 }
 
-export async function openActorEffectDialog({ actor, effect = null, seed = null } = {}) {
+export async function openActorEffectDialog({ actor, effect = null, seed = null, itemApplication = null } = {}) {
   const initial = seed ?? (effect ? getEffectDialogSeedFromActiveEffect(effect) : getBlankEffectDialogSeed());
   const escapedName = foundry.utils.escapeHTML(initial.name);
   const escapedImg = foundry.utils.escapeHTML(initial.img);
@@ -248,6 +347,9 @@ export async function openActorEffectDialog({ actor, effect = null, seed = null 
   let update;
   try {
     update = buildActiveEffectUpdateData(result, effect);
+    if (actor.documentName === "Item" && ["passive", "active"].includes(itemApplication)) {
+      update.flags[EFFECT_FLAG_SCOPE].itemApplication = itemApplication;
+    }
   } catch (error) {
     ui.notifications?.error(error.message || "Не удалось сохранить эффект.");
     console.error("ParovGrad | Failed to build active effect update", error);
