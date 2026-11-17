@@ -1,20 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { moduleUrl as resolveModuleUrl } from "./helpers/import-module.mjs";
 
-const urls = new Map();
-async function moduleUrl(path) {
-  if (urls.has(path)) return urls.get(path);
-  const file = new URL(`../module/${path}`, import.meta.url);
-  let source = await readFile(file, "utf8");
-  for (const match of [...source.matchAll(/from "(\.[^"]+)"/g)]) {
-    const dependency = new URL(match[1], file).pathname.split("/module/")[1];
-    source = source.replace(match[0], `from "${await moduleUrl(dependency)}"`);
-  }
-  const url = `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`;
-  urls.set(path, url);
-  return url;
-}
+const moduleUrl = path => resolveModuleUrl(new URL(`../module/${path}`, import.meta.url));
 
 function mergeObject(base, extra) {
   const result = structuredClone(base);

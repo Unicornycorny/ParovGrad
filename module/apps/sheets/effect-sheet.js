@@ -1,5 +1,11 @@
 import { attachItemPortraitListener } from "./item-portrait.js";
 import {
+  getDamageModifierModeOptions,
+  getDamageModifierTypeOptions,
+  getDamageModifierSummary,
+  initializeDamageModifierEditor
+} from "../../effects/damage-modifiers.js";
+import {
   getEffectItemTemplateData,
   getEffectModifierOptions,
   getEffectModifierLabel
@@ -39,6 +45,8 @@ export class ParovGradEffectSheet extends foundry.applications.api.HandlebarsApp
     context.system = this.document.system;
     context.isEditMode = this._isEditMode;
     context.modifierTargetOptions = getEffectModifierOptions();
+    context.damageModifierModeOptions = getDamageModifierModeOptions();
+    context.damageModifierTypeOptions = getDamageModifierTypeOptions();
     context.modifierList = effectData.modifiers.map((modifier, index) => ({
       index,
       target: modifier.target,
@@ -55,6 +63,7 @@ export class ParovGradEffectSheet extends foundry.applications.api.HandlebarsApp
       removal: effectData.removal || "—",
       description: effectData.description || "—",
       modifierSummary: effectData.modifierSummary || "—",
+      damageModifierSummary: getDamageModifierSummary(effectData.damageModifiers) || "—",
       modifierList: context.modifierList
     };
 
@@ -82,6 +91,8 @@ export class ParovGradEffectSheet extends foundry.applications.api.HandlebarsApp
     super._attachPartListeners(partId, htmlElement, options);
     attachItemPortraitListener(this, htmlElement);
     if (!this._isEditMode) return;
+    initializeDamageModifierEditor(htmlElement, getEffectItemTemplateData(this.document).damageModifiers,
+      (damageModifiers) => this.document.update({ "system.damageModifiers": damageModifiers }));
 
     const addButton = htmlElement.querySelector(".pg-effect-modifier-add");
     const targetSelect = htmlElement.querySelector(".pg-effect-modifier-target");

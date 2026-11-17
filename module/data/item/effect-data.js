@@ -1,3 +1,5 @@
+import { damageModifiersSchema } from "../../effects/damage-modifiers.js";
+
 const { StringField, NumberField, ArrayField, SchemaField } = foundry.data.fields;
 
 export class EffectDataModel extends foundry.abstract.TypeDataModel {
@@ -8,6 +10,7 @@ export class EffectDataModel extends foundry.abstract.TypeDataModel {
       effectType: new StringField({ required: false, initial: "" }),
       impact: new StringField({ required: false, initial: "" }),
       removal: new StringField({ required: false, initial: "" }),
+      damageModifiers: damageModifiersSchema(),
       modifiers: new ArrayField(
         new SchemaField({
           target: new StringField({ required: true, initial: "constitution" }),

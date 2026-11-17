@@ -1,13 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { importModule } from "./helpers/import-module.mjs";
 
-const effectSource = await readFile(new URL("../module/effects/effect-utils.js", import.meta.url), "utf8");
-const effectUrl = `data:text/javascript;base64,${Buffer.from(effectSource).toString("base64")}`;
-const restSource = (await readFile(new URL("../module/actors/rest-recovery.js", import.meta.url), "utf8"))
-  .replace('"../effects/effect-utils.js"', JSON.stringify(effectUrl));
-const { getRestRecoveryPoints, getRestRecoverableEffects, applyRestRecovery } = await import(
-  `data:text/javascript;base64,${Buffer.from(restSource).toString("base64")}`
+const { getRestRecoveryPoints, getRestRecoverableEffects, applyRestRecovery } = await importModule(
+  new URL("../module/actors/rest-recovery.js", import.meta.url)
 );
 
 function effect(id, level = 3, removal = "после отдыха", extra = {}) {

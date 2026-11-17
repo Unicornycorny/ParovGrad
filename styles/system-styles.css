@@ -356,6 +356,27 @@
   align-items: center;
 }
 
+.pg-damage-modifier-add-row,
+.pg-damage-modifier-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.pg-damage-modifiers select {
+  min-width: 0;
+  width: 100%;
+}
+
+.pg-damage-modifiers button {
+  white-space: nowrap;
+}
+
+.pg-damage-modifiers [data-damage-modifier-list] {
+  margin-top: 8px;
+}
+
 .pg-effect-modifier-list,
 .pg-effect-modifier-readonly-list {
   display: flex;
@@ -2690,6 +2711,70 @@
 .pg-tree-dialog .pg-level-up-summary-card__value { font: normal 24px/1.2 Georgia, serif; }
 .pg-tree-dialog .pg-level-up-errors__item { border-radius: 2px; }
 .pg-tree-dialog .pg-level-up-purchase-warning { color: var(--pg-magic-tree-danger); }
+
+/* Keep the effect editor's actions visible while only its dossier content scrolls. */
+.application.pg-effect-window {
+  max-height: calc(100dvh - 32px);
+  max-width: calc(100vw - 32px);
+}
+.pg-effect-window .window-content {
+  min-height: 0; padding: 0; overflow: hidden; color-scheme: light;
+}
+.pg-effect-window .dialog-form {
+  flex: 1; min-height: 0; gap: 0; overflow: hidden;
+}
+.pg-effect-window .dialog-content {
+  flex: 1; min-height: 0; padding: 0; gap: 0; overflow: auto;
+  scrollbar-color: var(--pg-brass) transparent; scrollbar-width: thin;
+}
+.pg-effect-window .pg-effect-dialog {
+  flex: none; min-height: min-content; padding: 20px 24px; gap: 18px;
+}
+.pg-effect-window .pg-effect-dialog__heading {
+  padding-bottom: 12px; border-bottom: 3px double var(--pg-brass);
+}
+.pg-effect-window .pg-effect-dialog__heading h2 {
+  margin: 0 0 6px; padding: 0; border: 0; font-size: 25px; letter-spacing: normal;
+}
+.pg-effect-window .pg-effect-dialog__heading p { margin: 0; color: var(--pg-muted); font-size: 12px; }
+.pg-effect-window .pg-effect-dialog__section { display: flex; flex-direction: column; gap: 12px; }
+.pg-effect-window .pg-effect-dialog__section h3 { margin: 0; }
+.pg-effect-window .pg-form-field { margin: 0; }
+.pg-effect-window .pg-form-field > :is(input, select, textarea) { width: 100%; }
+.pg-effect-window .pg-effect-dialog__details {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
+}
+.pg-effect-window .pg-effect-dialog__description { grid-column: 1 / -1; }
+.pg-effect-window .pg-effect-modifier-add-row,
+.pg-effect-window .pg-effect-modifier-row { grid-template-columns: minmax(0, 1fr) 84px auto; }
+.pg-effect-window .pg-effect-modifier-row,
+.pg-effect-window .pg-damage-modifier-row {
+  padding: 8px; border: 1px solid var(--pg-rule); border-radius: 2px; background: #faf5e944;
+}
+.pg-effect-window .pg-effect-modifier-empty {
+  margin: 0; border-color: var(--pg-rule); border-radius: 2px; color: var(--pg-muted);
+  font: italic 12px/1.5 Georgia, serif; opacity: 1;
+}
+.pg-effect-window .form-footer {
+  flex: 0 0 auto; margin: 0; padding: 12px 24px 16px; gap: 8px;
+  border-top: 1px solid var(--pg-rule); background: var(--pg-paper);
+}
+.pg-effect-window .form-footer button {
+  min-height: 38px; padding: 6px 12px; border: 1px solid #9c8057; border-radius: 2px;
+  background: #e0d2b6; color: var(--pg-ink); font: 13px/1.4 Arial, sans-serif;
+  white-space: normal; box-shadow: none; text-shadow: none;
+}
+.pg-effect-window .form-footer button[data-action="save"] { border-color: #74552b; background: #d0bd96; }
+.pg-effect-window .form-footer button:hover:not(:disabled) { border-color: #74552b; background: #ccb78e; }
+.pg-effect-window .form-footer button:focus-visible { outline: 2px solid #7d5426; outline-offset: 2px; }
+.pg-effect-window .form-footer button:disabled { opacity: .55; cursor: not-allowed; }
+@container (max-width: 440px) {
+  .pg-effect-dialog .pg-effect-dialog__details { grid-template-columns: minmax(0, 1fr); }
+  .pg-effect-dialog .pg-damage-modifier-add-row,
+  .pg-effect-dialog .pg-damage-modifier-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .pg-effect-dialog .pg-damage-modifier-add-row > select:first-child,
+  .pg-effect-dialog .pg-damage-modifier-row > select:first-child { grid-column: 1 / -1; }
+}
 
 @container (max-width: 820px) {
   .pg-tree-app .pg-spell-builder-workspace { grid-template-columns: minmax(0, 1fr) 280px; }

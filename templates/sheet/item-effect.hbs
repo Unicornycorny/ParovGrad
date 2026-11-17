@@ -84,6 +84,24 @@
           <div class="pg-effect-modifier-empty">Влияния не добавлены</div>
         {{/if}}
       </div>
+      <div class="pg-form-field pg-damage-modifiers" data-damage-modifier-editor>
+        <label>Преобразование входящего урона</label>
+        <div class="pg-damage-modifier-add-row">
+          <select data-damage-modifier-new-mode aria-label="Преобразование урона">
+            {{#each damageModifierModeOptions}}
+              <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+            {{/each}}
+          </select>
+          <select data-damage-modifier-new-type aria-label="Тип урона">
+            {{#each damageModifierTypeOptions}}
+              <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+            {{/each}}
+          </select>
+          <button type="button" data-damage-modifier-add>+</button>
+        </div>
+        <p class="pg-form-hint">Сопротивление — половина с округлением вниз, иммунитет — 0, уязвимость — двойной урон. Одинаковые преобразования не складываются.</p>
+        <div class="pg-effect-modifier-list" data-damage-modifier-list></div>
+      </div>
     {{else}}
       <div class="pg-weapon-stat-grid">
         <article class="pg-weapon-stat">
@@ -117,7 +135,12 @@
         </article>
 
         <article class="pg-weapon-stat pg-weapon-stat--full">
-          <div class="pg-weapon-stat__label">Влияния</div>
+          <div class="pg-weapon-stat__label">Преобразование входящего урона</div>
+          <div class="pg-weapon-stat__value">{{effectView.damageModifierSummary}}</div>
+        </article>
+
+        <article class="pg-weapon-stat pg-weapon-stat--full">
+          <div class="pg-weapon-stat__label">Влияния на показатели</div>
           <div class="pg-weapon-stat__value">
             {{#if effectView.modifierList.length}}
               <div class="pg-effect-modifier-readonly-list">

@@ -1,28 +1,7 @@
-/** Physical damage uses the same typed parts as energy and other damage. */
-export const PHYSICAL_DAMAGE_TYPES = Object.freeze({
-  bludgeoning: "Дробящий",
-  piercing: "Колющий",
-  slashing: "Режущий"
-});
-export const DAMAGE_TYPES = Object.freeze({
-  ...PHYSICAL_DAMAGE_TYPES,
-  fire: "Огонь",
-  cold: "Холод",
-  sonic: "Звук",
-  electricity: "Электричество",
-  force: "Силовой",
-  poison: "Яд",
-  acid: "Кислота",
-  necrotic: "Некротик",
-  holy: "Святой"
-});
-export const DAMAGE_CATEGORIES = Object.freeze({
-  // Accepted in saved data only; normalized to typed bludgeoning on read.
-  physical: "Физический",
-  typed: "Тип урона",
-  unspecified: "Не определён"
-});
-export const DAMAGE_TYPE_OPTIONS = Object.entries(DAMAGE_TYPES).map(([value, label]) => ({value, label}));
+import { DAMAGE_TYPES, PHYSICAL_DAMAGE_TYPES, DAMAGE_CATEGORIES, DAMAGE_TYPE_OPTIONS } from "./damage-config.js";
+import { getActorDamageModifiers } from "../effects/damage-modifiers.js";
+
+export { DAMAGE_TYPES, PHYSICAL_DAMAGE_TYPES, DAMAGE_CATEGORIES, DAMAGE_TYPE_OPTIONS } from "./damage-config.js";
 
 export function damagePartSchema() {
   const { SchemaField, StringField } = foundry.data.fields;
@@ -101,10 +80,34 @@ export function serializeDamageResults(results) {
 export function damageResultsHtml(results, escapeHTML = foundry.utils.escapeHTML) {
   return results.map(part => `${escapeHTML(damagePartLabel(part))}: ${escapeHTML(String(part.amount))} (${escapeHTML(part.formula)})`).join(" · ");
 }
-/** Resistance hooks can be inserted here without changing attack workflows. */
-export function calculateDamage(parts, {half = false} = {}) {
-  const total = (parts ?? []).reduce((sum, part) => sum + Math.max(0, Number(part.amount) || 0), 0);
-  return half ? Math.floor(total / 2) : total;
+/** Combine each type before rounding; repeated defenses never multiply each other. */
+export function calculateDamage(parts, {half = false, actor = null} = {}) {
+  const amounts = new Map();
+  for (const part of parts ?? []) {
+    const value = Number(part?.amount);
+    const amount = Number.isFinite(value) ? Math.max(0, value) : 0;
+    const legacyPhysical = part?.category === "physical" || !Object.hasOwn(DAMAGE_CATEGORIES, part?.category);
+    const type = legacyPhysical ? "bludgeoning"
+      : part.category === "typed" && Object.hasOwn(DAMAGE_TYPES, part.damageType) ? part.damageType : "unspecified";
+    amounts.set(type, (amounts.get(type) ?? 0) + amount);
+  }
+
+  const modifiers = getActorDamageModifiers(actor);
+  let total = 0;
+  for (const [type, amount] of amounts) {
+    const modes = new Set(modifiers
+      .filter(modifier => modifier.damageType === "all" || modifier.damageType === type
+        || (modifier.damageType === "physical" && Object.hasOwn(PHYSICAL_DAMAGE_TYPES, type)))
+      .map(modifier => modifier.mode));
+    if (modes.has("immunity")) continue;
+
+    let applied = half ? amount / 2 : amount;
+    if (modes.has("resistance")) applied = Math.floor(applied / 2);
+    if (modes.has("vulnerability")) applied *= 2;
+    total += applied;
+  }
+  // Half damage can leave fractions in different types; round only after summing.
+  return half || modifiers.length ? Math.floor(total) : total;
 }
 const damageApplicationsInFlight = new WeakMap();
 
@@ -123,7 +126,7 @@ export function getAppliedDamage(actor, applicationId) {
 }
 
 async function applyTrackedDamage(actor, parts, {half, applicationId}) {
-  const amount = calculateDamage(parts, {half});
+  const amount = calculateDamage(parts, {half, actor});
   const before = Math.max(0, Number(actor.system?.health?.value) || 0);
   const after = Math.max(0, before - amount);
   const receipt = {amount, before, after};
@@ -160,7 +163,7 @@ export async function applyTypedDamage(actor, parts, {half = false, applicationI
       if (!pending.size) damageApplicationsInFlight.delete(actor);
     }
   }
-  const amount = calculateDamage(parts, {half});
+  const amount = calculateDamage(parts, {half, actor});
   const before = Math.max(0, Number(actor.system?.health?.value) || 0);
   const after = Math.max(0, before - amount);
   await actor.update({"system.health.value": after});

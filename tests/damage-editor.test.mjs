@@ -1,12 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { importModule } from "./helpers/import-module.mjs";
 
-const damageSource = await readFile(new URL("../module/damage/damage-types.js", import.meta.url), "utf8");
-const damageUrl = `data:text/javascript;base64,${Buffer.from(damageSource).toString("base64")}`;
-const editorSource = (await readFile(new URL("../module/damage/damage-editor.js", import.meta.url), "utf8"))
-  .replace('"./damage-types.js"', JSON.stringify(damageUrl));
-const {attachDamageEditor} = await import(`data:text/javascript;base64,${Buffer.from(editorSource).toString("base64")}`);
+const {attachDamageEditor} = await importModule(new URL("../module/damage/damage-editor.js", import.meta.url));
 
 let nextId = 0;
 globalThis.foundry = {utils: {randomID: () => `new-${++nextId}`}};

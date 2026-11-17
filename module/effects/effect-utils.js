@@ -1,3 +1,10 @@
+import {
+  normalizeDamageModifiers,
+  getDamageModifierSummary,
+  renderDamageModifierEditor,
+  initializeDamageModifierEditor
+} from "./damage-modifiers.js";
+
 const EFFECT_FLAG_SCOPE = "ParovGrad";
 const DEFAULT_EFFECT_ICON = "icons/svg/aura.svg";
 const DEFAULT_EFFECT_TARGET = "constitution";
@@ -49,9 +56,10 @@ export function getActorEffectView(effect) {
     effectType: flagData.effectType,
     impact: flagData.impact,
     removal: flagData.removal,
-    changesCount: flagData.modifiers.length,
+    changesCount: flagData.modifiers.length + flagData.damageModifiers.length,
     modifiers: flagData.modifiers,
-    modifierSummary: getEffectModifierSummary(flagData.modifiers),
+    damageModifiers: flagData.damageModifiers,
+    modifierSummary: [getEffectModifierSummary(flagData.modifiers), getDamageModifierSummary(flagData.damageModifiers)].filter(Boolean).join(", "),
     sourceLabel: flagData.sourceItemName || ""
   };
 }
@@ -70,6 +78,7 @@ export function getParovgradEffectFlagData(effect) {
     impact: String(stored.impact ?? "").trim(),
     removal: String(stored.removal ?? "").trim(),
     modifiers,
+    damageModifiers: normalizeDamageModifiers(stored.damageModifiers),
     sourceItemUuid: stored.sourceItemUuid ?? "",
     sourceItemName: stored.sourceItemName ?? ""
   };
@@ -77,6 +86,7 @@ export function getParovgradEffectFlagData(effect) {
 
 export function getEffectItemTemplateData(item) {
   const modifiers = getSupportedModifiers(item.system?.modifiers, item.system?.changes, null);
+  const damageModifiers = normalizeDamageModifiers(item.system?.damageModifiers);
 
   return {
     name: item.name || "Новый эффект",
@@ -87,7 +97,8 @@ export function getEffectItemTemplateData(item) {
     impact: String(item.system?.impact ?? "").trim(),
     removal: String(item.system?.removal ?? "").trim(),
     modifiers,
-    modifierSummary: getEffectModifierSummary(modifiers),
+    damageModifiers,
+    modifierSummary: [getEffectModifierSummary(modifiers), getDamageModifierSummary(damageModifiers)].filter(Boolean).join(", "),
     sourceItemUuid: item.uuid,
     sourceItemName: item.name || ""
   };
@@ -248,16 +259,26 @@ export async function openActorEffectDialog({ actor, effect = null, seed = null,
   const escapedImpact = foundry.utils.escapeHTML(initial.impact);
   const escapedRemoval = foundry.utils.escapeHTML(initial.removal);
   const escapedSource = foundry.utils.escapeHTML(initial.sourceItemName || "");
+  const escapedOwner = foundry.utils.escapeHTML(actor.name || "");
   const modifierOptionsHtml = renderModifierTargetOptionsHtml(DEFAULT_EFFECT_TARGET);
 
   const result = await foundry.applications.api.DialogV2.wait({
-    window: { title: effect ? `Редактирование эффекта: ${effect.name}` : `Новый эффект: ${actor.name}` },
+    window: { title: effect ? `Редактирование эффекта: ${effect.name}` : `Новый эффект: ${actor.name}`, resizable: true },
+    classes: ["ParovGrad", "pg-item-window", "pg-effect-window"],
+    position: { width: 720, height: 720 },
     modal: true,
     rejectClose: false,
     content: `
-      <div class="pg-effect-dialog">
+      <div class="pg-item-dossier pg-effect-dialog">
+        <header class="pg-effect-dialog__heading">
+          <div class="pg-item-dossier-kicker">Паров-Град · Эффект</div>
+          <h2>${effect ? "Редактирование эффекта" : "Новый эффект"}</h2>
+          <p>${actor.documentName === "Item" ? "Предмет" : "Персонаж"}: <strong>${escapedOwner}</strong></p>
+        </header>
         ${escapedSource ? `<p class="pg-effect-dialog__source">Шаблон: <strong>${escapedSource}</strong></p>` : ""}
 
+        <section class="pg-effect-dialog__section">
+        <h3>Основное</h3>
         <div class="pg-form-field">
           <label for="pg-effect-name">Название</label>
           <input id="pg-effect-name" type="text" name="name" value="${escapedName}" autofocus>
@@ -279,44 +300,58 @@ export async function openActorEffectDialog({ actor, effect = null, seed = null,
           <label for="pg-effect-img">Иконка</label>
           <input id="pg-effect-img" type="text" name="img" value="${escapedImg}" placeholder="${DEFAULT_EFFECT_ICON}">
         </div>
+        </section>
 
+        <section class="pg-effect-dialog__section">
+        <h3>Действие и снятие</h3>
+        <div class="pg-effect-dialog__details">
         <div class="pg-form-field">
           <label for="pg-effect-impact">Воздействие эффекта</label>
-          <textarea id="pg-effect-impact" name="impact" rows="3">${escapedImpact}</textarea>
+          <textarea id="pg-effect-impact" name="impact" rows="2">${escapedImpact}</textarea>
         </div>
 
         <div class="pg-form-field">
           <label for="pg-effect-removal">Снятие эффекта</label>
-          <textarea id="pg-effect-removal" name="removal" rows="3">${escapedRemoval}</textarea>
+          <textarea id="pg-effect-removal" name="removal" rows="2">${escapedRemoval}</textarea>
         </div>
 
-        <div class="pg-form-field">
+        <div class="pg-form-field pg-effect-dialog__description">
           <label for="pg-effect-description">Описание</label>
-          <textarea id="pg-effect-description" name="description" rows="3">${escapedDescription}</textarea>
+          <textarea id="pg-effect-description" name="description" rows="2">${escapedDescription}</textarea>
         </div>
+        </div>
+        </section>
 
+        <section class="pg-effect-dialog__section">
+        <h3>Влияния на показатели</h3>
         <div class="pg-form-field">
-          <label>Влияния эффекта</label>
           <input type="hidden" name="modifiersData" value="[]">
           <div class="pg-effect-modifier-add-row">
-            <select name="newModifierTarget" class="pg-effect-modifier-target">
+            <select name="newModifierTarget" class="pg-effect-modifier-target" aria-label="Показатель">
               ${modifierOptionsHtml}
             </select>
-            <input type="number" name="newModifierValue" class="pg-effect-modifier-value-input" step="1" value="0">
-            <button type="button" class="pg-effect-modifier-add" data-action="add-modifier">+</button>
+            <input type="number" name="newModifierValue" class="pg-effect-modifier-value-input" aria-label="Изменение показателя" step="1" value="0">
+            <button type="button" class="pg-effect-modifier-add" data-action="add-modifier" aria-label="Добавить влияние">+</button>
           </div>
           <p class="pg-form-hint">Положительное число усиливает показатель, отрицательное — уменьшает.</p>
           <div class="pg-effect-modifier-list" data-effect-modifier-list></div>
         </div>
+        </section>
+        <section class="pg-effect-dialog__section">
+        <h3>Защита и уязвимости</h3>
+        ${renderDamageModifierEditor()}
+        </section>
       </div>
     `,
     render: (_event, dialog) => {
       initializeEffectModifierEditor(dialog, initial.modifiers);
+      initializeDamageModifierEditor(dialog.element ?? dialog.window?.content, initial.damageModifiers);
     },
     buttons: [
       {
         action: "save",
         label: effect ? "Сохранить" : "Создать",
+        default: true,
         callback: (_event, button, _dialog) => {
           const form = button?.form;
           if (!(form instanceof HTMLFormElement)) return null;
@@ -330,6 +365,7 @@ export async function openActorEffectDialog({ actor, effect = null, seed = null,
             impact: readDialogControlValue(form, "impact").trim(),
             removal: readDialogControlValue(form, "removal").trim(),
             modifiers: parseModifiersFieldValue(readDialogControlValue(form, "modifiersData", "[]")),
+            damageModifiers: parseDamageModifiersFieldValue(readDialogControlValue(form, "damageModifiersData", "[]")),
             sourceItemUuid: initial.sourceItemUuid || "",
             sourceItemName: initial.sourceItemName || ""
           };
@@ -472,6 +508,7 @@ function getEffectDialogSeedFromActiveEffect(effect) {
     impact: flagData.impact,
     removal: flagData.removal,
     modifiers: flagData.modifiers,
+    damageModifiers: flagData.damageModifiers,
     sourceItemUuid: flagData.sourceItemUuid,
     sourceItemName: flagData.sourceItemName
   };
@@ -487,6 +524,7 @@ function getBlankEffectDialogSeed() {
     impact: "",
     removal: "",
     modifiers: [],
+    damageModifiers: [],
     sourceItemUuid: "",
     sourceItemName: ""
   };
@@ -510,6 +548,7 @@ function buildActiveEffectCreateData(source, { origin = "", disabled = false, ba
     impact: String(source.impact ?? "").trim(),
     removal: String(source.removal ?? "").trim(),
     modifiers,
+    damageModifiers: normalizeDamageModifiers(source.damageModifiers),
     sourceItemUuid: String(source.sourceItemUuid ?? "").trim(),
     sourceItemName: String(source.sourceItemName ?? "").trim()
   };
@@ -702,10 +741,6 @@ function readDialogControlValue(form, fieldName, fallback = "") {
   const control = form.elements?.namedItem?.(fieldName);
   if (!control) return fallback;
 
-  if (control instanceof RadioNodeList) {
-    return String(control.value ?? fallback);
-  }
-
   if ("value" in control) {
     return String(control.value ?? fallback);
   }
@@ -728,6 +763,14 @@ function parseModifiersFieldValue(rawValue) {
   }
 
   return parsed.map((modifier, index) => normalizeEffectModifier(modifier, index));
+}
+
+function parseDamageModifiersFieldValue(rawValue) {
+  let parsed;
+  try { parsed = JSON.parse(String(rawValue ?? "[]")); }
+  catch (_error) { throw new Error("Не удалось прочитать преобразования урона."); }
+  if (!Array.isArray(parsed)) throw new Error("Список преобразований урона имеет неверный формат.");
+  return normalizeDamageModifiers(parsed);
 }
 
 function resolveDroppedDocument(data) {

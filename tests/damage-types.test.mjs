@@ -1,13 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { importModule } from "./helpers/import-module.mjs";
 
-const source = await readFile(new URL("../module/damage/damage-types.js", import.meta.url), "utf8");
 const {
   PHYSICAL_DAMAGE_TYPES, DAMAGE_TYPES, makeDamagePart, normalizedDamagePart,
   getItemDamageParts, damagePartLabel, damagePartOptions, validateDamageParts,
   rollDamageParts, serializeDamageResults, damageResultsHtml, calculateDamage, applyTypedDamage
-} = await import(`data:text/javascript;base64,${Buffer.from(source).toString("base64")}`);
+} = await importModule(new URL("../module/damage/damage-types.js", import.meta.url));
 
 let nextId = 0;
 globalThis.foundry = {utils: {

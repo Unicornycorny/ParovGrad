@@ -1,20 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {readFile} from "node:fs/promises";
+import { moduleUrl as resolveModuleUrl } from "./helpers/import-module.mjs";
 
-const moduleUrls = new Map();
-async function moduleUrl(path) {
-  if (moduleUrls.has(path)) return moduleUrls.get(path);
-  const fileUrl = new URL(`../module/${path}`, import.meta.url);
-  let source = await readFile(fileUrl, "utf8");
-  for (const match of [...source.matchAll(/from "(\.[^"]+)"/g)]) {
-    const dependency = new URL(match[1], fileUrl).pathname.split("/module/")[1];
-    source = source.replace(match[0], `from "${await moduleUrl(dependency)}"`);
-  }
-  const url = `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`;
-  moduleUrls.set(path, url);
-  return url;
-}
+const moduleUrl = path => resolveModuleUrl(new URL(`../module/${path}`, import.meta.url));
 
 let serial = 0;
 class Field {
