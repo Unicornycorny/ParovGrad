@@ -2944,3 +2944,81 @@
   .pg-rest-window .pg-rest-effect input { width: 70px; }
   .pg-rest-window .pg-rest-footer { flex-direction: column; }
 }
+
+/* Manually configured mana and combat-point pools: both Player and NPC. */
+.pg-player-dossier .pg-dossier-pool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.pg-player-dossier .pg-pool-card {
+  min-width: 0;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--pg-rule);
+  border-top: 3px double var(--pg-brass);
+  background: #faf5e944;
+}
+.pg-player-dossier .pg-pool-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 8px;
+  color: var(--pg-ink);
+}
+.pg-player-dossier .pg-pool-heading strong { font: bold 13px/1.3 Arial, sans-serif; }
+.pg-player-dossier .pg-pool-heading span { font: bold 14px/1.3 Georgia, serif; font-variant-numeric: tabular-nums; }
+.pg-player-dossier .pg-pool-bar {
+  height: 13px;
+  overflow: hidden;
+  border: 1px solid #9c8057;
+  border-radius: 2px;
+  background: #d7cbb6;
+  box-shadow: inset 0 1px 2px #302b2522;
+}
+.pg-player-dossier .pg-pool-bar-fill {
+  height: 100%;
+  background: #4c7290;
+  transition: width 130ms ease-out;
+}
+.pg-player-dossier .pg-pool-card--combatPoints .pg-pool-bar-fill { background: #a05d3d; }
+.pg-player-dossier .pg-pool-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 8px;
+  margin-top: 9px;
+}
+.pg-player-dossier .pg-pool-divider {
+  align-self: end;
+  padding-bottom: 5px;
+  color: var(--pg-muted);
+  font: bold 17px/1 Georgia, serif;
+}
+.pg-player-dossier .pg-pool-inputs label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  color: var(--pg-muted);
+  font: 11px/1.3 Arial, sans-serif;
+}
+.pg-player-dossier .pg-pool-inputs input {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  padding: 3px;
+  text-align: center;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.pg-player-dossier .pg-pool-warning {
+  margin: 6px 0 0;
+  color: #833c29;
+  font: 11px/1.4 Arial, sans-serif;
+}
+@container (max-width: 450px) {
+  .pg-player-dossier .pg-dossier-pool-grid { grid-template-columns: minmax(0, 1fr); }
+}

@@ -1,3 +1,4 @@
+import { buildResourcePoolViews, activateResourcePoolInputValidation } from "../../actors/resource-pools.js";
 import { startSpellUse } from "../../workflows/spell-use.js";
 import { startItemAttack, startItemUse } from "../../workflows/weapon-attack.js";
 import {
@@ -33,6 +34,7 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
     const context = await super._prepareContext(options);
     context.system = this.document.system;
     context.statViews = this._buildStatViews();
+    context.resourcePools = buildResourcePoolViews(this.document.system);
     context.healthInfluenceView = this._buildHealthInfluenceView();
     context.derivedHealthMax = Number(this.document.system.derivedHealthMax) || 0;
 
@@ -76,6 +78,7 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
 
   _attachPartListeners(partId, htmlElement, options) {
     super._attachPartListeners(partId, htmlElement, options);
+    activateResourcePoolInputValidation(htmlElement, this.document);
 
     htmlElement.querySelector(".pg-item-category")?.addEventListener("change", (event) => {
       event.stopPropagation();

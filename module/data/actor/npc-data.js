@@ -1,4 +1,5 @@
 import { buildActorInfluenceState } from "../../effects/effect-utils.js";
+import { createResourcePoolField, validateResourcePoolsJoint } from "../../actors/resource-pools.js";
 
 const { SchemaField, NumberField, StringField } = foundry.data.fields;
 
@@ -25,12 +26,21 @@ export class NpcDataModel extends foundry.abstract.TypeDataModel {
       experience: new NumberField({ required: true, integer: true, min: 0, initial: 0 }),
       level: new NumberField({ required: true, integer: true, min: 0, initial: 1 }),
 
+      // Ресурсы: минимум фиксирован на 0, текущее значение и максимум задаются вручную
+      mana: createResourcePoolField(),
+      combatPoints: createResourcePoolField(),
+
       // Здоровье
       health: new SchemaField({
         value: new NumberField({ required: true, integer: true, min: 0, initial: 10 }),
         max:   new NumberField({ required: true, integer: true, min: 0, initial: 10 })
       })
     };
+  }
+
+  static validateJoint(data) {
+    super.validateJoint(data);
+    validateResourcePoolsJoint(data);
   }
 
   prepareDerivedData() {

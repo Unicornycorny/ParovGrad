@@ -1,6 +1,7 @@
 import {DAMAGE_TYPES, DAMAGE_CATEGORIES, getItemDamageParts, applyTypedDamage} from "./damage/damage-types.js";
 import { PlayerDataModel } from "./data/actor/player-data.js";
 import { NpcDataModel } from "./data/actor/npc-data.js";
+import { normalizeActorResources } from "./actors/actor-resources.js";
 import { ItemDataModel } from "./data/item/item-data.js";
 import { WeaponDataModel } from "./data/item/weapon-data.js";
 import { SkillDataModel } from "./data/item/skill-data.js";
@@ -151,8 +152,8 @@ Hooks.on("preCreateActor", (actor, data) => {
     ui.notifications.warn(`Актёр содержит сущность «${label}». Уберите её из состава предметов перед импортом или копированием.`);
     return false;
   }
-  if (actor.type !== "Player") return;
-  applyDerivedHealthToSource(data);
+  if (["Player", "NPC"].includes(actor.type)) normalizeActorResources(data);
+  if (actor.type === "Player") applyDerivedHealthToSource(data);
 });
 
 Hooks.on("preUpdateActor", (actor, changed) => {
@@ -162,8 +163,11 @@ Hooks.on("preUpdateActor", (actor, changed) => {
     ui.notifications.warn(`Сущность «${label}» нельзя добавить в состав предметов актёра.`);
     return false;
   }
-  if (actor.type !== "Player") return;
-  applyDerivedHealthToUpdate(actor, changed);
+  if (["Player", "NPC"].includes(actor.type)) {
+    const merged = foundry.utils.mergeObject(actor.toObject(), changed, { inplace: false });
+    normalizeActorResources(merged, changed);
+  }
+  if (actor.type === "Player") applyDerivedHealthToUpdate(actor, changed);
 });
 
 

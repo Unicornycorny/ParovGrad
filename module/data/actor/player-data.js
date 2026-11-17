@@ -1,4 +1,5 @@
 import { buildActorInfluenceState } from "../../effects/effect-utils.js";
+import { createResourcePoolField, validateResourcePoolsJoint } from "../../actors/resource-pools.js";
 
 const { SchemaField, NumberField, ArrayField, StringField } = foundry.data.fields;
 
@@ -32,12 +33,21 @@ export class PlayerDataModel extends foundry.abstract.TypeDataModel {
         required: true, nullable: false, initial: []
       }),
 
+      // Ресурсы: минимум фиксирован на 0, текущее значение и максимум задаются вручную
+      mana: createResourcePoolField(),
+      combatPoints: createResourcePoolField(),
+
       // Здоровье (текущее/макс)
       health: new SchemaField({
         value: new NumberField({ required: true, integer: true, min: 0, initial: 10 }),
         max:   new NumberField({ required: true, integer: true, min: 0, initial: 10 })
       })
     };
+  }
+
+  static validateJoint(data) {
+    super.validateJoint(data);
+    validateResourcePoolsJoint(data);
   }
 
   prepareDerivedData() {

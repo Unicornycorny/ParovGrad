@@ -1,3 +1,4 @@
+import { buildResourcePoolViews, activateResourcePoolInputValidation } from "../../actors/resource-pools.js";
 import { openConfiguredD20RollDialog, consumeActorInspiration } from "../../dice/roll-dialog.js";
 import { startItemAttack, startItemUse } from "../../workflows/weapon-attack.js";
 import { startSpellUse } from "../../workflows/spell-use.js";
@@ -40,6 +41,7 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
     context.system = this.document.system;
     context.canEditProfile = this.isEditable;
     context.statViews = this._buildStatViews();
+    context.resourcePools = buildResourcePoolViews(this.document.system);
     context.healthInfluenceView = this._buildHealthInfluenceView();
     context.derivedHealthMax = Number(this.document.system.derivedHealthMax) || 0;
 
@@ -97,6 +99,7 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
 
   _attachPartListeners(partId, htmlElement, options) {
     super._attachPartListeners(partId, htmlElement, options);
+    activateResourcePoolInputValidation(htmlElement, this.document);
 
     htmlElement.querySelector(".pg-rest-button")?.addEventListener("click", async (event) => {
       event.preventDefault();

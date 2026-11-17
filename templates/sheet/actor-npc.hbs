@@ -51,6 +51,30 @@
         </div>
         {{/each}}
       </div>
+      <div class="pg-dossier-pool-grid" aria-label="Шкалы ресурсов">
+        {{#each resourcePools}}
+        <div class="pg-pool-card pg-pool-card--{{this.key}}">
+          <div class="pg-pool-heading">
+            <strong>{{this.label}}</strong>
+            <span>{{this.value}} / {{this.max}}</span>
+          </div>
+          <div class="pg-pool-bar" aria-hidden="true">
+            <div class="pg-pool-bar-fill" style="width: {{this.fillPercent}}%;"></div>
+          </div>
+          <div class="pg-pool-inputs">
+            <label for="pg-pool-{{this.key}}-value">Сейчас
+              <input id="pg-pool-{{this.key}}-value" type="number" step="1" min="0" max="{{this.max}}"
+                name="system.{{this.key}}.value" value="{{this.value}}" required>
+            </label>
+            <span class="pg-pool-divider" aria-hidden="true">/</span>
+            <label for="pg-pool-{{this.key}}-max">Максимум
+              <input id="pg-pool-{{this.key}}-max" type="number" step="1" min="0"
+                name="system.{{this.key}}.max" value="{{this.max}}" required>
+            </label>
+          </div>
+        </div>
+        {{/each}}
+      </div>
     </section>
 
     <section class="pg-dossier-section pg-dossier-resources">
