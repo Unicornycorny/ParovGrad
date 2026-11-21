@@ -182,6 +182,7 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
         if (!item) return;
 
         const confirmed = await foundry.applications.api.DialogV2.confirm({
+          classes: ["ParovGrad", "pg-dialog"],
           window: { title: "Удаление предмета" },
           content: `<p>Удалить предмет <strong>${item.name}</strong> у персонажа?</p>`,
           modal: true,
@@ -249,6 +250,7 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
         if (!effect) return;
 
         const confirmed = await foundry.applications.api.DialogV2.confirm({
+          classes: ["ParovGrad", "pg-dialog"],
           window: { title: "Удаление эффекта" },
           content: `<p>Удалить эффект <strong>${effect.name}</strong> у персонажа?</p>`,
           modal: true,

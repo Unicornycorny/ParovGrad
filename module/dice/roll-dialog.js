@@ -23,6 +23,7 @@ export async function consumeActorInspiration(actor, amount = 1) {
 
 export async function openConfiguredD20RollDialog({ title, actor } = {}) {
   return foundry.applications.api.DialogV2.wait({
+    classes: ["ParovGrad", "pg-dialog"],
     window: { title: title ?? "Бросок" },
     modal: true,
     rejectClose: false,
@@ -73,6 +74,7 @@ export async function openConfiguredD20RollDialog({ title, actor } = {}) {
 
 export async function openConfiguredDamageRollDialog({ title, actor, damageDie } = {}) {
   return foundry.applications.api.DialogV2.wait({
+    classes: ["ParovGrad", "pg-dialog"],
     window: { title: title ?? "Бросок урона" },
     modal: true,
     rejectClose: false,

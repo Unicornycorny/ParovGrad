@@ -1,0 +1,48 @@
+/*
+ * ParovGrad — шрифты темы «Стимпанк-газета».
+ * Все шрифты поставляются с системой без изменений, лицензия SIL Open Font License 1.1
+ * (тексты лицензий лежат рядом с файлами в fonts/<шрифт>/OFL.txt). Все три содержат кириллицу.
+ *
+ * Пути считаются от этого файла: styles/theme/ -> ../../fonts/.
+ */
+
+/* Заголовки-«шапки»: узкий гротеск в духе газетных заголовков XIX века. */
+@font-face {
+  font-family: "PG Oswald";
+  src: url("../../fonts/oswald/Oswald-VariableFont_wght.ttf") format("truetype");
+  font-weight: 200 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Основной текст: Old Standard TT — реконструкция «обыкновенной» гарнитуры русских изданий XIX века. */
+@font-face {
+  font-family: "PG Old Standard";
+  src: url("../../fonts/old-standard-tt/OldStandard-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "PG Old Standard";
+  src: url("../../fonts/old-standard-tt/OldStandard-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "PG Old Standard";
+  src: url("../../fonts/old-standard-tt/OldStandard-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Логотип / «газетная шапка»: декоративный шрифт в древнерусском духе. Только для крупных надписей. */
+@font-face {
+  font-family: "PG Ruslan Display";
+  src: url("../../fonts/ruslan-display/RuslanDisplay-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}

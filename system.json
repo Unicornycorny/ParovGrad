@@ -11,7 +11,10 @@
         "module/Parovgrad.js"
     ],
     "styles": [
+        "styles/theme/fonts.css",
+        "styles/theme/tokens.css",
         "styles/system-styles.css",
+        "styles/theme/newspaper.css",
         "styles/animations.css"
     ],
     "documentTypes": {

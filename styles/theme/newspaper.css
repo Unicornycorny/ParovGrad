@@ -1,0 +1,681 @@
+/*
+ * ParovGrad — тема «Стимпанк-газета» (v1).
+ * Подключается ПОСЛЕ styles/system-styles.css и задаёт внешний вид поверх раскладки.
+ * Цвета/шрифты берутся только из токенов (styles/theme/tokens.css). Правила — в STYLE.md.
+ *
+ * Разделы:
+ *   1. Окно приложения (рамка, железная шапка с заклёпками)
+ *   2. Базовая типографика содержимого
+ *   3. Элементы управления: кнопки-«латунные пластины», поля ввода
+ *   4. Лист персонажа / NPC: газетная шапка, колонки, шкалы
+ *   5. Листы предметов и окна древ
+ *   6. Диалоги (DialogV2)
+ *   7. Карточки чата — «газетная вырезка»
+ *   8. Утилиты-компоненты (pg-extra, pg-rule, pg-column)
+ */
+
+/* =========================================================================
+   1. Окно приложения
+   ========================================================================= */
+.application:is(.parovgrad, .ParovGrad) {
+  /* Перекрашиваем темовые переменные Foundry внутри наших окон, чтобы
+     стандартные элементы (подсказки, ссылки, скроллбар) не брали тёмную тему. */
+  --color-text-primary: var(--pg-ink);
+  --color-text-emphatic: var(--pg-ink-strong);
+  --color-text-secondary: var(--pg-ink-muted);
+  --color-text-subtle: var(--pg-ink-muted);
+  --color-form-label: var(--pg-ink);
+  --color-form-hint: var(--pg-ink-muted);
+  --color-scrollbar: var(--pg-brass);
+  --color-scrollbar-track: transparent;
+  --input-background-color: var(--pg-field);
+  --input-border-color: var(--pg-field-border);
+  --input-text-color: var(--pg-ink);
+  --button-background-color: var(--pg-button);
+  --button-border-color: var(--pg-brass-dark);
+  --button-text-color: var(--pg-ink);
+  --button-hover-background-color: var(--pg-button-hover);
+  --button-hover-border-color: var(--pg-brass-dark);
+  --button-hover-text-color: var(--pg-ink-strong);
+  color-scheme: light;
+  color: var(--pg-ink);
+  background: var(--pg-background-paper);
+  border: 1px solid var(--pg-brass-dark);
+  border-radius: var(--pg-radius);
+  box-shadow: var(--pg-shadow-window);
+}
+
+.application:is(.parovgrad, .ParovGrad) > .window-header {
+  min-height: 34px;
+  padding-inline: 20px;
+  color: var(--pg-brass-light);
+  background: var(--pg-background-iron);
+  border-bottom: 3px solid var(--pg-brass);
+  box-shadow: 0 1px 0 var(--pg-brass-dark), inset 0 1px 0 rgba(255, 230, 180, 0.08);
+  text-shadow: 0 1px 0 #000;
+}
+.application:is(.parovgrad, .ParovGrad) > .window-header .window-title {
+  font-family: var(--pg-font-headline);
+  font-size: var(--pg-fs-md);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pg-brass-light);
+}
+.application:is(.parovgrad, .ParovGrad) > .window-header .window-icon,
+.application:is(.parovgrad, .ParovGrad) > .window-header .header-control {
+  color: var(--pg-brass-light);
+}
+.application:is(.parovgrad, .ParovGrad) > .window-header .header-control:hover {
+  color: var(--pg-paper-light);
+  text-shadow: 0 0 6px rgba(255, 200, 120, 0.6);
+}
+.application:is(.parovgrad, .ParovGrad) > .window-content {
+  background: transparent;
+  color: var(--pg-ink);
+}
+
+/* =========================================================================
+   2. Базовая типографика
+   ========================================================================= */
+.application:is(.parovgrad, .ParovGrad) .window-content {
+  font-family: var(--pg-font-body);
+}
+:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config) :is(h1, h2, h3, h4) {
+  font-family: var(--pg-font-headline);
+  color: var(--pg-ink-strong);
+  text-shadow: none;
+}
+:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config) :is(.pg-form-hint, .pg-roll-dialog__hint) {
+  font-family: var(--pg-font-body);
+  font-style: italic;
+  color: var(--pg-ink-muted);
+}
+.pg-player-dossier,
+.pg-item-dossier,
+.parovgrad.sheet.actor.player .pg-player-dossier,
+.parovgrad.sheet.actor.npc .pg-player-dossier {
+  font-family: var(--pg-font-body);
+  background: var(--pg-background-paper);
+}
+
+/* Подписи полей: узкий гротеск капителью, как подзаголовки колонок. */
+:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config)
+  :is(.pg-form-field > label, .pg-dossier-field > label, .pg-roll-dialog__field > label, .pg-weapon-stat__label, .pg-pool-inputs label) {
+  font-family: var(--pg-font-headline);
+  font-weight: 500;
+  font-size: var(--pg-fs-sm);
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+  color: var(--pg-ink-muted);
+}
+
+/* =========================================================================
+   3. Элементы управления
+   ========================================================================= */
+/* Кнопка — латунная пластина. */
+:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-dialog, .pg-animation-config) button:not(.header-control, .pg-portrait-edit, .pg-item-portrait-edit, .pg-item-icon-button, .pg-item-link, .pg-effect-row__name, .pg-magic-tree-node, .pg-magic-tree-icon-button),
+:is(.pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config) .form-footer button,
+.pg-chat-card .pg-chat-button {
+  /* Размеры кнопок задаёт раскладка (system-styles.css); тема меняет только вид. */
+  border: 1px solid var(--pg-brass-dark);
+  border-radius: var(--pg-radius);
+  background: var(--pg-background-brass);
+  box-shadow: var(--pg-shadow-plate);
+  color: var(--pg-ink-strong);
+  font-family: var(--pg-font-headline);
+  font-weight: 500;
+  font-size: var(--pg-fs-sm);
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 245, 220, 0.5);
+}
+:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-dialog, .pg-animation-config) button:not(.header-control, .pg-portrait-edit, .pg-item-portrait-edit, .pg-item-icon-button, .pg-item-link, .pg-effect-row__name, .pg-magic-tree-node, .pg-magic-tree-icon-button):hover:not(:disabled),
+:is(.pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config) .form-footer button:hover:not(:disabled),
+.pg-chat-card .pg-chat-button:hover:not(:disabled) {
+  background: var(--pg-background-brass-hover);
+  border-color: var(--pg-ink-strong);
+  color: var(--pg-ink-strong);
+  box-shadow: var(--pg-shadow-plate), 0 0 0 1px var(--pg-brass-light);
+}
+:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-dialog, .pg-animation-config) button:active:not(:disabled),
+.pg-chat-card .pg-chat-button:active:not(:disabled) {
+  box-shadow: inset 0 2px 3px rgba(60, 40, 10, 0.35);
+}
+
+/* Главное действие — «типографская» кнопка: чёрная плашка, светлый текст (как плашка ЭКСТРА в негативе). */
+:is(.pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config) .form-footer button:is([data-action="save"], [data-action="ok"], [data-action="yes"], [data-action="roll"], [data-action="normal"], .default),
+:is(.pg-tree-app, .pg-item-dossier, .pg-player-dossier) :is(.pg-spell-builder-apply, .pg-learn-skill-apply, .pg-preparation-save, .pg-rest-apply),
+.pg-button--primary {
+  background: linear-gradient(180deg, var(--pg-iron-light), var(--pg-iron));
+  border-color: var(--pg-ink-strong);
+  color: var(--pg-paper-light);
+  text-shadow: 0 1px 0 #000;
+  box-shadow: inset 0 0 0 1px var(--pg-brass), inset 0 1px 0 rgba(255, 230, 180, 0.15);
+}
+:is(.pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config) .form-footer button:is([data-action="save"], [data-action="ok"], [data-action="yes"], [data-action="roll"], [data-action="normal"], .default):hover:not(:disabled),
+:is(.pg-tree-app, .pg-item-dossier, .pg-player-dossier) :is(.pg-spell-builder-apply, .pg-learn-skill-apply, .pg-preparation-save, .pg-rest-apply):hover:not(:disabled),
+.pg-button--primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #4a4238, var(--pg-iron-light));
+  color: #fff8e6;
+  border-color: var(--pg-ink-strong);
+}
+
+/* Опасное действие — киноварь. */
+:is(.pg-player-dossier, .pg-item-dossier) :is(.pg-item-delete, .pg-effect-delete),
+.pg-chat-card .pg-chat-button--danger,
+.pg-dialog .form-footer button[data-action="no"] {
+  color: var(--pg-danger);
+}
+
+/* Фокус — медный контур. */
+:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-chat-card) :is(button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--pg-focus);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* Поля ввода — «бланк»: светлая бумага, тонкая рамка, без скруглений. */
+:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config)
+  :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]), select, textarea) {
+  border: 1px solid var(--pg-field-border);
+  border-radius: var(--pg-radius);
+  background-color: var(--pg-field);
+  color: var(--pg-ink);
+  font-family: var(--pg-font-body);
+  box-shadow: inset 0 1px 2px rgba(40, 28, 10, 0.12);
+}
+:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config)
+  :is(input[type="checkbox"], input[type="radio"]) {
+  accent-color: var(--pg-brass-dark);
+}
+
+/* =========================================================================
+   4. Лист персонажа / NPC
+   ========================================================================= */
+/* Газетная шапка: портрет | название издания | печать-шестерня. Снизу — линейка «толстая + тонкая». */
+.pg-player-dossier .pg-dossier-header {
+  position: relative;
+  padding-bottom: 14px;
+  border-bottom: 3px solid var(--pg-rule-strong);
+  box-shadow: 0 3px 0 var(--pg-paper), 0 4px 0 var(--pg-rule-strong);
+}
+
+/* Строка над названием, как «Цена 2 монеты | ...» в шапке газеты. */
+.pg-player-dossier .pg-dossier-kicker {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0;
+  border-top: 1px solid var(--pg-rule-strong);
+  border-bottom: 1px solid var(--pg-rule-strong);
+  font-family: var(--pg-font-headline);
+  font-size: var(--pg-fs-xs);
+  letter-spacing: 0.18em;
+  color: var(--pg-ink);
+}
+.pg-player-dossier .pg-dossier-kicker span { color: var(--pg-brass); }
+
+/* Название издания — «Паров-Град». */
+.pg-player-dossier .pg-dossier-brand,
+.parovgrad.sheet.actor.player .pg-player-dossier .pg-dossier-brand,
+.parovgrad.sheet.actor.npc .pg-player-dossier .pg-dossier-brand {
+  margin: 6px 0 6px;
+  font-family: var(--pg-font-display);
+  font-weight: 400;
+  font-size: clamp(30px, 7cqi, 54px);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-align: center;
+  color: var(--pg-ink-strong);
+  text-shadow: 1px 1px 0 color-mix(in srgb, var(--pg-paper) 60%, transparent);
+}
+
+/* Имя персонажа — «заголовок номера». */
+.pg-player-dossier h1,
+.pg-player-dossier .pg-character-name input {
+  font-family: var(--pg-font-headline);
+  font-weight: 600;
+  font-size: var(--pg-fs-xl);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--pg-ink-strong);
+}
+.pg-player-dossier h1 { border-top: 1px solid var(--pg-rule-strong); }
+.pg-player-dossier .pg-character-name input {
+  height: 38px;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.pg-player-dossier .pg-character-name input:hover:not(:disabled),
+.pg-player-dossier .pg-character-name input:focus {
+  background: color-mix(in srgb, var(--pg-field) 70%, transparent);
+  border-color: var(--pg-field-border);
+}
+
+/* Портрет — фотография, наклеенная в номер. */
+.pg-player-dossier .pg-dossier-portrait {
+  padding: 4px;
+  border: 1px solid var(--pg-rule-strong);
+  background: var(--pg-paper-light);
+  box-shadow: 3px 3px 0 color-mix(in srgb, var(--pg-ink) 25%, transparent);
+  transform: rotate(-1.2deg);
+}
+.pg-player-dossier .pg-dossier-portrait img {
+  filter: sepia(0.35) contrast(1.05);
+}
+
+/* Печать — латунная шестерня. */
+.pg-player-dossier .pg-dossier-seal {
+  width: 56px;
+  height: 56px;
+  border: 0;
+  outline: 0;
+  font-family: var(--pg-font-headline);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--pg-ink-strong);
+  background:
+    radial-gradient(circle, var(--pg-paper-light) 0 14px, var(--pg-brass-dark) 14.5px 16px, transparent 16.5px),
+    radial-gradient(circle at 35% 30%, #f0d9a2, var(--pg-brass) 60%, var(--pg-brass-dark) 100%);
+  border-radius: 50%;
+  /* Зубцы: сплошной диск r=22 плюс 12 секторов до края круга. */
+  -webkit-mask: radial-gradient(circle, #000 22px, transparent 22.5px), repeating-conic-gradient(#000 0 15deg, transparent 15deg 30deg);
+  mask: radial-gradient(circle, #000 22px, transparent 22.5px), repeating-conic-gradient(#000 0 15deg, transparent 15deg 30deg);
+  transform: rotate(-8deg);
+  filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.35));
+}
+
+/* Заголовок раздела — как рубрика газеты: узкий гротеск, двойная линейка снизу. */
+.pg-player-dossier h2 {
+  padding: 0 0 4px;
+  border-bottom: 2px solid var(--pg-rule-strong);
+  font-family: var(--pg-font-headline);
+  font-weight: 600;
+  font-size: var(--pg-fs-lg);
+  letter-spacing: 0.06em;
+  color: var(--pg-ink-strong);
+}
+.pg-player-dossier h2::after {
+  right: 0;
+  left: 0;
+  bottom: -5px;
+  width: auto;
+  height: 1px;
+  border-radius: 0;
+  background: var(--pg-rule-strong);
+}
+
+/* Карточка характеристики — колонка с рубрикой. */
+.pg-player-dossier .pg-stat-row {
+  border: 1px solid var(--pg-rule-strong);
+  border-top: 4px double var(--pg-rule-strong);
+  background: color-mix(in srgb, var(--pg-field) 35%, transparent);
+}
+.pg-player-dossier .pg-stat-row label {
+  font-family: var(--pg-font-headline);
+  font-weight: 600;
+  font-size: var(--pg-fs-sm);
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+  color: var(--pg-ink-strong);
+}
+.pg-player-dossier .pg-stat-controls input {
+  font-family: var(--pg-font-body);
+  font-weight: 700;
+}
+/* Кнопка броска характеристики — плашка «ЭКСТРА». */
+.pg-player-dossier .pg-stat-roll,
+.parovgrad.sheet.actor .pg-player-dossier .pg-stat-roll {
+  border: 2px solid var(--pg-ink-strong);
+  background: var(--pg-paper-light);
+  box-shadow: inset 0 0 0 1px var(--pg-paper-light), inset 0 0 0 2px var(--pg-ink-strong);
+  font-family: var(--pg-font-headline);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--pg-ink-strong);
+  text-shadow: none;
+}
+.pg-player-dossier .pg-stat-roll:hover:not(:disabled) {
+  background: var(--pg-ink-strong);
+  color: var(--pg-paper-light);
+  box-shadow: inset 0 0 0 1px var(--pg-ink-strong), inset 0 0 0 2px var(--pg-brass-light);
+}
+
+/* Шкалы маны и боевых очков — манометры в латунной оправе. */
+.pg-player-dossier .pg-pool-card {
+  border: 1px solid var(--pg-rule-strong);
+  border-top: 4px double var(--pg-rule-strong);
+  background: color-mix(in srgb, var(--pg-field) 35%, transparent);
+}
+.pg-player-dossier .pg-pool-heading strong {
+  font-family: var(--pg-font-headline);
+  font-weight: 600;
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+}
+.pg-player-dossier .pg-pool-heading span { font-family: var(--pg-font-body); }
+.pg-player-dossier .pg-pool-bar {
+  height: 14px;
+  border: 2px solid var(--pg-brass-dark);
+  border-radius: 7px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), color-mix(in srgb, var(--pg-ink) 30%, transparent) calc(10% - 1px) 10%),
+    var(--pg-paper-dark);
+  box-shadow: 0 0 0 1px var(--pg-brass-light), inset 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.pg-player-dossier .pg-pool-bar-fill {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.25), transparent 50%, rgba(0, 0, 0, 0.2)),
+    var(--pg-mana);
+}
+.pg-player-dossier .pg-pool-card--combatPoints .pg-pool-bar-fill {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.25), transparent 50%, rgba(0, 0, 0, 0.2)),
+    var(--pg-copper);
+}
+.pg-player-dossier .pg-dossier-health-values input { color: var(--pg-danger); }
+
+/* Строки эффектов и предметов — заметки, разделённые линейками. */
+.pg-player-dossier .pg-effect-row { border-bottom: 1px solid var(--pg-rule); }
+.pg-player-dossier .pg-effect-row__name,
+.pg-player-dossier .pg-item-link {
+  font-family: var(--pg-font-body);
+  font-weight: 700;
+  color: var(--pg-ink-strong);
+}
+.pg-player-dossier .pg-effect-row__meta,
+.pg-player-dossier .pg-effect-row__source,
+.pg-player-dossier .pg-effect-badge {
+  font-family: var(--pg-font-headline);
+  letter-spacing: 0.04em;
+}
+.pg-player-dossier .pg-effect-badge {
+  border: 1px solid var(--pg-ink-strong);
+  text-transform: uppercase;
+  color: var(--pg-ink-strong);
+}
+
+/* Плитка предмета — рекламный блок в двойной рамке. */
+.pg-player-dossier .pg-item-grid .pg-item-tile {
+  border: 1px solid var(--pg-rule-strong);
+  background: color-mix(in srgb, var(--pg-field) 40%, transparent);
+  box-shadow: inset 0 0 0 2px var(--pg-paper), inset 0 0 0 3px var(--pg-rule);
+}
+.pg-player-dossier .pg-item-grid .pg-item-icon-button {
+  border-color: var(--pg-rule);
+  background: color-mix(in srgb, var(--pg-paper-dark) 35%, transparent);
+}
+.pg-player-dossier .pg-item-grid .pg-item-icon-button:hover {
+  background: var(--pg-paper-shade);
+  border-color: var(--pg-ink-strong);
+}
+.pg-player-dossier .pg-item-grid .pg-item-tile-name {
+  font-family: var(--pg-font-headline);
+  font-size: var(--pg-fs-sm);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.pg-player-dossier .pg-item-prepared-badge {
+  border: 1px solid var(--pg-ink-strong);
+  background: var(--pg-ink-strong);
+  color: var(--pg-paper-light);
+  font-family: var(--pg-font-headline);
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+}
+.pg-player-dossier .pg-item-category {
+  border-color: var(--pg-rule-strong);
+  font-family: var(--pg-font-body);
+}
+
+/* Подвал листа — выходные данные газеты. */
+.pg-player-dossier .pg-dossier-footer {
+  border-top: 1px solid var(--pg-rule-strong);
+  box-shadow: 0 -3px 0 var(--pg-paper), 0 -6px 0 var(--pg-rule-strong);
+  margin-top: 28px;
+  font-family: var(--pg-font-headline);
+  font-size: var(--pg-fs-xs);
+  color: var(--pg-ink);
+}
+
+/* =========================================================================
+   5. Листы предметов и окна древ
+   ========================================================================= */
+.pg-item-dossier .pg-sheet-header,
+.pg-tree-app .pg-tree-app-header,
+.pg-tree-dialog .pg-tree-dialog-heading,
+.pg-effect-window .pg-effect-dialog__heading,
+.pg-preparation-window .pg-preparation-header,
+.pg-rest-window .pg-rest-header {
+  border-bottom: 3px solid var(--pg-rule-strong);
+  box-shadow: 0 3px 0 var(--pg-paper), 0 4px 0 var(--pg-rule-strong);
+}
+.pg-item-dossier .pg-item-dossier-kicker,
+.pg-tree-app .pg-item-dossier-kicker {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--pg-rule-strong);
+  font-family: var(--pg-font-headline);
+  font-weight: 500;
+  font-size: var(--pg-fs-xs);
+  letter-spacing: 0.16em;
+  color: var(--pg-ink-strong);
+}
+.pg-item-dossier h1 {
+  font-family: var(--pg-font-headline);
+  font-weight: 700;
+  font-size: var(--pg-fs-xxl);
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--pg-ink-strong);
+}
+.pg-item-dossier .pg-item-portrait-edit {
+  border-color: var(--pg-rule-strong);
+  background: var(--pg-paper-light);
+  box-shadow: 3px 3px 0 color-mix(in srgb, var(--pg-ink) 25%, transparent);
+}
+.pg-item-dossier :is(h2, h3),
+.pg-tree-app :is(h2, h3),
+.pg-effect-window .pg-effect-dialog__section h3 {
+  border-bottom: 2px solid var(--pg-rule-strong);
+  font-family: var(--pg-font-headline);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.pg-item-dossier .pg-item-effect-group__heading h2 { border: 0; }
+.pg-item-dossier .pg-weapon-stat,
+.pg-item-dossier .pg-item-effect-group,
+.pg-tree-app .pg-spell-builder-preview-card,
+.pg-tree-dialog :is(.pg-level-up-summary-card, .pg-level-up-purchase-row) {
+  border: 1px solid var(--pg-rule-strong);
+  border-top: 4px double var(--pg-rule-strong);
+}
+.pg-item-dossier table thead {
+  background: var(--pg-ink-strong);
+  color: var(--pg-paper-light);
+  font-family: var(--pg-font-headline);
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+}
+.pg-item-dossier .pg-item-sheet-mode { font-family: var(--pg-font-body); }
+
+/* Узлы древ магии и навыков: только шрифт, геометрия графа не трогается. */
+.pg-magic-tree-node__header strong,
+.pg-skill-tree-node__header strong { font-family: var(--pg-font-headline); letter-spacing: 0.02em; }
+
+/* =========================================================================
+   6. Диалоги (DialogV2)
+   Классы ["ParovGrad", "pg-dialog"] передаются в DialogV2 в коде системы.
+   ========================================================================= */
+.application.pg-dialog .window-content { padding: 0; }
+.application.pg-dialog .dialog-content {
+  padding: var(--pg-space-4) var(--pg-space-5) var(--pg-space-3);
+  font-family: var(--pg-font-body);
+  font-size: var(--pg-fs-md);
+  color: var(--pg-ink);
+}
+.application.pg-dialog .dialog-content strong { color: var(--pg-ink-strong); }
+.application.pg-dialog .form-footer {
+  margin: 0;
+  padding: var(--pg-space-3) var(--pg-space-5) var(--pg-space-4);
+  gap: var(--pg-space-2);
+  border-top: 1px solid var(--pg-rule-strong);
+  box-shadow: inset 0 3px 0 var(--pg-paper), inset 0 4px 0 var(--pg-rule-strong);
+  background: color-mix(in srgb, var(--pg-paper-shade) 45%, transparent);
+}
+.application.pg-dialog .form-footer button { min-height: 34px; padding: 6px 12px; }
+.pg-dialog .pg-roll-dialog { display: flex; flex-direction: column; gap: var(--pg-space-3); }
+.pg-dialog .pg-roll-dialog__value {
+  font-family: var(--pg-font-headline);
+  font-weight: 700;
+  font-size: var(--pg-fs-xl);
+  letter-spacing: 0.06em;
+  color: var(--pg-ink-strong);
+}
+.pg-dialog .pg-roll-dialog__checkbox { font-family: var(--pg-font-body); }
+
+/* =========================================================================
+   7. Карточки чата — «газетная вырезка»
+   Карточка сама несёт фон, поэтому выглядит одинаково в светлой и тёмной теме Foundry.
+   ========================================================================= */
+.pg-chat-card {
+  position: relative;
+  gap: var(--pg-space-2);
+  padding: 10px 10px 10px;
+  border: 1px solid var(--pg-rule-strong);
+  background: var(--pg-background-paper);
+  box-shadow: inset 0 0 0 3px var(--pg-paper), inset 0 0 0 4px var(--pg-rule);
+  color: var(--pg-ink);
+  font-family: var(--pg-font-body);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.pg-chat-card__header {
+  gap: 2px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--pg-rule-strong);
+  box-shadow: 0 2px 0 var(--pg-paper), 0 3px 0 var(--pg-rule-strong);
+  margin-bottom: 4px;
+  text-align: center;
+}
+/* Заголовок — газетная «шапка» номера. */
+.pg-chat-card__title {
+  font-family: var(--pg-font-headline);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--pg-ink-strong);
+}
+.pg-chat-card__subtitle {
+  font-style: italic;
+  opacity: 1;
+  color: var(--pg-ink);
+}
+.pg-chat-card__meta {
+  padding: 2px 0;
+  border-bottom: 1px dotted var(--pg-rule);
+  font-size: 12px;
+  opacity: 1;
+  color: var(--pg-ink-muted);
+}
+.pg-chat-card__comparison {
+  padding: 6px 8px;
+  border-left: 3px double var(--pg-rule-strong);
+  font-family: var(--pg-font-headline);
+  letter-spacing: 0.03em;
+}
+/* Итог — штамп-плашка в духе «ЭКСТРА!». */
+.pg-chat-card__result {
+  align-self: center;
+  padding: 3px 12px;
+  border: 2px solid currentColor;
+  box-shadow: inset 0 0 0 1px var(--pg-paper), inset 0 0 0 2px currentColor;
+  font-family: var(--pg-font-headline);
+  font-weight: 700;
+  font-size: var(--pg-fs-md);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+}
+.pg-chat-card__result.is-success { color: var(--pg-success); }
+.pg-chat-card__result.is-failure { color: var(--pg-danger); }
+.pg-chat-card__actions { justify-content: center; }
+.pg-chat-card .pg-chat-button { flex: 1 1 auto; min-height: 28px; padding: 3px 10px; line-height: 1.6; }
+.pg-chat-card .pg-chat-button--healing { color: var(--pg-success); }
+.pg-chat-card .pg-spell-effect-row { border-color: var(--pg-rule); }
+/* Результат броска Foundry внутри карточки — в рамке «бланка». */
+.pg-chat-card .dice-roll .dice-total {
+  border: 1px solid var(--pg-rule-strong);
+  border-radius: var(--pg-radius);
+  background: var(--pg-field);
+  color: var(--pg-ink-strong);
+  font-family: var(--pg-font-headline);
+  box-shadow: none;
+}
+.pg-chat-card .dice-roll .dice-formula,
+.pg-chat-card .dice-roll .dice-tooltip {
+  border-radius: var(--pg-radius);
+  background: color-mix(in srgb, var(--pg-paper-shade) 60%, transparent);
+  color: var(--pg-ink);
+}
+
+/* =========================================================================
+   8. Утилиты-компоненты для новых шаблонов
+   ========================================================================= */
+/* Плашка «ЭКСТРА!» — рамка из двух линий, капитель. */
+.pg-extra {
+  display: inline-block;
+  padding: 1px 8px;
+  border: 2px solid var(--pg-ink-strong);
+  box-shadow: inset 0 0 0 1px var(--pg-paper), inset 0 0 0 2px var(--pg-ink-strong);
+  font-family: var(--pg-font-headline);
+  font-weight: 700;
+  font-size: var(--pg-fs-sm);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pg-ink-strong);
+}
+/* Газетная линейка «толстая + тонкая». */
+.pg-rule {
+  height: 0;
+  margin: var(--pg-space-3) 0;
+  border: 0;
+  border-top: 3px solid var(--pg-rule-strong);
+  box-shadow: 0 2px 0 var(--pg-paper), 0 3px 0 var(--pg-rule-strong);
+}
+/* Колонки с вертикальными линейками. */
+.pg-columns {
+  column-gap: var(--pg-space-5);
+  column-rule: 1px solid var(--pg-rule-strong);
+}
+/* Рубрика по центру между линейками («ПОГОДА»). */
+.pg-rubric {
+  margin: var(--pg-space-3) 0 var(--pg-space-2);
+  padding: 3px 0;
+  border-top: 1px solid var(--pg-rule-strong);
+  border-bottom: 1px solid var(--pg-rule-strong);
+  font-family: var(--pg-font-headline);
+  font-weight: 600;
+  font-size: var(--pg-fs-md);
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--pg-ink-strong);
+}
+/* Буквица для длинных описаний. */
+.pg-dropcap::first-letter {
+  float: left;
+  margin: 2px 6px 0 0;
+  font-family: var(--pg-font-display);
+  font-size: 3.1em;
+  line-height: 0.8;
+  color: var(--pg-ink-strong);
+}
