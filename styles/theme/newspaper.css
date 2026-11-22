@@ -70,6 +70,43 @@
   color: var(--pg-paper-light);
   text-shadow: 0 0 6px rgba(255, 200, 120, 0.6);
 }
+
+/* Выпадающее меню «⋮» в шапке (Configure Sheet и т.п.). Ядро красит пункты через
+   --color-text-primary, которое мы переопределили в тёмные чернила для бумаги, —
+   поэтому задаём меню собственный вид: железная плашка с латунной окантовкой. */
+.application:is(.parovgrad, .ParovGrad) > .controls-dropdown {
+  background: var(--pg-background-iron);
+  border: 1px solid var(--pg-brass-dark);
+  border-top: 2px solid var(--pg-brass);
+  border-radius: var(--pg-radius);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 6px 14px rgba(0, 0, 0, 0.55);
+}
+.application:is(.parovgrad, .ParovGrad) > .controls-dropdown .header-control {
+  margin: 2px;
+  text-shadow: none;
+}
+.application:is(.parovgrad, .ParovGrad) > .controls-dropdown .header-control > button {
+  --button-text-color: var(--pg-brass-light);
+  --button-hover-text-color: var(--pg-ink-strong);
+  --button-hover-background-color: var(--pg-brass-light);
+  --button-hover-border-color: transparent;
+  --button-focus-outline-color: var(--pg-brass);
+  gap: 0.5rem;
+  padding: 4px 10px;
+  border-radius: var(--pg-radius);
+  color: var(--pg-brass-light);
+  font-family: var(--pg-font-headline);
+  font-weight: 500;
+  font-size: var(--pg-fs-sm);
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 #000;
+}
+.application:is(.parovgrad, .ParovGrad) > .controls-dropdown .header-control > button:is(:hover, :focus-visible) {
+  color: var(--pg-ink-strong);
+  background: var(--pg-background-brass-hover, var(--pg-brass-light));
+  text-shadow: 0 1px 0 rgba(255, 245, 220, 0.5);
+}
 .application:is(.parovgrad, .ParovGrad) > .window-content {
   background: transparent;
   color: var(--pg-ink);
