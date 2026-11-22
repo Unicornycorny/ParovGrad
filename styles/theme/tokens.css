@@ -51,6 +51,7 @@
   --pg-font-headline: "PG Oswald", "Arial Narrow", sans-serif;          /* заголовки, кнопки, подписи */
   --pg-font-body: "PG Old Standard", Georgia, "Times New Roman", serif; /* основной текст */
   --pg-font-ui: var(--pg-font-headline);                                /* мелкие подписи интерфейса */
+  --pg-font-mono: "Courier New", Courier, monospace;                     /* формулы бросков, коды */
 
   /* --- Размеры шрифта --------------------------------------------------- */
   --pg-fs-xs: 10px;

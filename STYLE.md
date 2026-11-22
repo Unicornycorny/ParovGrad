@@ -118,6 +118,7 @@ mask: var(--pg-ornament-gear-train) top center / contain no-repeat;
 | Заголовки, кнопки, подписи | `--pg-font-headline` | Oswald (вариативный 200–700) | ВЕРХНИЙ РЕГИСТР, разрядка `--pg-tracking-caps` (0.08em) |
 | Основной текст, значения полей | `--pg-font-body` | Old Standard TT (обычный, курсив, жирный) | обычный регистр; подсказки курсивом |
 | Мелкие подписи интерфейса | `--pg-font-ui` | = headline | 10–12px, капителью |
+| Формулы, коды (`<code>`) | `--pg-font-mono` | Courier New (системный) | жирный, светлая плашка `--pg-field` с рамкой `--pg-rule`; тёмный фон Foundry перебит |
 
 Размеры: `--pg-fs-xs` 10, `--pg-fs-sm` 12, `--pg-fs-md` 14, `--pg-fs-lg` 17, `--pg-fs-xl` 21, `--pg-fs-xxl` 28 (px).
 

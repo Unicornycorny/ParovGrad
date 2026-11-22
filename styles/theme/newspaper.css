@@ -126,7 +126,30 @@
 :is(.pg-player-dossier, .pg-character, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config) :is(.pg-form-hint, .pg-roll-dialog__hint) {
   font-family: var(--pg-font-body);
   font-style: italic;
-  color: var(--pg-ink-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  /* Подсказки часто стоят на затемнённых панелях (инспектор древа) — берём основную краску, а не muted. */
+  color: var(--pg-ink);
+  opacity: 1;
+}
+/* Формулы и коды в тексте — «машинописная» вставка на светлой плашке.
+   Перебивает тёмный фон <code> из темы Foundry. */
+.application:is(.parovgrad, .ParovGrad) code,
+.pg-chat-card code {
+  display: inline-block;
+  padding: 0 4px;
+  border: 1px solid var(--pg-rule);
+  border-radius: var(--pg-radius);
+  background: var(--pg-field);
+  color: var(--pg-ink-strong);
+  font-family: var(--pg-font-mono);
+  font-size: 0.95em;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+  text-shadow: none;
+  box-shadow: none;
 }
 .pg-player-dossier,
 .pg-item-dossier,
