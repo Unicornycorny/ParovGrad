@@ -1,162 +1,167 @@
-<section class="pg-sheet pg-item-dossier">
+<section class="pg-sheet pg-item-dossier pg-passport pg-passport--effect">
   <div class="sheet-body">
-    <header class="pg-sheet-header">
-      <button type="button" class="pg-item-portrait-edit" title="Изменить изображение" aria-label="Изменить изображение: {{document.name}}" {{#unless canEditPortrait}}disabled{{/unless}}>
-        <img src="{{document.img}}" alt="{{document.name}}">
-      </button>
-      <div class="pg-item-dossier-heading"><div class="pg-item-dossier-kicker">Паров-Град · Эффект</div>
-        <h1>{{document.name}}</h1></div>
-      <div class="pg-item-sheet-mode">
-        {{#if isEditMode}}
-          Режим: редактирование
-        {{else}}
-          Режим: просмотр
-        {{/if}}
-      </div>
-    </header>
+    <div class="pg-blueprint pg-blueprint--passport">
+      <div class="pg-blueprint__zones" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="pg-blueprint__margin" aria-hidden="true"><span>Инв. № подл.</span><span>Подп. и дата</span></div>
 
-    {{#if isEditMode}}
-      <div class="pg-form-field">
-        <label>Название</label>
-        <input type="text" name="name" value="{{document.name}}" />
-      </div>
-
-      <div class="pg-form-grid pg-form-grid--two-columns">
-        <div class="pg-form-field">
-          <label>Уровень</label>
-          <input type="number" name="system.level" min="0" step="1" value="{{system.level}}" />
+      <header class="pg-passport__header">
+        <div class="pg-passport__kicker"><span>Паров-Град</span><i class="fa-solid fa-gear" aria-hidden="true"></i><span>Протокол · Эффект</span></div>
+        <div class="pg-passport__figure">
+          <button type="button" class="pg-item-portrait-edit" title="Изменить изображение" aria-label="Изменить изображение: {{document.name}}" {{#unless canEditPortrait}}disabled{{/unless}}>
+            <img src="{{document.img}}" alt="{{document.name}}">
+          </button>
+          <span class="pg-passport__dim pg-passport__dim--h" aria-hidden="true">М 1:1</span>
+          <span class="pg-passport__dim pg-passport__dim--v" aria-hidden="true"></span>
+          <span class="pg-passport__stamp {{#if isEditMode}}is-draft{{/if}}" aria-hidden="true">{{#if isEditMode}}Черновик{{else}}Утверждено{{/if}}</span>
         </div>
-
-        <div class="pg-form-field">
-          <label>Тип</label>
-          <input type="text" name="system.effectType" value="{{system.effectType}}" />
-        </div>
-      </div>
-
-      <div class="pg-form-field">
-        <label>Воздействие эффекта</label>
-        <textarea name="system.impact" rows="3">{{system.impact}}</textarea>
-      </div>
-
-      <div class="pg-form-field">
-        <label>Снятие эффекта</label>
-        <textarea name="system.removal" rows="3">{{system.removal}}</textarea>
-      </div>
-
-      <div class="pg-form-field">
-        <label>Описание</label>
-        <textarea name="system.description" rows="3">{{system.description}}</textarea>
-      </div>
-
-      <div class="pg-form-field">
-        <label>Влияния эффекта</label>
-
-        <div class="pg-effect-modifier-add-row">
-          <select class="pg-effect-modifier-target">
-            {{#each modifierTargetOptions}}
-              <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
-            {{/each}}
-          </select>
-
-          <input type="number" class="pg-effect-modifier-value-input" step="1" value="0">
-          <button type="button" class="pg-effect-modifier-add">+</button>
-        </div>
-
-        <p class="pg-form-hint">Положительное число усиливает показатель, отрицательное — уменьшает.</p>
-
-        {{#if modifierList.length}}
-          <div class="pg-effect-modifier-list">
-            {{#each modifierList}}
-              <div class="pg-effect-modifier-row" data-modifier-index="{{this.index}}">
-                <div class="pg-effect-modifier-row__label">{{this.label}}</div>
-                <input
-                  type="number"
-                  class="pg-effect-modifier-row__value"
-                  data-modifier-index="{{this.index}}"
-                  step="1"
-                  value="{{this.value}}"
-                >
-                <button type="button" class="pg-effect-modifier-delete" data-modifier-index="{{this.index}}">Удалить</button>
-              </div>
-            {{/each}}
-          </div>
-        {{else}}
-          <div class="pg-effect-modifier-empty">Влияния не добавлены</div>
-        {{/if}}
-      </div>
-      <div class="pg-form-field pg-damage-modifiers" data-damage-modifier-editor>
-        <label>Преобразование входящего урона</label>
-        <div class="pg-damage-modifier-add-row">
-          <select data-damage-modifier-new-mode aria-label="Преобразование урона">
-            {{#each damageModifierModeOptions}}
-              <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
-            {{/each}}
-          </select>
-          <select data-damage-modifier-new-type aria-label="Тип урона">
-            {{#each damageModifierTypeOptions}}
-              <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
-            {{/each}}
-          </select>
-          <button type="button" data-damage-modifier-add>+</button>
-        </div>
-        <p class="pg-form-hint">Сопротивление — половина с округлением вниз, иммунитет — 0, уязвимость — двойной урон. Одинаковые преобразования не складываются.</p>
-        <div class="pg-effect-modifier-list" data-damage-modifier-list></div>
-      </div>
-    {{else}}
-      <div class="pg-weapon-stat-grid">
-        <article class="pg-weapon-stat">
-          <div class="pg-weapon-stat__label">Название</div>
-          <div class="pg-weapon-stat__value">{{effectView.name}}</div>
-        </article>
-
-        <article class="pg-weapon-stat">
-          <div class="pg-weapon-stat__label">Уровень</div>
-          <div class="pg-weapon-stat__value">{{effectView.level}}</div>
-        </article>
-
-        <article class="pg-weapon-stat">
-          <div class="pg-weapon-stat__label">Тип</div>
-          <div class="pg-weapon-stat__value">{{effectView.effectType}}</div>
-        </article>
-
-        <article class="pg-weapon-stat pg-weapon-stat--full">
-          <div class="pg-weapon-stat__label">Воздействие</div>
-          <div class="pg-weapon-stat__value">{{effectView.impact}}</div>
-        </article>
-
-        <article class="pg-weapon-stat pg-weapon-stat--full">
-          <div class="pg-weapon-stat__label">Снятие</div>
-          <div class="pg-weapon-stat__value">{{effectView.removal}}</div>
-        </article>
-
-        <article class="pg-weapon-stat pg-weapon-stat--full">
-          <div class="pg-weapon-stat__label">Описание</div>
-          <div class="pg-weapon-stat__value">{{effectView.description}}</div>
-        </article>
-
-        <article class="pg-weapon-stat pg-weapon-stat--full">
-          <div class="pg-weapon-stat__label">Преобразование входящего урона</div>
-          <div class="pg-weapon-stat__value">{{effectView.damageModifierSummary}}</div>
-        </article>
-
-        <article class="pg-weapon-stat pg-weapon-stat--full">
-          <div class="pg-weapon-stat__label">Влияния на показатели</div>
-          <div class="pg-weapon-stat__value">
-            {{#if effectView.modifierList.length}}
-              <div class="pg-effect-modifier-readonly-list">
-                {{#each effectView.modifierList}}
-                  <div class="pg-effect-modifier-readonly-row">
-                    <span>{{this.label}}</span>
-                    <strong>{{this.signedValue}}</strong>
-                  </div>
-                {{/each}}
-              </div>
-            {{else}}
-              —
+        <div class="pg-passport__title">
+          <h1>{{document.name}}</h1>
+          <p class="pg-passport__lead"><span>Уровень <strong>{{effectView.level}}</strong></span><span>Тип <strong>{{effectView.effectType}}</strong></span></p>
+          <div class="pg-passport__controls">
+            {{#if passport.canToggleMode}}
+            <button type="button" class="pg-mode-toggle" aria-pressed="{{#if isEditMode}}true{{else}}false{{/if}}">
+              {{#if isEditMode}}<i class="fa-solid fa-check" aria-hidden="true"></i> Готово{{else}}<i class="fa-solid fa-pen-ruler" aria-hidden="true"></i> Править{{/if}}
+            </button>
             {{/if}}
           </div>
-        </article>
+        </div>
+      </header>
+
+      <div class="pg-passport__body">
+        {{#if isEditMode}}
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Основные данные</h2>
+          <div class="pg-form-field">
+            <label for="pg-effect-name-{{document.id}}">Название</label>
+            <input id="pg-effect-name-{{document.id}}" type="text" name="name" value="{{document.name}}" />
+          </div>
+          <div class="pg-form-grid pg-form-grid--two-columns">
+            <div class="pg-form-field">
+              <label for="pg-effect-level-{{document.id}}">Уровень</label>
+              <input id="pg-effect-level-{{document.id}}" type="number" name="system.level" min="0" step="1" value="{{system.level}}" />
+            </div>
+            <div class="pg-form-field">
+              <label for="pg-effect-type-{{document.id}}">Тип</label>
+              <input id="pg-effect-type-{{document.id}}" type="text" name="system.effectType" value="{{system.effectType}}" />
+            </div>
+          </div>
+        </section>
+
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Воздействие и снятие</h2>
+          <div class="pg-form-field">
+            <label for="pg-effect-impact-{{document.id}}">Воздействие эффекта</label>
+            <textarea id="pg-effect-impact-{{document.id}}" name="system.impact" rows="3">{{system.impact}}</textarea>
+          </div>
+          <div class="pg-form-field">
+            <label for="pg-effect-removal-{{document.id}}">Снятие эффекта</label>
+            <textarea id="pg-effect-removal-{{document.id}}" name="system.removal" rows="3">{{system.removal}}</textarea>
+          </div>
+          <div class="pg-form-field">
+            <label for="pg-effect-description-{{document.id}}">Описание</label>
+            <textarea id="pg-effect-description-{{document.id}}" name="system.description" rows="3">{{system.description}}</textarea>
+          </div>
+        </section>
+
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Влияния эффекта</h2>
+          <div class="pg-effect-modifier-add-row">
+            <select class="pg-effect-modifier-target" aria-label="Показатель">
+              {{#each modifierTargetOptions}}
+                <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+              {{/each}}
+            </select>
+            <input type="number" class="pg-effect-modifier-value-input" step="1" value="0" aria-label="Значение влияния">
+            <button type="button" class="pg-effect-modifier-add"><i class="fa-solid fa-plus" aria-hidden="true"></i> Добавить</button>
+          </div>
+          <p class="pg-form-hint">Положительное число усиливает показатель, отрицательное — уменьшает.</p>
+
+          {{#if modifierList.length}}
+            <div class="pg-effect-modifier-list">
+              {{#each modifierList}}
+                <div class="pg-effect-modifier-row" data-modifier-index="{{this.index}}">
+                  <div class="pg-effect-modifier-row__label">{{this.label}}</div>
+                  <input type="number" class="pg-effect-modifier-row__value" data-modifier-index="{{this.index}}" step="1" value="{{this.value}}" aria-label="Значение: {{this.label}}">
+                  <button type="button" class="pg-effect-modifier-delete pg-icon-button" data-modifier-index="{{this.index}}" title="Удалить влияние" aria-label="Удалить влияние {{this.label}}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+                </div>
+              {{/each}}
+            </div>
+          {{else}}
+            <p class="pg-empty">Влияния не добавлены</p>
+          {{/if}}
+        </section>
+
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Преобразование входящего урона</h2>
+          <div class="pg-form-field pg-damage-modifiers" data-damage-modifier-editor>
+            <div class="pg-damage-modifier-add-row">
+              <select data-damage-modifier-new-mode aria-label="Преобразование урона">
+                {{#each damageModifierModeOptions}}
+                  <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                {{/each}}
+              </select>
+              <select data-damage-modifier-new-type aria-label="Тип урона">
+                {{#each damageModifierTypeOptions}}
+                  <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                {{/each}}
+              </select>
+              <button type="button" data-damage-modifier-add><i class="fa-solid fa-plus" aria-hidden="true"></i> Добавить</button>
+            </div>
+            <p class="pg-form-hint">Сопротивление — половина с округлением вниз, иммунитет — 0, уязвимость — двойной урон. Одинаковые преобразования не складываются.</p>
+            <div class="pg-effect-modifier-list" data-damage-modifier-list></div>
+          </div>
+        </section>
+        {{else}}
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Характеристики</h2>
+          <dl class="pg-specs">
+            <div class="pg-specs__row"><dt>Уровень</dt><dd>{{effectView.level}}</dd></div>
+            <div class="pg-specs__row"><dt>Тип</dt><dd>{{effectView.effectType}}</dd></div>
+            <div class="pg-specs__row"><dt>Входящий урон</dt><dd>{{effectView.damageModifierSummary}}</dd></div>
+          </dl>
+        </section>
+
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Влияния на показатели</h2>
+          {{#if effectView.modifierList.length}}
+          <dl class="pg-specs">
+            {{#each effectView.modifierList}}
+            <div class="pg-specs__row"><dt>{{this.label}}</dt><dd>{{this.signedValue}}</dd></div>
+            {{/each}}
+          </dl>
+          {{else}}
+          <p class="pg-empty">Влияний нет</p>
+          {{/if}}
+        </section>
+
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Воздействие и снятие</h2>
+          <div class="pg-prose-block"><h3>Воздействие</h3><p>{{effectView.impact}}</p></div>
+          <div class="pg-prose-block"><h3>Снятие</h3><p>{{effectView.removal}}</p></div>
+        </section>
+
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Описание</h2>
+          <div class="pg-prose">{{effectView.description}}</div>
+        </section>
+        {{/if}}
       </div>
-    {{/if}}
+
+      <footer class="pg-titleblock pg-titleblock--passport" aria-hidden="true">
+        <div class="pg-titleblock__art pg-ornament pg-ornament--caliper"></div>
+        <div class="pg-titleblock__grid">
+          <span class="pg-titleblock__key">Эффект</span>
+          <span class="pg-titleblock__value">{{document.name}}</span>
+          <span class="pg-titleblock__title"><b>Паров-Град</b><small>Протокол эффекта</small></span>
+          <span class="pg-titleblock__key">Тип</span>
+          <span class="pg-titleblock__value">{{effectView.effectType}}</span>
+          <span class="pg-titleblock__key">Режим</span>
+          <span class="pg-titleblock__value">{{#if isEditMode}}правка{{else}}просмотр{{/if}}</span>
+          <span class="pg-titleblock__meta"><small>Лит.</small>Э</span>
+          <span class="pg-titleblock__meta"><small>Лист</small>1</span>
+          <span class="pg-titleblock__meta"><small>Шифр</small>{{passport.code}}</span>
+        </div>
+      </footer>
+    </div>
   </div>
 </section>

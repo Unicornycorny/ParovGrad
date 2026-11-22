@@ -1,406 +1,272 @@
-<section class="pg-sheet pg-item-dossier">
+<section class="pg-sheet pg-item-dossier pg-passport pg-passport--spell">
   <div class="sheet-body">
+    <div class="pg-blueprint pg-blueprint--passport">
+      <div class="pg-blueprint__zones" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="pg-blueprint__margin" aria-hidden="true"><span>Инв. № подл.</span><span>Подп. и дата</span></div>
 
-    <header class="pg-sheet-header">
-      <button type="button" class="pg-item-portrait-edit" title="Изменить изображение" aria-label="Изменить изображение: {{document.name}}" {{#unless canEditPortrait}}disabled{{/unless}}>
-        <img src="{{document.img}}" alt="{{document.name}}">
-      </button>
-      <div class="pg-item-dossier-heading"><div class="pg-item-dossier-kicker">Паров-Град · Заклинание</div>
-        <h1>{{document.name}}</h1></div>
-
-      <div class="pg-item-sheet-mode">
-        {{#if isEditMode}}
-          Режим: редактирование
-        {{else}}
-          Режим: просмотр
-        {{/if}}
-      </div>
-    </header>
-
-    <div class="pg-spell-builder-callout">
-      <div>
-        <strong>Конструктор заклинания</strong>
-        <span>Выберите составляющие прямо на древе магии и примените рассчитанный результат.</span>
-      </div>
-      <button type="button" class="pg-spell-open-builder">
-        <i class="fa-solid fa-diagram-project"></i>
-        Собрать из древа
-      </button>
-    </div>
-
-    {{#if constructionStatus.hasConstruction}}
-      <div class="pg-spell-construction-status {{#if constructionStatus.outdated}}is-outdated{{/if}} {{#unless constructionStatus.treeAvailable}}is-missing{{/unless}}">
-        <i class="fa-solid fa-code-branch"></i>
-        <div>
-          {{#if constructionStatus.treeAvailable}}
-            <strong>{{constructionStatus.treeName}}</strong>
-            <span>
-              Ревизия сборки: {{constructionStatus.treeRevision}} · Узлов: {{constructionStatus.selectedNodeIds.length}}
-              {{#if constructionStatus.outdated}}
-                · Текущая ревизия древа: {{constructionStatus.currentTreeRevision}}
-              {{/if}}
-            </span>
-            {{#if constructionStatus.outdated}}
-              <small>Древо изменилось. Текущие параметры заклинания сохранены как snapshot и не меняются автоматически.</small>
+      <header class="pg-passport__header">
+        <div class="pg-passport__kicker"><span>Паров-Град</span><i class="fa-solid fa-gear" aria-hidden="true"></i><span>Чертёж заклинания</span></div>
+        <div class="pg-passport__figure">
+          <button type="button" class="pg-item-portrait-edit" title="Изменить изображение" aria-label="Изменить изображение: {{document.name}}" {{#unless canEditPortrait}}disabled{{/unless}}>
+            <img src="{{document.img}}" alt="{{document.name}}">
+          </button>
+          <span class="pg-passport__dim pg-passport__dim--h" aria-hidden="true">М 1:1</span>
+          <span class="pg-passport__dim pg-passport__dim--v" aria-hidden="true"></span>
+          <span class="pg-passport__stamp {{#if isEditMode}}is-draft{{/if}}" aria-hidden="true">{{#if isEditMode}}Черновик{{else}}Утверждено{{/if}}</span>
+        </div>
+        <div class="pg-passport__title">
+          <h1>{{document.name}}</h1>
+          <p class="pg-passport__lead"><span>Уровень <strong>{{spellView.level}}</strong></span><span>Стоимость <strong>{{spellView.cost}}</strong></span><span>Дальность <strong>{{spellView.range}}</strong></span></p>
+          <div class="pg-passport__controls">
+            {{#if passport.canToggleMode}}
+            <button type="button" class="pg-mode-toggle" aria-pressed="{{#if isEditMode}}true{{else}}false{{/if}}">
+              {{#if isEditMode}}<i class="fa-solid fa-check" aria-hidden="true"></i> Готово{{else}}<i class="fa-solid fa-pen-ruler" aria-hidden="true"></i> Править{{/if}}
+            </button>
             {{/if}}
-          {{else}}
-            <strong>Исходное древо недоступно</strong>
-            <span>Сохранён UUID: {{constructionStatus.treeUuid}}</span>
-          {{/if}}
-        </div>
-      </div>
-    {{/if}}
-
-    {{#if isEditMode}}
-
-      <div class="pg-form-field">
-        <label>Название</label>
-        <input
-          type="text"
-          name="name"
-          value="{{document.name}}"
-        />
-      </div>
-
-      <div class="pg-form-grid pg-form-grid--two-columns">
-
-        <div class="pg-form-field">
-          <label>Уровень</label>
-          <input
-            type="number"
-            name="system.level"
-            min="0"
-            step="1"
-            value="{{system.level}}"
-          />
-        </div>
-
-        <div class="pg-form-field">
-          <label>Стоимость</label>
-          <input
-            type="number"
-            name="system.cost"
-            min="0"
-            step="1"
-            value="{{system.cost}}"
-          />
-        </div>
-
-        <div class="pg-form-field">
-          <label>Дальность</label>
-          <input
-            type="text"
-            name="system.range"
-            value="{{system.range}}"
-          />
-        </div>
-
-        <div class="pg-form-field">
-          <label>Форма</label>
-          <input
-            type="text"
-            name="system.shape"
-            value="{{system.shape}}"
-          />
-        </div>
-
-      </div>
-
-      <section class="pg-spell-template-panel">
-        <div class="pg-spell-template-panel__header">
-          <div>
-            <strong>Шаблон области</strong>
-            <span>При применении заклинания шаблон размещается на сцене и выбирает токены, центр которых попал в область.</span>
           </div>
-          <label class="pg-spell-template-toggle">
-            <input
-              type="checkbox"
-              name="system.template.enabled"
-              {{checked spellTemplate.enabled}}
-            />
-            Использовать
-          </label>
         </div>
+      </header>
 
-        <div class="pg-form-grid pg-form-grid--two-columns">
-          <div class="pg-form-field">
-            <label>Тип шаблона</label>
-            <select name="system.template.type">
-              {{#each spellTemplate.typeOptions}}
-                <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
-              {{/each}}
-            </select>
-          </div>
-
-          <div class="pg-form-field">
-            <label>{{spellTemplate.distanceLabel}}</label>
-            <input
-              type="number"
-              name="system.template.distance"
-              min="0"
-              step="1"
-              value="{{spellTemplate.distance}}"
-            />
-          </div>
-
-          {{#if spellTemplate.usesWidth}}
-            <div class="pg-form-field">
-              <label>Ширина линии</label>
-              <input
-                type="number"
-                name="system.template.width"
-                min="0"
-                step="1"
-                value="{{spellTemplate.width}}"
-              />
-              <p class="pg-form-hint">0 — ширина одной клетки текущей сцены.</p>
+      <div class="pg-passport__body">
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Конструкция</h2>
+          <div class="pg-spell-builder-callout">
+            <div>
+              <strong>Конструктор заклинания</strong>
+              <span>Выберите составляющие прямо на древе магии и примените рассчитанный результат.</span>
             </div>
-          {{/if}}
-
-          {{#if spellTemplate.usesAngle}}
-            <div class="pg-form-field">
-              <label>Угол конуса</label>
-              <input
-                type="number"
-                name="system.template.angle"
-                min="1"
-                max="360"
-                step="1"
-                value="{{spellTemplate.angle}}"
-              />
-            </div>
-          {{/if}}
-        </div>
-
-        <p class="pg-form-hint">Размеры задаются в единицах дистанции сцены. Для квадрата указанная величина считается длиной стороны.</p>
-      </section>
-
-      <div class="pg-form-field">
-        <label>Влияние</label>
-
-        {{#if canAddInfluence}}
-          <div class="pg-spell-influence-add-row">
-            <input
-              type="text"
-              class="pg-spell-influence-add-input"
-              placeholder="Тип влияния"
-            />
-
-            <button
-              type="button"
-              class="pg-spell-influence-add"
-            >
-              + Добавить
+            <button type="button" class="pg-spell-open-builder">
+              <i class="fa-solid fa-diagram-project" aria-hidden="true"></i>
+              Собрать из древа
             </button>
           </div>
-        {{/if}}
 
-        <p class="pg-form-hint">
-          Можно указать до 4 типов влияния.
-        </p>
-
-        {{#if influenceList}}
-          <div class="pg-effect-modifier-list">
-
-            {{#each influenceList}}
-              <div class="pg-spell-influence-row">
-
-                <input
-                  type="text"
-                  class="pg-spell-influence-value"
-                  data-influence-index="{{this.index}}"
-                  value="{{this.value}}"
-                />
-
-                <button
-                  type="button"
-                  class="pg-effect-modifier-delete pg-spell-influence-delete"
-                  data-influence-index="{{this.index}}"
-                >
-                  Удалить
-                </button>
-
+          {{#if constructionStatus.hasConstruction}}
+            <div class="pg-spell-construction-status {{#if constructionStatus.outdated}}is-outdated{{/if}} {{#unless constructionStatus.treeAvailable}}is-missing{{/unless}}">
+              <i class="fa-solid fa-code-branch" aria-hidden="true"></i>
+              <div>
+                {{#if constructionStatus.treeAvailable}}
+                  <strong>{{constructionStatus.treeName}}</strong>
+                  <span>
+                    Ревизия сборки: {{constructionStatus.treeRevision}} · Узлов: {{constructionStatus.selectedNodeIds.length}}
+                    {{#if constructionStatus.outdated}}
+                      · Текущая ревизия древа: {{constructionStatus.currentTreeRevision}}
+                    {{/if}}
+                  </span>
+                  {{#if constructionStatus.outdated}}
+                    <small>Древо изменилось. Текущие параметры заклинания сохранены как snapshot и не меняются автоматически.</small>
+                  {{/if}}
+                {{else}}
+                  <strong>Исходное древо недоступно</strong>
+                  <span>Сохранён UUID: {{constructionStatus.treeUuid}}</span>
+                {{/if}}
               </div>
-            {{/each}}
+            </div>
+          {{/if}}
+        </section>
 
+        {{#if isEditMode}}
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Основные данные</h2>
+          <div class="pg-form-field">
+            <label for="pg-spell-name-{{document.id}}">Название</label>
+            <input id="pg-spell-name-{{document.id}}" type="text" name="name" value="{{document.name}}" />
           </div>
+          <div class="pg-form-grid pg-form-grid--two-columns">
+            <div class="pg-form-field">
+              <label for="pg-spell-level-{{document.id}}">Уровень</label>
+              <input id="pg-spell-level-{{document.id}}" type="number" name="system.level" min="0" step="1" value="{{system.level}}" />
+            </div>
+            <div class="pg-form-field">
+              <label for="pg-spell-cost-{{document.id}}">Стоимость</label>
+              <input id="pg-spell-cost-{{document.id}}" type="number" name="system.cost" min="0" step="1" value="{{system.cost}}" />
+            </div>
+            <div class="pg-form-field">
+              <label for="pg-spell-range-{{document.id}}">Дальность</label>
+              <input id="pg-spell-range-{{document.id}}" type="text" name="system.range" value="{{system.range}}" />
+            </div>
+            <div class="pg-form-field">
+              <label for="pg-spell-shape-{{document.id}}">Форма</label>
+              <input id="pg-spell-shape-{{document.id}}" type="text" name="system.shape" value="{{system.shape}}" />
+            </div>
+          </div>
+        </section>
+
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Шаблон области</h2>
+          <div class="pg-spell-template-panel">
+            <div class="pg-spell-template-panel__header">
+              <div>
+                <strong>Размещение на сцене</strong>
+                <span>При применении заклинания шаблон размещается на сцене и выбирает токены, центр которых попал в область.</span>
+              </div>
+              <label class="pg-spell-template-toggle">
+                <input type="checkbox" name="system.template.enabled" {{checked spellTemplate.enabled}} />
+                Использовать
+              </label>
+            </div>
+
+            <div class="pg-form-grid pg-form-grid--two-columns">
+              <div class="pg-form-field">
+                <label for="pg-spell-template-type-{{document.id}}">Тип шаблона</label>
+                <select id="pg-spell-template-type-{{document.id}}" name="system.template.type">
+                  {{#each spellTemplate.typeOptions}}
+                    <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                  {{/each}}
+                </select>
+              </div>
+
+              <div class="pg-form-field">
+                <label for="pg-spell-template-distance-{{document.id}}">{{spellTemplate.distanceLabel}}</label>
+                <input id="pg-spell-template-distance-{{document.id}}" type="number" name="system.template.distance" min="0" step="1" value="{{spellTemplate.distance}}" />
+              </div>
+
+              {{#if spellTemplate.usesWidth}}
+                <div class="pg-form-field">
+                  <label for="pg-spell-template-width-{{document.id}}">Ширина линии</label>
+                  <input id="pg-spell-template-width-{{document.id}}" type="number" name="system.template.width" min="0" step="1" value="{{spellTemplate.width}}" />
+                  <p class="pg-form-hint">0 — ширина одной клетки текущей сцены.</p>
+                </div>
+              {{/if}}
+
+              {{#if spellTemplate.usesAngle}}
+                <div class="pg-form-field">
+                  <label for="pg-spell-template-angle-{{document.id}}">Угол конуса</label>
+                  <input id="pg-spell-template-angle-{{document.id}}" type="number" name="system.template.angle" min="1" max="360" step="1" value="{{spellTemplate.angle}}" />
+                </div>
+              {{/if}}
+            </div>
+
+            <p class="pg-form-hint">Размеры задаются в единицах дистанции сцены. Для квадрата указанная величина считается длиной стороны.</p>
+          </div>
+        </section>
+
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Влияния</h2>
+          {{#if canAddInfluence}}
+            <div class="pg-spell-influence-add-row">
+              <input type="text" class="pg-spell-influence-add-input" placeholder="Тип влияния" aria-label="Новый тип влияния" />
+              <button type="button" class="pg-spell-influence-add"><i class="fa-solid fa-plus" aria-hidden="true"></i> Добавить</button>
+            </div>
+          {{/if}}
+          <p class="pg-form-hint">Можно указать до 4 типов влияния.</p>
+
+          {{#if influenceList}}
+            <div class="pg-effect-modifier-list">
+              {{#each influenceList}}
+                <div class="pg-spell-influence-row">
+                  <input type="text" class="pg-spell-influence-value" data-influence-index="{{this.index}}" value="{{this.value}}" aria-label="Тип влияния" />
+                  <button type="button" class="pg-effect-modifier-delete pg-spell-influence-delete pg-icon-button" data-influence-index="{{this.index}}" title="Удалить влияние" aria-label="Удалить влияние"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+                </div>
+              {{/each}}
+            </div>
+          {{else}}
+            <p class="pg-empty">Влияния не добавлены</p>
+          {{/if}}
+        </section>
+
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Механика влияний</h2>
+          {{#if spellEffects.length}}
+            <div class="pg-spell-effect-list">
+              {{#each spellEffects}}
+                <div class="pg-spell-effect-row is-{{this.type}}">
+                  <strong>{{this.typeLabel}}</strong>
+                  <span>{{this.label}}</span>
+                  <code>{{this.formula}}</code>
+                  {{#if this.damageLabel}}<span>{{this.damageLabel}}</span>{{/if}}
+                </div>
+              {{/each}}
+            </div>
+          {{else}}
+            <p class="pg-empty">Нет влияний с броском урона или лечения.</p>
+          {{/if}}
+          <p class="pg-form-hint">Механика урона и лечения задаётся в узле влияния древа. Старые записи вида «Урон: 1d8 + 2d4» распознаются автоматически.</p>
+        </section>
+
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Материальные компоненты</h2>
+          <div class="pg-form-field">
+            <label class="pg-visually-hidden" for="pg-spell-materials-{{document.id}}">Материальные компоненты</label>
+            <textarea id="pg-spell-materials-{{document.id}}" class="pg-spell-materials-input" rows="4" placeholder="Один компонент на строку">{{materialsText}}</textarea>
+            <p class="pg-form-hint">Пока это обычный текст. При сборке из древа значения берутся из выбранных узлов.</p>
+          </div>
+        </section>
+
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Описание</h2>
+          <div class="pg-form-field">
+            <label class="pg-visually-hidden" for="pg-spell-description-{{document.id}}">Описание</label>
+            <textarea id="pg-spell-description-{{document.id}}" name="system.description" rows="6">{{system.description}}</textarea>
+          </div>
+        </section>
         {{else}}
-          <div class="pg-effect-modifier-empty">
-            Влияния не добавлены
-          </div>
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Характеристики</h2>
+          <dl class="pg-specs">
+            <div class="pg-specs__row"><dt>Уровень</dt><dd>{{spellView.level}}</dd></div>
+            <div class="pg-specs__row"><dt>Стоимость</dt><dd>{{spellView.cost}}</dd></div>
+            <div class="pg-specs__row"><dt>Дальность</dt><dd>{{spellView.range}}</dd></div>
+            <div class="pg-specs__row"><dt>Форма</dt><dd>{{spellView.shape}}</dd></div>
+            <div class="pg-specs__row"><dt>Шаблон области</dt><dd>{{spellView.template}}</dd></div>
+            <div class="pg-specs__row">
+              <dt>Влияния</dt>
+              <dd>{{#if spellView.influences}}<ul class="pg-chip-list">{{#each spellView.influences}}<li>{{this}}</li>{{/each}}</ul>{{else}}—{{/if}}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Механика влияний</h2>
+          {{#if spellView.effects.length}}
+            <div class="pg-spell-effect-list">
+              {{#each spellView.effects}}
+                <div class="pg-spell-effect-row is-{{this.type}}">
+                  <strong>{{this.typeLabel}}</strong>
+                  <span>{{this.label}}</span>
+                  <code>{{this.formula}}</code>
+                  {{#if this.damageLabel}}<span>{{this.damageLabel}}</span>{{/if}}
+                </div>
+              {{/each}}
+            </div>
+          {{else}}
+            <p class="pg-empty">Нет влияний с броском урона или лечения.</p>
+          {{/if}}
+        </section>
+
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Материальные компоненты</h2>
+          {{#if spellView.materials}}
+            <ol class="pg-material-list">
+              {{#each spellView.materials}}<li>{{this}}</li>{{/each}}
+            </ol>
+          {{else}}
+            <p class="pg-empty">Не требуются</p>
+          {{/if}}
+        </section>
+
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Описание</h2>
+          <div class="pg-prose">{{spellView.description}}</div>
+        </section>
         {{/if}}
       </div>
 
-      <div class="pg-form-field">
-        <label>Механика влияний</label>
-        {{#if spellEffects.length}}
-          <div class="pg-spell-effect-list">
-            {{#each spellEffects}}
-              <div class="pg-spell-effect-row is-{{this.type}}">
-                <strong>{{this.typeLabel}}</strong>
-                <span>{{this.label}}</span>
-                <code>{{this.formula}}</code>
-                {{#if this.damageLabel}}<span>{{this.damageLabel}}</span>{{/if}}
-              </div>
-            {{/each}}
-          </div>
-        {{else}}
-          <div class="pg-effect-modifier-empty">Нет влияний с броском урона или лечения.</div>
-        {{/if}}
-        <p class="pg-form-hint">Механика урона и лечения задаётся в узле влияния древа. Старые записи вида «Урон: 1d8 + 2d4» распознаются автоматически.</p>
-      </div>
-
-      <div class="pg-form-field">
-        <label>Материальные компоненты</label>
-        <textarea
-          class="pg-spell-materials-input"
-          rows="4"
-          placeholder="Один компонент на строку"
-        >{{materialsText}}</textarea>
-        <p class="pg-form-hint">Пока это обычный текст. При сборке из древа значения берутся из выбранных узлов.</p>
-      </div>
-
-      <div class="pg-form-field">
-        <label>Описание</label>
-        <textarea
-          name="system.description"
-          rows="5"
-        >{{system.description}}</textarea>
-      </div>
-
-    {{else}}
-
-      <div class="pg-weapon-stat-grid">
-
-        <article class="pg-weapon-stat">
-          <div class="pg-weapon-stat__label">
-            Название
-          </div>
-          <div class="pg-weapon-stat__value">
-            {{spellView.name}}
-          </div>
-        </article>
-
-        <article class="pg-weapon-stat">
-          <div class="pg-weapon-stat__label">
-            Уровень
-          </div>
-          <div class="pg-weapon-stat__value">
-            {{spellView.level}}
-          </div>
-        </article>
-
-        <article class="pg-weapon-stat">
-          <div class="pg-weapon-stat__label">
-            Стоимость
-          </div>
-          <div class="pg-weapon-stat__value">
-            {{spellView.cost}}
-          </div>
-        </article>
-
-        <article class="pg-weapon-stat">
-          <div class="pg-weapon-stat__label">
-            Дальность
-          </div>
-          <div class="pg-weapon-stat__value">
-            {{spellView.range}}
-          </div>
-        </article>
-
-        <article class="pg-weapon-stat">
-          <div class="pg-weapon-stat__label">
-            Форма
-          </div>
-          <div class="pg-weapon-stat__value">
-            {{spellView.shape}}
-          </div>
-        </article>
-
-        <article class="pg-weapon-stat">
-          <div class="pg-weapon-stat__label">
-            Шаблон области
-          </div>
-          <div class="pg-weapon-stat__value">
-            {{spellView.template}}
-          </div>
-        </article>
-
-        <article class="pg-weapon-stat pg-weapon-stat--full">
-          <div class="pg-weapon-stat__label">
-            Влияние
-          </div>
-
-          <div class="pg-weapon-stat__value">
-
-            {{#if spellView.influences}}
-              <div class="pg-effect-modifier-readonly-list">
-
-                {{#each spellView.influences}}
-                  <div class="pg-effect-modifier-readonly-row">
-                    <strong>{{this}}</strong>
-                  </div>
-                {{/each}}
-
-              </div>
-            {{else}}
-              —
-            {{/if}}
-
-          </div>
-        </article>
-
-        <article class="pg-weapon-stat pg-weapon-stat--full">
-          <div class="pg-weapon-stat__label">
-            Механика влияний
-          </div>
-          <div class="pg-weapon-stat__value">
-            {{#if spellView.effects.length}}
-              <div class="pg-spell-effect-list">
-                {{#each spellView.effects}}
-                  <div class="pg-spell-effect-row is-{{this.type}}">
-                    <strong>{{this.typeLabel}}</strong>
-                    <span>{{this.label}}</span>
-                    <code>{{this.formula}}</code>
-                    {{#if this.damageLabel}}<span>{{this.damageLabel}}</span>{{/if}}
-                  </div>
-                {{/each}}
-              </div>
-            {{else}}
-              —
-            {{/if}}
-          </div>
-        </article>
-
-        <article class="pg-weapon-stat pg-weapon-stat--full">
-          <div class="pg-weapon-stat__label">
-            Материальные компоненты
-          </div>
-          <div class="pg-weapon-stat__value">
-            {{#if spellView.materials}}
-              <div class="pg-effect-modifier-readonly-list">
-                {{#each spellView.materials}}
-                  <div class="pg-effect-modifier-readonly-row">{{this}}</div>
-                {{/each}}
-              </div>
-            {{else}}
-              —
-            {{/if}}
-          </div>
-        </article>
-
-        <article class="pg-weapon-stat pg-weapon-stat--full">
-          <div class="pg-weapon-stat__label">
-            Описание
-          </div>
-          <div class="pg-weapon-stat__value">
-            {{spellView.description}}
-          </div>
-        </article>
-
-      </div>
-
-    {{/if}}
-
+      <footer class="pg-titleblock pg-titleblock--passport" aria-hidden="true">
+        <div class="pg-titleblock__art pg-ornament pg-ornament--caliper"></div>
+        <div class="pg-titleblock__grid">
+          <span class="pg-titleblock__key">Формула</span>
+          <span class="pg-titleblock__value">{{document.name}}</span>
+          <span class="pg-titleblock__title"><b>Паров-Град</b><small>Чертёж заклинания</small></span>
+          <span class="pg-titleblock__key">Уровень</span>
+          <span class="pg-titleblock__value">{{spellView.level}}</span>
+          <span class="pg-titleblock__key">Режим</span>
+          <span class="pg-titleblock__value">{{#if isEditMode}}правка{{else}}просмотр{{/if}}</span>
+          <span class="pg-titleblock__meta"><small>Лит.</small>З</span>
+          <span class="pg-titleblock__meta"><small>Лист</small>1</span>
+          <span class="pg-titleblock__meta"><small>Шифр</small>{{passport.code}}</span>
+        </div>
+      </footer>
+    </div>
   </div>
 </section>

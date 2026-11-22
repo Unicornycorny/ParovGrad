@@ -89,4 +89,15 @@
     radial-gradient(circle at 9px 50%, var(--pg-rivet) 0 2px, #4a3a22 2.5px, transparent 3.5px),
     radial-gradient(circle at calc(100% - 9px) 50%, var(--pg-rivet) 0 2px, #4a3a22 2.5px, transparent 3.5px),
     linear-gradient(180deg, var(--pg-iron-light) 0%, var(--pg-iron) 60%, #1a1714 100%);
+
+  /* --- Инженерные рисунки (assets/ornaments, генератор tools/build-ornaments.mjs) --
+     Чёрная графика на прозрачном фоне. Используются только как маска:
+     background: var(--pg-ink); mask: var(--pg-ornament-…) center / contain no-repeat;
+     поэтому цвет рисунка всегда берётся из токена краски.
+     Пути указаны относительно styles/theme/ — файлы, где они применяются, лежат там же. */
+  --pg-ornament-gear: url("../../assets/ornaments/gear-large.svg");             /* водяной знак шапки */
+  --pg-ornament-gear-train: url("../../assets/ornaments/gear-train.svg");       /* поля колонки характеристик */
+  --pg-ornament-steam-engine: url("../../assets/ornaments/steam-engine.svg");   /* рисунок у штампа персонажа */
+  --pg-ornament-caliper: url("../../assets/ornaments/caliper.svg");             /* рисунок у штампа предмета */
+  --pg-ornament-gauge-dial: url("../../assets/ornaments/gauge-dial.svg");       /* шкала манометра */
 }

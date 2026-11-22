@@ -1,5 +1,5 @@
 import {damagePartLabel} from "../../damage/damage-types.js";
-import { attachItemPortraitListener } from "./item-portrait.js";
+import { attachItemModeToggle, attachItemPortraitListener, buildItemPassport } from "./item-portrait.js";
 import { animationHeaderControl } from "../animation-config.js";
 import { ParovGradSpellBuilder } from "../spell-builder.js";
 import { getSpellConstructionStatus } from "../../magic/spell-construction.js";
@@ -80,6 +80,7 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.canEditPortrait = this.isEditable;
+    context.passport = buildItemPassport(this);
 
     const influences = normalizeInfluences(this.document.system?.influences);
     const materials = normalizeMaterials(this.document.system?.materials);
@@ -221,6 +222,7 @@ export class ParovGradSpellSheet extends foundry.applications.api.HandlebarsAppl
   _attachPartListeners(partId, htmlElement, options) {
     super._attachPartListeners(partId, htmlElement, options);
     attachItemPortraitListener(this, htmlElement);
+    attachItemModeToggle(this, htmlElement);
 
     htmlElement.querySelector(".pg-spell-open-builder")?.addEventListener("click", async (event) => {
       event.preventDefault();

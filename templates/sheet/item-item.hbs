@@ -1,189 +1,201 @@
-<section class="pg-sheet pg-item-dossier">
+<section class="pg-sheet pg-item-dossier pg-passport pg-passport--item">
   <div class="sheet-body">
-    <header class="pg-sheet-header">
-      <button type="button" class="pg-item-portrait-edit" title="Изменить изображение" aria-label="Изменить изображение: {{document.name}}" {{#unless canEditPortrait}}disabled{{/unless}}>
-        <img src="{{document.img}}" alt="{{document.name}}">
-      </button>
-      <div class="pg-item-dossier-heading"><div class="pg-item-dossier-kicker">Паров-Град · Предмет</div>
-        <h1>{{document.name}}</h1></div>
-      <div class="pg-item-sheet-mode">
-        {{#if isEditMode}}
-          Режим: редактирование
-        {{else}}
-          Режим: просмотр
-        {{/if}}
-      </div>
-    </header>
+    <div class="pg-blueprint pg-blueprint--passport">
+      <div class="pg-blueprint__zones" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="pg-blueprint__margin" aria-hidden="true"><span>Инв. № подл.</span><span>Подп. и дата</span></div>
 
-    <div class="pg-item-equipped-field">
-      <label>
-        <input type="checkbox" class="pg-item-equipped" {{#if equipped}}checked{{/if}} {{#unless canToggleEquipped}}disabled{{/unless}}>
-        <strong>Надет / используется</strong>
-      </label>
-      <p class="pg-form-hint">Включает пассивные эффекты у носителя. Хранение в инвентаре их не включает.</p>
-    </div>
-
-    <div class="pg-item-effects">
-      {{#each itemEffectGroups}}
-        <section class="pg-item-effect-group {{#if this.isEditable}}pg-item-effect-group--editable{{/if}}" data-item-effect-application="{{this.application}}">
-          <div class="pg-item-effect-group__heading">
-            <h2>{{this.label}}</h2>
-            {{#if this.isEditable}}
-              <button type="button" class="pg-item-effect-create"><i class="fa-solid fa-plus"></i> Создать эффект</button>
+      <header class="pg-passport__header">
+        <div class="pg-passport__kicker"><span>Паров-Град</span><i class="fa-solid fa-gear" aria-hidden="true"></i><span>Технический паспорт · Предмет</span></div>
+        <div class="pg-passport__figure">
+          <button type="button" class="pg-item-portrait-edit" title="Изменить изображение" aria-label="Изменить изображение: {{document.name}}" {{#unless canEditPortrait}}disabled{{/unless}}>
+            <img src="{{document.img}}" alt="{{document.name}}">
+          </button>
+          <span class="pg-passport__dim pg-passport__dim--h" aria-hidden="true">М 1:1</span>
+          <span class="pg-passport__dim pg-passport__dim--v" aria-hidden="true"></span>
+          <span class="pg-passport__stamp {{#if isEditMode}}is-draft{{/if}}" aria-hidden="true">{{#if isEditMode}}Черновик{{else}}Утверждено{{/if}}</span>
+        </div>
+        <div class="pg-passport__title">
+          <h1>{{document.name}}</h1>
+          <p class="pg-passport__lead">Куб доп. эффекта: <strong>{{itemView.effectCheckDie}}</strong></p>
+          <div class="pg-passport__controls">
+            <label class="pg-switch">
+              <input type="checkbox" class="pg-item-equipped" {{#if equipped}}checked{{/if}} {{#unless canToggleEquipped}}disabled{{/unless}}>
+              <span class="pg-switch__lever" aria-hidden="true"></span>
+              <span class="pg-switch__text"><strong>Надет / используется</strong><small>Включает пассивные эффекты у носителя</small></span>
+            </label>
+            {{#if passport.canToggleMode}}
+            <button type="button" class="pg-mode-toggle" aria-pressed="{{#if isEditMode}}true{{else}}false{{/if}}">
+              {{#if isEditMode}}<i class="fa-solid fa-check" aria-hidden="true"></i> Готово{{else}}<i class="fa-solid fa-pen-ruler" aria-hidden="true"></i> Править{{/if}}
+            </button>
             {{/if}}
           </div>
-          <p class="pg-form-hint">{{this.hint}}</p>
-          {{#if this.isEditable}}
-            <p class="pg-item-effect-drop-hint"><i class="fa-solid fa-hand"></i> Перетащите сюда готовый эффект</p>
-          {{/if}}
-          {{#if this.effects.length}}
-            <div class="pg-item-effect-list">
-              {{#each this.effects}}
-                <article class="pg-item-effect-row {{#if this.disabled}}pg-item-effect-row--disabled{{/if}}" data-effect-id="{{this.id}}">
-                  <img class="pg-item-effect-row__icon" src="{{this.img}}" alt="">
-                  <div class="pg-item-effect-row__body">
-                    <strong>{{this.name}}</strong>
-                    {{#if this.disabled}}<span class="pg-item-effect-status">Отключён</span>{{/if}}
-                    {{#if this.modifierSummary}}<p>{{this.modifierSummary}}</p>{{/if}}
-                    {{#if this.impact}}<p>{{this.impact}}</p>{{/if}}
-                    {{#if this.removal}}<p>Снятие: {{this.removal}}</p>{{/if}}
-                    {{#if this.description}}<p>{{this.description}}</p>{{/if}}
-                    {{#if ../isEditable}}
-                      <select class="pg-item-effect-mode" aria-label="Способ применения эффекта {{this.name}}">
-                        <option value="passive" {{#if this.isPassive}}selected{{/if}}>Пассивный — носителю</option>
-                        <option value="active" {{#unless this.isPassive}}selected{{/unless}}>Активный — цели</option>
-                      </select>
-                    {{/if}}
+        </div>
+      </header>
+
+      <div class="pg-passport__body">
+        {{#if isEditMode}}
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Основные данные</h2>
+          <div class="pg-form-field">
+            <label for="pg-item-name-{{document.id}}">Название</label>
+            <input id="pg-item-name-{{document.id}}" type="text" name="name" value="{{document.name}}" />
+          </div>
+        </section>
+
+
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Дополнительный эффект</h2>
+          <div class="pg-form-field">
+            <label for="pg-item-die-{{document.id}}">Куб проверки доп. эффекта</label>
+            <select id="pg-item-die-{{document.id}}" name="system.effectCheckDie">
+              {{#each effectDieOptions}}
+              <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+              {{/each}}
+            </select>
+            <p class="pg-form-hint">После использования предмета можно отдельно проверить дополнительный эффект по диапазону.</p>
+          </div>
+
+          <div class="pg-range-composer">
+            <div class="pg-form-field">
+              <label for="pg-item-range-from-{{document.id}}">От</label>
+              <input id="pg-item-range-from-{{document.id}}" type="number" class="pg-weapon-effect-add-from" min="1" step="1" value="1" />
+            </div>
+            <div class="pg-form-field">
+              <label for="pg-item-range-to-{{document.id}}">До</label>
+              <input id="pg-item-range-to-{{document.id}}" type="number" class="pg-weapon-effect-add-to" min="1" step="1" value="1" />
+            </div>
+            <div class="pg-form-field pg-range-composer__text">
+              <label for="pg-item-range-text-{{document.id}}">Эффект</label>
+              <textarea id="pg-item-range-text-{{document.id}}" class="pg-weapon-effect-add-text" rows="2"></textarea>
+            </div>
+            <button type="button" class="pg-weapon-effect-add"><i class="fa-solid fa-plus" aria-hidden="true"></i> Диапазон</button>
+          </div>
+
+          {{#if effectRanges.length}}
+            <div class="pg-effect-modifier-list pg-range-list">
+              {{#each effectRanges}}
+                <div class="pg-effect-modifier-row pg-weapon-effect-row" data-effect-range-index="{{this.index}}">
+                  <div class="pg-weapon-effect-row__range-fields">
+                    <input type="number" class="pg-weapon-effect-row__from" min="1" step="1" value="{{this.from}}" aria-label="От">
+                    <span>—</span>
+                    <input type="number" class="pg-weapon-effect-row__to" min="1" step="1" value="{{this.to}}" aria-label="До">
                   </div>
-                  {{#if ../isEditable}}
-                    <div class="pg-item-effect-row__actions">
-                      <button type="button" class="pg-item-effect-edit" title="Редактировать эффект" aria-label="Редактировать {{this.name}}"><i class="fa-solid fa-pen"></i></button>
-                      <button type="button" class="pg-item-effect-toggle" title="{{#if this.disabled}}Включить{{else}}Отключить{{/if}} эффект" aria-label="{{#if this.disabled}}Включить{{else}}Отключить{{/if}} {{this.name}}"><i class="fa-solid {{#if this.disabled}}fa-toggle-off{{else}}fa-toggle-on{{/if}}"></i></button>
-                      <button type="button" class="pg-item-effect-delete" title="Удалить привязку" aria-label="Удалить {{this.name}}"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                  {{/if}}
-                </article>
+                  <textarea class="pg-weapon-effect-row__text" rows="2" aria-label="Эффект диапазона">{{this.effect}}</textarea>
+                  <button type="button" class="pg-effect-modifier-delete pg-weapon-effect-delete pg-icon-button" data-effect-range-index="{{this.index}}" title="Удалить диапазон" aria-label="Удалить диапазон"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+                </div>
               {{/each}}
             </div>
           {{else}}
-            <div class="pg-effect-modifier-empty">Эффекты не добавлены</div>
+            <p class="pg-empty">Диапазоны дополнительных эффектов не добавлены</p>
           {{/if}}
         </section>
-      {{/each}}
-    </div>
 
-    {{#if isEditMode}}
-      <div class="pg-form-field">
-        <label>Название</label>
-        <input type="text" name="name" value="{{document.name}}" />
-      </div>
-
-      <div class="pg-form-field">
-        <label>Куб проверки доп. эффекта</label>
-        <select name="system.effectCheckDie">
-          {{#each effectDieOptions}}
-          <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
-          {{/each}}
-        </select>
-        <p class="pg-form-hint">После использования предмета можно отдельно проверить дополнительный эффект по диапазону.</p>
-      </div>
-
-      <div class="pg-form-field">
-        <label>Диапазоны дополнительных эффектов</label>
-
-        <div class="pg-form-grid pg-form-grid--two-columns">
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Описание</h2>
           <div class="pg-form-field">
-            <label>От</label>
-            <input type="number" class="pg-weapon-effect-add-from" min="1" step="1" value="1" />
+            <label class="pg-visually-hidden" for="pg-item-description-{{document.id}}">Описание</label>
+            <textarea id="pg-item-description-{{document.id}}" name="system.description" rows="6">{{system.description}}</textarea>
           </div>
+        </section>
+        {{else}}
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Технические характеристики</h2>
+          <dl class="pg-specs">
+            <div class="pg-specs__row"><dt>Куб доп. эффекта</dt><dd>{{itemView.effectCheckDie}}</dd></div>
+            <div class="pg-specs__row"><dt>Состояние</dt><dd>{{#if equipped}}надет{{else}}в снаряжении{{/if}}</dd></div>
+          </dl>
+        </section>
 
-          <div class="pg-form-field">
-            <label>До</label>
-            <input type="number" class="pg-weapon-effect-add-to" min="1" step="1" value="1" />
-          </div>
-        </div>
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Дополнительные эффекты</h2>
+          {{#if itemView.effectRanges.length}}
+          <table class="pg-range-table">
+            <thead><tr><th scope="col">{{itemView.effectCheckDie}}</th><th scope="col">Эффект</th></tr></thead>
+            <tbody>
+              {{#each itemView.effectRanges}}
+              <tr><td>{{this.from}}–{{this.to}}</td><td>{{#if this.hasText}}{{this.effect}}{{else}}—{{/if}}</td></tr>
+              {{/each}}
+            </tbody>
+          </table>
+          {{else}}
+          <p class="pg-empty">Диапазоны не заданы</p>
+          {{/if}}
+        </section>
 
-        <div class="pg-form-field">
-          <label>Эффект</label>
-          <textarea class="pg-weapon-effect-add-text" rows="3"></textarea>
-        </div>
+        <section class="pg-doc-section">
+          <h2 class="pg-doc-heading">Описание</h2>
+          <div class="pg-prose">{{itemView.description}}</div>
+        </section>
+        {{/if}}
 
-        <button type="button" class="pg-weapon-effect-add">+ Добавить диапазон</button>
-
-        {{#if effectRanges.length}}
-          <div class="pg-effect-modifier-list">
-            {{#each effectRanges}}
-              <div class="pg-effect-modifier-row pg-weapon-effect-row" data-effect-range-index="{{this.index}}">
-                <div class="pg-effect-modifier-row__label">Диапазон</div>
-                <div class="pg-weapon-effect-row__range-fields">
-                  <input
-                    type="number"
-                    class="pg-weapon-effect-row__from"
-                    min="1"
-                    step="1"
-                    value="{{this.from}}"
-                  >
-                  <span>—</span>
-                  <input
-                    type="number"
-                    class="pg-weapon-effect-row__to"
-                    min="1"
-                    step="1"
-                    value="{{this.to}}"
-                  >
+        <section class="pg-doc-section pg-doc-section--effects">
+          <h2 class="pg-doc-heading">Эффекты предмета</h2>
+          <div class="pg-item-effects">
+            {{#each itemEffectGroups}}
+              <section class="pg-item-effect-group {{#if this.isEditable}}pg-item-effect-group--editable{{/if}}" data-item-effect-application="{{this.application}}">
+                <div class="pg-item-effect-group__heading">
+                  <h3>{{this.label}}</h3>
+                  {{#if this.isEditable}}
+                    <button type="button" class="pg-item-effect-create"><i class="fa-solid fa-plus" aria-hidden="true"></i> Создать эффект</button>
+                  {{/if}}
                 </div>
-                <textarea
-                  class="pg-weapon-effect-row__text"
-                  rows="2"
-                >{{this.effect}}</textarea>
-                <button type="button" class="pg-effect-modifier-delete pg-weapon-effect-delete" data-effect-range-index="{{this.index}}">Удалить</button>
-              </div>
+                <p class="pg-form-hint">{{this.hint}}</p>
+                {{#if this.isEditable}}
+                  <p class="pg-item-effect-drop-hint"><i class="fa-solid fa-hand" aria-hidden="true"></i> Перетащите сюда готовый эффект</p>
+                {{/if}}
+                {{#if this.effects.length}}
+                  <div class="pg-item-effect-list">
+                    {{#each this.effects}}
+                      <article class="pg-item-effect-row {{#if this.disabled}}pg-item-effect-row--disabled{{/if}}" data-effect-id="{{this.id}}">
+                        <img class="pg-item-effect-row__icon" src="{{this.img}}" alt="">
+                        <div class="pg-item-effect-row__body">
+                          <strong>{{this.name}}</strong>
+                          {{#if this.disabled}}<span class="pg-item-effect-status">Отключён</span>{{/if}}
+                          {{#if this.modifierSummary}}<p>{{this.modifierSummary}}</p>{{/if}}
+                          {{#if this.impact}}<p>{{this.impact}}</p>{{/if}}
+                          {{#if this.removal}}<p>Снятие: {{this.removal}}</p>{{/if}}
+                          {{#if this.description}}<p>{{this.description}}</p>{{/if}}
+                          {{#if ../isEditable}}
+                            <select class="pg-item-effect-mode" aria-label="Способ применения эффекта {{this.name}}">
+                              <option value="passive" {{#if this.isPassive}}selected{{/if}}>Пассивный — носителю</option>
+                              <option value="active" {{#unless this.isPassive}}selected{{/unless}}>Активный — цели</option>
+                            </select>
+                          {{/if}}
+                        </div>
+                        {{#if ../isEditable}}
+                          <div class="pg-item-effect-row__actions">
+                            <button type="button" class="pg-item-effect-edit" title="Редактировать эффект" aria-label="Редактировать {{this.name}}"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+                            <button type="button" class="pg-item-effect-toggle" title="{{#if this.disabled}}Включить{{else}}Отключить{{/if}} эффект" aria-label="{{#if this.disabled}}Включить{{else}}Отключить{{/if}} {{this.name}}"><i class="fa-solid {{#if this.disabled}}fa-toggle-off{{else}}fa-toggle-on{{/if}}" aria-hidden="true"></i></button>
+                            <button type="button" class="pg-item-effect-delete" title="Удалить привязку" aria-label="Удалить {{this.name}}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+                          </div>
+                        {{/if}}
+                      </article>
+                    {{/each}}
+                  </div>
+                {{else}}
+                  <p class="pg-empty">Эффекты не добавлены</p>
+                {{/if}}
+              </section>
             {{/each}}
           </div>
-        {{else}}
-          <div class="pg-effect-modifier-empty">Диапазоны дополнительных эффектов не добавлены</div>
-        {{/if}}
+        </section>
       </div>
 
-      <div class="pg-form-field">
-        <label>Описание</label>
-        <textarea name="system.description">{{system.description}}</textarea>
-      </div>
-    {{else}}
-      <div class="pg-weapon-stat-grid">
-        <article class="pg-weapon-stat">
-          <div class="pg-weapon-stat__label">Название</div>
-          <div class="pg-weapon-stat__value">{{itemView.name}}</div>
-        </article>
-
-        <article class="pg-weapon-stat">
-          <div class="pg-weapon-stat__label">Куб доп. эффекта</div>
-          <div class="pg-weapon-stat__value">{{itemView.effectCheckDie}}</div>
-        </article>
-
-        <article class="pg-weapon-stat pg-weapon-stat--full">
-          <div class="pg-weapon-stat__label">Диапазоны доп. эффектов</div>
-          <div class="pg-weapon-stat__value">
-            {{#if itemView.effectRanges.length}}
-              <div class="pg-effect-modifier-readonly-list">
-                {{#each itemView.effectRanges}}
-                  <div class="pg-effect-modifier-readonly-row">
-                    <span>{{this.from}}–{{this.to}}</span>
-                    <strong>{{#if this.hasText}}{{this.effect}}{{else}}—{{/if}}</strong>
-                  </div>
-                {{/each}}
-              </div>
-            {{else}}
-              —
-            {{/if}}
-          </div>
-        </article>
-
-        <article class="pg-weapon-stat pg-weapon-stat--full">
-          <div class="pg-weapon-stat__label">Описание</div>
-          <div class="pg-weapon-stat__value">{{itemView.description}}</div>
-        </article>
-      </div>
-    {{/if}}
+      <footer class="pg-titleblock pg-titleblock--passport" aria-hidden="true">
+        <div class="pg-titleblock__art pg-ornament pg-ornament--caliper"></div>
+        <div class="pg-titleblock__grid">
+          <span class="pg-titleblock__key">Изделие</span>
+          <span class="pg-titleblock__value">{{document.name}}</span>
+          <span class="pg-titleblock__title"><b>Паров-Град</b><small>Технический паспорт</small></span>
+          <span class="pg-titleblock__key">Тип</span>
+          <span class="pg-titleblock__value">Предмет</span>
+          <span class="pg-titleblock__key">Режим</span>
+          <span class="pg-titleblock__value">{{#if isEditMode}}правка{{else}}просмотр{{/if}}</span>
+          <span class="pg-titleblock__meta"><small>Лит.</small>О</span>
+          <span class="pg-titleblock__meta"><small>Лист</small>1</span>
+          <span class="pg-titleblock__meta"><small>Шифр</small>{{passport.code}}</span>
+        </div>
+      </footer>
+    </div>
   </div>
 </section>

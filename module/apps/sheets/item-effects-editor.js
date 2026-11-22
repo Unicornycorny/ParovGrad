@@ -10,7 +10,8 @@ export function prepareItemEffectsContext(sheet) {
   const editing = Boolean(sheet.isEditable && sheet._isEditMode);
   return {
     equipped: Boolean(item.system?.equipped),
-    canToggleEquipped: Boolean(sheet.isEditable && (editing || item.parent?.documentName === "Actor")),
+    // Wear state is a quick action, available in view mode for any item the user may change.
+    canToggleEquipped: Boolean(sheet.isEditable),
     itemEffectGroups: [
       {
         application: "passive",
@@ -49,7 +50,6 @@ export function attachItemEffectsEditor(sheet, root) {
     event.preventDefault();
     event.stopPropagation();
     if (!canEdit()) return;
-    if (!sheet._isEditMode && sheet.document.parent?.documentName !== "Actor") return;
     return run(() => sheet.document.update({ "system.equipped": Boolean(event.currentTarget.checked) }));
   });
 

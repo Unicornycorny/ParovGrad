@@ -1,0 +1,1118 @@
+/*
+ * ParovGrad — лист персонажа и NPC «Чертёж-досье» (v2).
+ * Подключается после newspaper.css. Здесь и раскладка, и вид: рамка чертежа,
+ * манометры, колонка характеристик и штамп неотделимы от геометрии листа.
+ * Цвета, шрифты и рисунки — только из токенов (tokens.css). Правила — STYLE.md.
+ *
+ *   1. Лист-чертёж: рамка, зоны, поле подшивки
+ *   2. Шапка: фото, логотип, имя, учётные данные
+ *   3. Общие детали: рубрика со «штангой», иконочные кнопки, метки
+ *   4. Состояние: манометры на общей трубе
+ *   5. Журнал: вкладки, переключатель, спецификация, эффекты
+ *   6. Характеристики: вентили на паровой трубе + чертёж шестерён
+ *   7. Штамп (основная надпись)
+ *   8. Узкое окно
+ */
+
+/* =========================================================================
+   1. Лист-чертёж
+   ========================================================================= */
+.parovgrad.sheet.actor .window-content:has(> .pg-character) {
+  padding: 0;
+  overflow: hidden;
+  background: var(--pg-background-paper);
+}
+.pg-character {
+  container: pg-sheet / inline-size;
+  flex: 1;
+  min-height: 0;
+  color-scheme: light;
+  color: var(--pg-ink);
+  font: var(--pg-fs-md)/1.45 var(--pg-font-body);
+  background: var(--pg-background-paper);
+}
+.pg-character *,
+.pg-character *::before,
+.pg-character *::after { box-sizing: border-box; }
+.pg-character :is(dt, dd, th, td, label, h1, h2, h3, p, strong, small) { text-shadow: none; }
+.pg-character .sheet-body {
+  padding: 14px 16px 16px;
+  scrollbar-color: var(--pg-brass) transparent;
+  scrollbar-width: thin;
+}
+
+/* Рамка: толстая внутренняя линия + тонкая внешняя (как на листе ЕСКД). */
+.pg-blueprint {
+  position: relative;
+  padding: 24px 20px 0 44px;
+  border: 2px solid var(--pg-rule-strong);
+  outline: 1px solid var(--pg-rule-strong);
+  outline-offset: 4px;
+  overflow: clip;
+}
+/* Водяной знак — большая шестерня за шапкой, срезана рамкой. */
+.pg-blueprint::before {
+  content: "";
+  position: absolute;
+  top: -70px;
+  right: -70px;
+  width: 250px;
+  height: 250px;
+  background: var(--pg-ink);
+  opacity: 0.07;
+  -webkit-mask: var(--pg-ornament-gear) center / contain no-repeat;
+  mask: var(--pg-ornament-gear) center / contain no-repeat;
+  pointer-events: none;
+}
+/* Буквы зон по верхнему краю. */
+.pg-blueprint__zones {
+  position: absolute;
+  top: 0;
+  left: 24px;
+  right: 0;
+  display: flex;
+  height: 13px;
+  border-bottom: 1px solid var(--pg-rule-strong);
+  font: 500 9px/12px var(--pg-font-headline);
+  letter-spacing: 0.1em;
+  color: var(--pg-ink-muted);
+  pointer-events: none;
+}
+.pg-blueprint__zones span {
+  flex: 1;
+  text-align: center;
+  border-left: 1px solid var(--pg-rule-strong);
+}
+/* Поле подшивки слева: графы «Инв. № подл.» и т.п. */
+.pg-blueprint__margin {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  border-right: 1px solid var(--pg-rule-strong);
+  pointer-events: none;
+}
+.pg-blueprint__margin span {
+  height: 92px;
+  padding: 4px 0;
+  border-top: 1px solid var(--pg-rule-strong);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font: 500 8.5px/22px var(--pg-font-headline);
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--pg-ink-muted);
+}
+.pg-blueprint__margin span:first-child { border-top: 0; border-bottom: 1px solid var(--pg-rule-strong); }
+
+/* =========================================================================
+   2. Шапка
+   ========================================================================= */
+.pg-masthead {
+  position: relative;
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+  padding: 14px 0 20px;
+  border-bottom: 3px solid var(--pg-rule-strong);
+  box-shadow: 0 3px 0 var(--pg-paper), 0 4px 0 var(--pg-rule-strong);
+}
+
+/* Фото, вклеенное уголками. */
+.pg-masthead__portrait {
+  position: relative;
+  margin: 4px 0 0;
+  padding: 7px 7px 20px;
+  border: 1px solid var(--pg-rule);
+  background: var(--pg-paper-light);
+  box-shadow: 2px 3px 0 color-mix(in srgb, var(--pg-ink) 22%, transparent);
+  transform: rotate(-1.6deg);
+}
+.pg-masthead__portrait::before {
+  content: "";
+  position: absolute;
+  inset: 2px 2px 15px;
+  background:
+    linear-gradient(135deg, var(--pg-ink-strong) 0 9px, transparent 9.5px) top left / 15px 15px no-repeat,
+    linear-gradient(225deg, var(--pg-ink-strong) 0 9px, transparent 9.5px) top right / 15px 15px no-repeat,
+    linear-gradient(45deg, var(--pg-ink-strong) 0 9px, transparent 9.5px) bottom left / 15px 15px no-repeat,
+    linear-gradient(315deg, var(--pg-ink-strong) 0 9px, transparent 9.5px) bottom right / 15px 15px no-repeat;
+  pointer-events: none;
+  z-index: 1;
+}
+.pg-character button.pg-portrait-edit {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--pg-paper-dark);
+  box-shadow: none;
+  overflow: hidden;
+  cursor: pointer;
+}
+.pg-character button.pg-portrait-edit:disabled { cursor: default; opacity: 1; }
+.pg-character .pg-portrait-edit img {
+  display: block;
+  width: 100%;
+  height: 142px;
+  object-fit: cover;
+  object-position: center top;
+  border: 0;
+  border-radius: 0;
+  filter: sepia(0.4) contrast(1.05) saturate(0.85);
+  transition: filter 0.2s ease;
+}
+.pg-character .pg-portrait-edit:not(:disabled):hover img { filter: sepia(0.1) contrast(1.05); }
+.pg-character .pg-masthead__photo {
+  display: block;
+  width: 100%;
+  height: 142px;
+  object-fit: cover;
+  object-position: center top;
+  border: 0;
+  border-radius: 0;
+  background: var(--pg-paper-dark);
+  filter: sepia(0.4) contrast(1.05) saturate(0.85);
+}
+.pg-masthead__portrait figcaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 3px;
+  font: italic 10px/1.2 var(--pg-font-body);
+  text-align: center;
+  color: var(--pg-ink-muted);
+}
+
+.pg-masthead__identity { position: relative; min-width: 0; }
+.pg-masthead__kicker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 0;
+  border-top: 1px solid var(--pg-rule-strong);
+  border-bottom: 1px solid var(--pg-rule-strong);
+  font: 500 var(--pg-fs-xs)/1.5 var(--pg-font-headline);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--pg-ink);
+}
+.pg-masthead__kicker i { font-size: 13px; color: var(--pg-brass); }
+.pg-character .pg-masthead__brand {
+  margin: 8px 0 2px;
+  font: 400 clamp(30px, 6.4cqi, 50px)/1 var(--pg-font-display);
+  letter-spacing: 0.01em;
+  text-align: center;
+  color: var(--pg-ink-strong);
+  text-shadow: 1px 1px 0 color-mix(in srgb, var(--pg-paper-light) 70%, transparent);
+}
+
+/* Имя — графа бланка: подпись под линией. */
+.pg-masthead__name { position: relative; padding-bottom: 14px; }
+.pg-masthead__name::after {
+  content: "фамилия · имя · отчество";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  font: italic 10px/1.2 var(--pg-font-body);
+  text-align: center;
+  color: var(--pg-ink-muted);
+}
+.pg-character .pg-masthead__name h1,
+.pg-character .pg-masthead__name input {
+  width: 100%;
+  min-height: 40px;
+  height: 40px;
+  margin: 0;
+  padding: 2px 6px;
+  border: 0;
+  border-bottom: 1px solid var(--pg-rule-strong);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font: 400 clamp(18px, 3.3cqi, 26px)/1.1 var(--pg-font-headline);
+  letter-spacing: 0.05em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--pg-ink-strong);
+}
+.pg-character .pg-masthead__name h1 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: auto;
+  overflow-wrap: anywhere;
+  text-shadow: none;
+}
+.pg-character .pg-masthead__name input:hover:not(:disabled),
+.pg-character .pg-masthead__name input:focus {
+  background: color-mix(in srgb, var(--pg-field) 70%, transparent);
+}
+.pg-character .pg-masthead__name input:disabled { opacity: 1; color: var(--pg-ink-strong); -webkit-text-fill-color: var(--pg-ink-strong); }
+
+/* Учётные данные — строка таблицы бланка. */
+.pg-register {
+  display: grid;
+  grid-template-columns: 1.45fr repeat(4, minmax(0, 1fr));
+  margin-top: 12px;
+  border: 1px solid var(--pg-rule-strong);
+  border-top: 3px double var(--pg-rule-strong);
+  background: color-mix(in srgb, var(--pg-field) 45%, transparent);
+}
+.pg-register__cell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 4px 6px 5px;
+  border-left: 1px solid var(--pg-rule);
+}
+.pg-register__cell:first-child { border-left: 0; }
+.pg-character .pg-register__cell > label {
+  overflow: hidden;
+  font: 500 9.5px/1.3 var(--pg-font-headline);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pg-ink-muted);
+}
+.pg-character .pg-register input {
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 1px dotted var(--pg-rule);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font: 700 18px/1 var(--pg-font-body);
+  text-align: center;
+  color: var(--pg-ink-strong);
+}
+.pg-character .pg-register input:focus { background: var(--pg-field); }
+.pg-register--npc { grid-template-columns: 2.2fr repeat(3, minmax(0, 1fr)); }
+.pg-character .pg-register input.pg-register__text {
+  font: italic 15px/1 var(--pg-font-body);
+  text-align: left;
+}
+.pg-register__level { display: flex; align-items: center; gap: 6px; }
+.pg-register__level input { flex: 1 1 auto; }
+.pg-character button.pg-level-up-button {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 12px;
+}
+
+/* =========================================================================
+   3. Общие детали
+   ========================================================================= */
+/* Рубрика: тонкая капитель + «штанга» с болтами на концах (как в бумажном листе). */
+.pg-rubric-bar {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+  padding-bottom: 9px;
+}
+.pg-rubric-bar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 7px;
+  background:
+    radial-gradient(circle at 3.5px 50%, var(--pg-ink-strong) 0 2.6px, transparent 3px),
+    radial-gradient(circle at calc(100% - 3.5px) 50%, var(--pg-ink-strong) 0 2.6px, transparent 3px),
+    linear-gradient(var(--pg-ink-strong), var(--pg-ink-strong)) center / calc(100% - 6px) 2px no-repeat;
+  pointer-events: none;
+}
+.pg-character .pg-rubric-bar h2 {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font: 400 var(--pg-fs-lg)/1.15 var(--pg-font-headline);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pg-ink-strong);
+}
+.pg-character .pg-rubric-bar h2::after { content: none; }
+.pg-character .pg-rubric-bar button { flex: 0 0 auto; width: auto; min-height: 28px; padding: 3px 12px; gap: 6px; }
+
+.pg-character button.pg-icon-button {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  min-height: 0;
+  padding: 0;
+  font-size: 13px;
+}
+.pg-character button.pg-icon-button.pg-item-delete,
+.pg-character button.pg-icon-button.pg-effect-delete { color: var(--pg-danger); }
+
+.pg-tag {
+  display: inline-block;
+  padding: 0 5px;
+  border: 1px solid var(--pg-ink-strong);
+  background: var(--pg-ink-strong);
+  color: var(--pg-paper-light);
+  font: 500 9.5px/1.5 var(--pg-font-headline);
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+}
+.pg-character .pg-form-hint {
+  margin: 0;
+  font: italic var(--pg-fs-sm)/1.45 var(--pg-font-body);
+  color: var(--pg-ink-muted);
+  opacity: 1;
+}
+.pg-empty {
+  margin: 0;
+  padding: 18px 8px;
+  border: 1px dashed var(--pg-rule);
+  font-style: italic;
+  text-align: center;
+  color: var(--pg-ink-muted);
+}
+
+/* =========================================================================
+   4. Состояние: манометры
+   ========================================================================= */
+.pg-character__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 236px;
+  gap: 24px;
+  padding: 18px 0 0;
+}
+.pg-character__main,
+.pg-character__aside { min-width: 0; }
+.pg-character__main { display: flex; flex-direction: column; gap: 20px; }
+.pg-character__aside { display: flex; flex-direction: column; }
+
+/* Числовая регистрация переменной: только так её можно плавно анимировать
+   (ход стрелки — module/apps/sheets/gauge-motion.js). */
+@property --pg-gauge-fill {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+.pg-manifold {
+  --pg-gauge-size: 112px;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+/* Общая паровая труба, на которой стоят манометры. */
+.pg-manifold::before {
+  content: "";
+  position: absolute;
+  top: calc(var(--pg-gauge-size) / 2 - 6px);
+  left: 10%;
+  right: 10%;
+  height: 12px;
+  border: 1px solid var(--pg-brass-dark);
+  border-radius: 6px;
+  background: linear-gradient(180deg, var(--pg-brass-light), var(--pg-brass) 55%, var(--pg-brass-dark));
+  box-shadow: inset 0 1px 0 rgba(255, 240, 205, 0.5);
+}
+.pg-gauge {
+  --pg-gauge-color: var(--pg-ink-strong);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.pg-gauge--health { --pg-gauge-color: var(--pg-danger); }
+.pg-gauge--mana { --pg-gauge-color: var(--pg-mana); }
+.pg-gauge--combatPoints { --pg-gauge-color: var(--pg-copper); }
+
+/* Латунная оправа с заклёпками. */
+.pg-gauge__dial {
+  position: relative;
+  width: var(--pg-gauge-size);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 4.5%, var(--pg-rivet) 0 2px, #4a3a22 2.4px, transparent 3px),
+    radial-gradient(circle at 50% 95.5%, var(--pg-rivet) 0 2px, #4a3a22 2.4px, transparent 3px),
+    radial-gradient(circle at 4.5% 50%, var(--pg-rivet) 0 2px, #4a3a22 2.4px, transparent 3px),
+    radial-gradient(circle at 95.5% 50%, var(--pg-rivet) 0 2px, #4a3a22 2.4px, transparent 3px),
+    conic-gradient(from 210deg, var(--pg-brass-light), var(--pg-brass-dark) 25%, var(--pg-brass-light) 50%, var(--pg-brass-dark) 75%, var(--pg-brass-light));
+  box-shadow: 0 2px 5px rgba(30, 20, 5, 0.45), inset 0 0 0 1px var(--pg-brass-dark);
+}
+/* Циферблат под стеклом. */
+.pg-gauge__dial::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.55), transparent 42%),
+    radial-gradient(circle, var(--pg-paper-light) 60%, var(--pg-paper-shade));
+  box-shadow: inset 0 0 0 1px var(--pg-brass-dark), inset 0 2px 6px rgba(40, 25, 5, 0.45);
+}
+.pg-gauge__arc,
+.pg-gauge__ticks {
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+}
+/* Заполненная дуга: 270° от левого нижнего края. */
+.pg-gauge__arc {
+  background: conic-gradient(from 225deg,
+    color-mix(in srgb, var(--pg-gauge-color) 75%, transparent) 0deg calc(var(--pg-gauge-fill, 0) * 2.7deg),
+    color-mix(in srgb, var(--pg-ink) 8%, transparent) 0deg 270deg,
+    transparent 0deg);
+  -webkit-mask: radial-gradient(circle, transparent 0 calc(50% - 10px), #000 calc(50% - 9.5px) calc(50% - 3px), transparent calc(50% - 2.5px));
+  mask: radial-gradient(circle, transparent 0 calc(50% - 10px), #000 calc(50% - 9.5px) calc(50% - 3px), transparent calc(50% - 2.5px));
+}
+.pg-gauge__ticks {
+  background: var(--pg-ink-strong);
+  -webkit-mask: var(--pg-ornament-gauge-dial) center / contain no-repeat;
+  mask: var(--pg-ornament-gauge-dial) center / contain no-repeat;
+}
+.pg-gauge__needle {
+  position: absolute;
+  top: 15%;
+  left: calc(50% - 2.5px);
+  width: 5px;
+  height: 35%;
+  background: var(--pg-gauge-color);
+  clip-path: polygon(50% 0, 100% 88%, 100% 100%, 0 100%, 0 88%);
+  transform-origin: 50% 100%;
+  transform: rotate(calc(-135deg + var(--pg-gauge-fill, 0) * 2.7deg));
+  filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.25));
+}
+.pg-gauge__hub {
+  position: absolute;
+  top: calc(50% - 7px);
+  left: calc(50% - 7px);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--pg-brass-light), var(--pg-brass-dark));
+  box-shadow: 0 0 0 1px var(--pg-ink-strong), 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.pg-gauge__readout {
+  position: absolute;
+  left: 50%;
+  bottom: 13%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.pg-gauge__readout strong {
+  font: 600 19px/1 var(--pg-font-headline);
+  color: var(--pg-ink-strong);
+}
+.pg-gauge__readout small {
+  margin-top: 1px;
+  font: 500 8.5px/1 var(--pg-font-headline);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pg-ink-muted);
+}
+/* Табличка с названием — латунная пластина на двух винтах. */
+.pg-gauge__title {
+  margin-top: -12px;
+  padding: 1px 16px;
+  border: 1px solid var(--pg-brass-dark);
+  border-radius: var(--pg-radius);
+  background:
+    radial-gradient(circle at 6px 50%, var(--pg-brass-dark) 0 1.6px, transparent 2px),
+    radial-gradient(circle at calc(100% - 6px) 50%, var(--pg-brass-dark) 0 1.6px, transparent 2px),
+    var(--pg-background-brass);
+  box-shadow: var(--pg-shadow-plate), 0 1px 2px rgba(30, 20, 5, 0.35);
+  font: 600 10.5px/1.6 var(--pg-font-headline);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pg-ink-strong);
+  z-index: 1;
+}
+.pg-gauge__inputs {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+}
+.pg-gauge__inputs label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+}
+.pg-gauge__inputs label > span {
+  font: 500 9px/1.2 var(--pg-font-headline);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pg-ink-muted);
+}
+.pg-character .pg-gauge__inputs input {
+  width: 52px;
+  height: 26px;
+  padding: 0 2px;
+  font: 700 15px/1 var(--pg-font-body);
+  text-align: center;
+}
+.pg-character .pg-gauge__inputs input:disabled {
+  opacity: 1;
+  background: color-mix(in srgb, var(--pg-paper-shade) 45%, transparent);
+  color: var(--pg-ink-muted);
+  -webkit-text-fill-color: var(--pg-ink-muted);
+}
+.pg-gauge__inputs :is(.pg-gauge__slash, .pg-pool-divider) {
+  padding-bottom: 4px;
+  font: 400 16px/1 var(--pg-font-headline);
+  color: var(--pg-ink-muted);
+}
+.pg-gauge__note {
+  font: italic 11px/1.3 var(--pg-font-body);
+  text-align: center;
+  color: var(--pg-ink-muted);
+  cursor: help;
+}
+.pg-gauge__note strong { font-style: normal; color: var(--pg-ink-strong); }
+
+/* =========================================================================
+   5. Журнал: вкладки, спецификация, эффекты
+   ========================================================================= */
+.pg-ledger { min-width: 0; container: pg-ledger / inline-size; }
+@container pg-ledger (max-width: 540px) {
+  .pg-ledger__tab i { display: none; }
+}
+@container pg-ledger (max-width: 400px) {
+  .pg-ledger__tabs { padding: 0 2px; gap: 2px; }
+  .pg-character button.pg-ledger__tab { padding: 0 4px; font-size: 10.5px; letter-spacing: 0.02em; }
+  .pg-ledger__count { display: none; }
+}
+.pg-ledger__tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 0 6px;
+  border-bottom: 2px solid var(--pg-rule-strong);
+}
+.pg-character button.pg-ledger__tab {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  height: 32px;
+  min-height: 0;
+  margin: 0 0 -2px;
+  padding: 0 7px;
+  border: 1px solid var(--pg-rule-strong);
+  border-bottom: 2px solid var(--pg-rule-strong);
+  border-radius: 4px 4px 0 0;
+  background: color-mix(in srgb, var(--pg-paper-shade) 70%, transparent);
+  box-shadow: none;
+  font: 500 11.5px/1 var(--pg-font-headline);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-shadow: none;
+  color: var(--pg-ink-muted);
+  cursor: pointer;
+}
+.pg-character button.pg-ledger__tab:hover:not(.is-active) {
+  background: color-mix(in srgb, var(--pg-paper-light) 80%, transparent);
+  color: var(--pg-ink-strong);
+}
+.pg-character button.pg-ledger__tab.is-active {
+  height: 38px;
+  border-width: 2px 2px 0;
+  border-bottom: 2px solid var(--pg-paper-light);
+  background: var(--pg-paper-light);
+  box-shadow: inset 0 3px 0 var(--pg-brass);
+  color: var(--pg-ink-strong);
+}
+.pg-ledger__tab i { font-size: 12px; }
+.pg-ledger__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-ledger__count {
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 9px;
+  background: var(--pg-ink-muted);
+  font: 600 10px/1.3 var(--pg-font-headline);
+  letter-spacing: 0;
+  color: var(--pg-paper-light);
+}
+.pg-ledger__tab.is-active .pg-ledger__count { background: var(--pg-ink-strong); }
+.pg-ledger__panel {
+  padding: 12px;
+  border: 2px solid var(--pg-rule-strong);
+  border-top: 0;
+  background: color-mix(in srgb, var(--pg-paper-light) 80%, transparent);
+}
+.pg-ledger__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 10px;
+}
+.pg-ledger__toolbar .pg-form-hint { flex: 1 1 200px; }
+.pg-ledger__actions { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.pg-character .pg-ledger__toolbar button { width: auto; min-height: 28px; padding: 3px 12px; gap: 6px; }
+
+/* Переключатель «известные / подготовленные» — рычажный тумблер. */
+.pg-segmented { display: inline-flex; border: 1px solid var(--pg-brass-dark); border-radius: var(--pg-radius); }
+.pg-character .pg-segmented button.pg-segmented__option {
+  min-height: 28px;
+  margin: 0;
+  padding: 3px 12px;
+  border: 0;
+  border-left: 1px solid var(--pg-brass-dark);
+  border-radius: 0;
+  gap: 6px;
+}
+.pg-character .pg-segmented button.pg-segmented__option:first-child { border-left: 0; }
+.pg-character .pg-segmented button.pg-segmented__option.is-active {
+  background: linear-gradient(180deg, var(--pg-iron-light), var(--pg-iron));
+  color: var(--pg-paper-light);
+  text-shadow: 0 1px 0 #000;
+  box-shadow: inset 0 0 0 1px var(--pg-brass);
+}
+.pg-segmented__option span { opacity: 0.75; }
+.pg-preparation-summary {
+  margin: -2px 0 10px;
+  font: italic var(--pg-fs-sm)/1.4 var(--pg-font-body);
+  color: var(--pg-ink-muted);
+}
+.pg-preparation-summary strong { font-style: normal; color: var(--pg-ink-strong); }
+
+/* Спецификация: позиция | наименование | действия. */
+.pg-spec__head,
+.pg-spec__row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 30px 30px;
+  align-items: center;
+  column-gap: 8px;
+}
+.pg-spec__head {
+  padding: 3px 4px;
+  border-top: 2px solid var(--pg-rule-strong);
+  border-bottom: 1px solid var(--pg-rule-strong);
+  font: 500 9.5px/1.4 var(--pg-font-headline);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pg-ink-muted);
+}
+.pg-spec__head span:last-child { grid-column: 3 / -1; text-align: center; }
+.pg-spec {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pg-spec__row {
+  position: relative;
+  min-height: 52px;
+  padding: 4px;
+  border-bottom: 1px solid var(--pg-rule);
+}
+.pg-spec__row:hover { background: color-mix(in srgb, var(--pg-paper-shade) 35%, transparent); }
+/* Номер позиции — кружок-выноска, как на сборочном чертеже. */
+.pg-spec__pos {
+  justify-self: center;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--pg-rule-strong);
+  border-radius: 50%;
+  background: var(--pg-paper-light);
+  font: 500 11px/1 var(--pg-font-headline);
+  color: var(--pg-ink-strong);
+}
+.pg-character button.pg-spec__item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 2px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  text-align: left;
+  color: var(--pg-ink);
+  cursor: pointer;
+}
+.pg-spec__icon {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  padding: 2px;
+  border: 1px solid var(--pg-rule);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--pg-paper-dark) 35%, transparent);
+  object-fit: contain;
+}
+.pg-spec__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pg-spec__name {
+  overflow: hidden;
+  font: 700 15px/1.2 var(--pg-font-body);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pg-ink-strong);
+}
+.pg-character button.pg-spec__item:hover .pg-spec__name { text-decoration: underline; text-underline-offset: 2px; }
+.pg-spec__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  font: 500 10px/1.4 var(--pg-font-headline);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pg-ink-muted);
+}
+
+/* Эффекты — карточки-вырезки. */
+.pg-character .pg-effect-cards { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.pg-character .pg-effect-card {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 10px 10px 12px;
+  border: 1px solid var(--pg-rule);
+  border-left: 3px solid var(--pg-brass);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--pg-field) 70%, transparent);
+}
+.pg-character .pg-effect-card[draggable="true"] { cursor: grab; }
+.pg-character .pg-effect-card.is-disabled {
+  opacity: 1;
+  border-left-color: var(--pg-rule);
+  background:
+    repeating-linear-gradient(45deg, color-mix(in srgb, var(--pg-ink) 6%, transparent) 0 1px, transparent 1px 6px),
+    color-mix(in srgb, var(--pg-paper-shade) 40%, transparent);
+}
+.pg-character .pg-effect-card .pg-effect-row__icon {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--pg-rule);
+  border-radius: 0;
+  object-fit: cover;
+}
+.pg-character .pg-effect-card.is-disabled .pg-effect-row__icon { filter: grayscale(1); opacity: 0.6; }
+.pg-character .pg-effect-row__content { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pg-character .pg-effect-row__title-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.pg-character button.pg-effect-row__name {
+  flex: 0 1 auto;
+  justify-content: flex-start;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  font: 700 15px/1.25 var(--pg-font-body);
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--pg-ink-strong);
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.pg-character button.pg-effect-row__name:hover { text-decoration: underline; text-underline-offset: 2px; }
+.pg-character .pg-effect-card.is-disabled .pg-effect-row__name { color: var(--pg-ink-muted); }
+.pg-character .pg-effect-badge {
+  padding: 0 5px;
+  border: 1px solid var(--pg-ink-strong);
+  border-radius: 0;
+  font: 500 9.5px/1.5 var(--pg-font-headline);
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+  color: var(--pg-ink-strong);
+}
+.pg-character .pg-effect-badge--off { border-color: var(--pg-danger); color: var(--pg-danger); }
+.pg-character .pg-effect-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 0;
+  font: 500 10.5px/1.4 var(--pg-font-headline);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pg-ink-muted);
+  opacity: 1;
+}
+.pg-character .pg-effect-row__meta span + span::before { content: "·"; margin: 0 6px; color: var(--pg-brass); }
+.pg-character .pg-effect-row__text { font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+.pg-character .pg-effect-row__source { font: italic 11.5px/1.4 var(--pg-font-body); color: var(--pg-ink-muted); opacity: 1; overflow-wrap: anywhere; }
+.pg-character .pg-effect-row__actions { display: flex; flex-direction: column; gap: 4px; }
+
+.pg-legacy-trees { display: flex; flex-direction: column; gap: 10px; }
+
+/* =========================================================================
+   6. Характеристики
+   ========================================================================= */
+.pg-stats {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 2px 0;
+  list-style: none;
+}
+/* Вертикальная паровая труба: характеристики — вентили на ней. */
+.pg-stats::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 19px;
+  width: 10px;
+  border: 1px solid var(--pg-brass-dark);
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--pg-brass-dark), var(--pg-brass-light) 40%, var(--pg-brass) 70%, var(--pg-brass-dark));
+}
+.pg-stat {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: 48px 46px minmax(0, 1fr) 32px;
+  grid-template-areas:
+    "icon label label label"
+    "icon value mods roll";
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 3px;
+  padding: 6px 8px 7px 0;
+}
+/* Пластина под вентилем. */
+.pg-stat::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 24px;
+  z-index: -1;
+  border: 1px solid var(--pg-rule-strong);
+  border-top: 3px double var(--pg-rule-strong);
+  background:
+    radial-gradient(circle at calc(100% - 6px) 7px, var(--pg-rule) 0 1.5px, transparent 2px),
+    radial-gradient(circle at calc(100% - 6px) calc(100% - 6px), var(--pg-rule) 0 1.5px, transparent 2px),
+    color-mix(in srgb, var(--pg-field) 75%, transparent);
+}
+.pg-stat__icon {
+  grid-area: icon;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--pg-paper-light) 0 16px, var(--pg-brass-dark) 16.5px 17.5px, transparent 18px),
+    conic-gradient(from 200deg, var(--pg-brass-light), var(--pg-brass-dark) 30%, var(--pg-brass-light) 55%, var(--pg-brass-dark) 80%, var(--pg-brass-light));
+  box-shadow: 0 1px 3px rgba(30, 20, 5, 0.45), inset 0 0 0 1px var(--pg-brass-dark);
+  font-size: 17px;
+  color: var(--pg-ink-strong);
+}
+.pg-character .pg-stat__label {
+  grid-area: label;
+  overflow: hidden;
+  font: 600 var(--pg-fs-sm)/1.2 var(--pg-font-headline);
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--pg-ink-strong);
+}
+.pg-character .pg-stat__value {
+  grid-area: value;
+  width: 46px;
+  height: 32px;
+  padding: 0;
+  font: 700 21px/1 var(--pg-font-body);
+  text-align: center;
+  color: var(--pg-ink-strong);
+}
+.pg-stat__mods {
+  grid-area: mods;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  font: 500 var(--pg-fs-sm)/1 var(--pg-font-headline);
+  white-space: nowrap;
+  cursor: help;
+}
+.pg-stat__influence { color: var(--pg-ink-muted); }
+.pg-stat__total { font-weight: 600; font-size: 14px; color: var(--pg-ink-strong); }
+/* Бросок — штамп в двойной рамке (в негативе при наведении). */
+.pg-character button.pg-stat-roll {
+  grid-area: roll;
+  width: 32px;
+  height: 32px;
+  min-height: 0;
+  padding: 0;
+  border: 2px solid var(--pg-ink-strong);
+  border-radius: var(--pg-radius);
+  background: var(--pg-paper-light);
+  box-shadow: inset 0 0 0 1px var(--pg-paper-light), inset 0 0 0 2px var(--pg-ink-strong);
+  font-size: 14px;
+  color: var(--pg-ink-strong);
+  text-shadow: none;
+}
+.pg-character button.pg-stat-roll:hover:not(:disabled) {
+  background: var(--pg-ink-strong);
+  border-color: var(--pg-ink-strong);
+  box-shadow: inset 0 0 0 1px var(--pg-ink-strong), inset 0 0 0 2px var(--pg-brass-light);
+  color: var(--pg-paper-light);
+}
+
+/* Рисунок на полях: шестерни, труба, манометр, вентиль. */
+.pg-ornament {
+  background: var(--pg-ink);
+  pointer-events: none;
+}
+.pg-ornament--gear-train {
+  width: 100%;
+  aspect-ratio: 220 / 380;
+  max-height: 420px;
+  margin-top: 16px;
+  opacity: 0.82;
+  -webkit-mask: var(--pg-ornament-gear-train) top center / contain no-repeat;
+  mask: var(--pg-ornament-gear-train) top center / contain no-repeat;
+}
+.pg-ornament--steam-engine {
+  -webkit-mask: var(--pg-ornament-steam-engine) right center / contain no-repeat;
+  mask: var(--pg-ornament-steam-engine) right center / contain no-repeat;
+}
+
+/* =========================================================================
+   7. Штамп
+   ========================================================================= */
+.pg-titleblock {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 360px);
+  align-items: stretch;
+  gap: 16px;
+  margin: 24px -20px 0 0;
+  pointer-events: none;
+}
+.pg-titleblock__art { min-height: 70px; margin: 2px 0 6px; opacity: 0.8; }
+.pg-titleblock__grid {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) repeat(3, 54px);
+  grid-template-rows: repeat(3, 24px);
+  border-top: 2px solid var(--pg-rule-strong);
+  border-left: 2px solid var(--pg-rule-strong);
+  font: 500 10px/1 var(--pg-font-headline);
+  color: var(--pg-ink);
+}
+.pg-titleblock__grid > span {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0 5px;
+  overflow: hidden;
+  border-right: 1px solid var(--pg-rule-strong);
+  border-bottom: 1px solid var(--pg-rule-strong);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.pg-titleblock__grid > span:nth-child(3),
+.pg-titleblock__grid > span:last-child { border-right: 0; }
+.pg-titleblock__key { letter-spacing: 0.06em; text-transform: uppercase; color: var(--pg-ink-muted); }
+.pg-titleblock__value { font: italic 12px/1 var(--pg-font-body); color: var(--pg-ink-strong); }
+.pg-titleblock__title {
+  grid-column: 3 / -1;
+  grid-row: 1 / 3;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+}
+.pg-titleblock__title b { font: 400 17px/1 var(--pg-font-display); color: var(--pg-ink-strong); }
+.pg-titleblock__title small { font: 500 9px/1 var(--pg-font-headline); letter-spacing: 0.16em; text-transform: uppercase; }
+.pg-titleblock__grid > .pg-titleblock__meta {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 0 2px;
+  font: 600 11px/1 var(--pg-font-headline);
+  color: var(--pg-ink-strong);
+}
+.pg-titleblock__meta small { font: 500 7.5px/1 var(--pg-font-headline); letter-spacing: 0.08em; text-transform: uppercase; color: var(--pg-ink-muted); }
+
+/* =========================================================================
+   8. Узкое окно
+   ========================================================================= */
+/* Контейнеры именованы: внутри листа есть вложенный контейнер журнала. */
+@container pg-sheet (max-width: 720px) {
+  .pg-character__layout { grid-template-columns: minmax(0, 1fr); }
+  .pg-character__aside { order: -1; }
+  .pg-stats { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+  .pg-stats::before { display: none; }
+  .pg-ornament--gear-train { display: none; }
+}
+@container pg-sheet (max-width: 660px) {
+  .pg-register { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pg-register__cell:nth-child(4) { border-left: 0; }
+  .pg-register__cell:nth-child(n + 4) { border-top: 1px solid var(--pg-rule); }
+  .pg-register--npc { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pg-register--npc .pg-register__cell--wide { grid-column: 1 / -1; }
+  .pg-register--npc .pg-register__cell:nth-child(2) { border-left: 0; border-top: 1px solid var(--pg-rule); }
+  .pg-register--npc .pg-register__cell:nth-child(n + 2) { border-top: 1px solid var(--pg-rule); }
+  .pg-register--npc .pg-register__cell:nth-child(4) { border-left: 1px solid var(--pg-rule); }
+}
+@container pg-sheet (max-width: 540px) {
+  .pg-character .sheet-body { padding: 10px; }
+  .pg-blueprint { padding: 20px 12px 0 32px; }
+  .pg-blueprint__margin { width: 18px; }
+  .pg-blueprint__margin span { line-height: 16px; }
+  .pg-masthead { grid-template-columns: 92px minmax(0, 1fr); gap: 14px; }
+  .pg-character .pg-portrait-edit img,
+  .pg-character .pg-masthead__photo { height: 104px; }
+  .pg-manifold { --pg-gauge-size: 96px; gap: 6px; }
+  .pg-character .pg-gauge__inputs input { width: 44px; }
+  .pg-titleblock { grid-template-columns: minmax(0, 1fr); margin-right: -12px; }
+  .pg-titleblock__art { display: none; }
+}
+@container pg-sheet (max-width: 420px) {
+  .pg-manifold { grid-template-columns: minmax(0, 1fr); }
+  .pg-manifold::before { display: none; }
+  .pg-masthead { grid-template-columns: minmax(0, 1fr); }
+  .pg-masthead__portrait { width: 120px; justify-self: center; }
+}

@@ -15,6 +15,8 @@
         "styles/theme/tokens.css",
         "styles/system-styles.css",
         "styles/theme/newspaper.css",
+        "styles/theme/dossier.css",
+        "styles/theme/passport.css",
         "styles/animations.css"
     ],
     "documentTypes": {

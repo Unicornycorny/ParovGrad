@@ -1,4 +1,4 @@
-import { attachItemPortraitListener } from "./item-portrait.js";
+import { attachItemModeToggle, attachItemPortraitListener, buildItemPassport } from "./item-portrait.js";
 import { animationHeaderControl } from "../animation-config.js";
 import {
   getDamageModifierModeOptions,
@@ -41,6 +41,7 @@ export class ParovGradEffectSheet extends foundry.applications.api.HandlebarsApp
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.canEditPortrait = this.isEditable;
+    context.passport = buildItemPassport(this);
     const effectData = getEffectItemTemplateData(this.document);
 
     context.system = this.document.system;
@@ -92,6 +93,7 @@ export class ParovGradEffectSheet extends foundry.applications.api.HandlebarsApp
   _attachPartListeners(partId, htmlElement, options) {
     super._attachPartListeners(partId, htmlElement, options);
     attachItemPortraitListener(this, htmlElement);
+    attachItemModeToggle(this, htmlElement);
     if (!this._isEditMode) return;
     initializeDamageModifierEditor(htmlElement, getEffectItemTemplateData(this.document).damageModifiers,
       (damageModifiers) => this.document.update({ "system.damageModifiers": damageModifiers }));

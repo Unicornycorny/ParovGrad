@@ -59,22 +59,25 @@ function harness({ editable = true, editing = true, embedded = true } = {}) {
   return { sheet, root, equipped, groups, rows, writes, calls, warnings, effects };
 }
 
-test("wear state is switchable on owned item in view mode and never on read-only sheets", async () => {
-  const owned = harness({ editing: false });
-  assert.equal(prepareItemEffectsContext(owned.sheet).canToggleEquipped, true);
-  attachItemEffectsEditor(owned.sheet, owned.root);
-  await owned.equipped.fire("change");
-  assert.deepEqual(owned.writes, [{ "system.equipped": true }]);
-
-  for (const options of [{ editable: false }, { editing: false, embedded: false }]) {
-    const readOnly = harness(options);
-    assert.equal(prepareItemEffectsContext(readOnly.sheet).canToggleEquipped, false);
-    attachItemEffectsEditor(readOnly.sheet, readOnly.root);
-    await readOnly.equipped.fire("change");
-    await readOnly.groups[0].fire("drop", { dataTransfer: { getData: () => '{"uuid":"Item.effect"}' } });
-    assert.deepEqual(readOnly.writes, []);
-    assert.deepEqual(readOnly.calls, []);
+test("wear state is switchable in view mode for owned and catalogue items, never on read-only sheets", async () => {
+  for (const options of [{ editing: false }, { editing: false, embedded: false }]) {
+    const viewing = harness(options);
+    assert.equal(prepareItemEffectsContext(viewing.sheet).canToggleEquipped, true);
+    attachItemEffectsEditor(viewing.sheet, viewing.root);
+    await viewing.equipped.fire("change");
+    assert.deepEqual(viewing.writes, [{ "system.equipped": true }]);
+    // Effect configuration stays edit-mode only.
+    await viewing.groups[0].fire("drop", { dataTransfer: { getData: () => '{"uuid":"Item.effect"}' } });
+    assert.deepEqual(viewing.calls, []);
   }
+
+  const readOnly = harness({ editable: false });
+  assert.equal(prepareItemEffectsContext(readOnly.sheet).canToggleEquipped, false);
+  attachItemEffectsEditor(readOnly.sheet, readOnly.root);
+  await readOnly.equipped.fire("change");
+  await readOnly.groups[0].fire("drop", { dataTransfer: { getData: () => '{"uuid":"Item.effect"}' } });
+  assert.deepEqual(readOnly.writes, []);
+  assert.deepEqual(readOnly.calls, []);
 });
 
 test("each drop zone binds its own application and creates a new effect with that application", async () => {

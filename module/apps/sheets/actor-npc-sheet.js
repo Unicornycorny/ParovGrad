@@ -8,13 +8,35 @@ import {
   getActorPassiveItemEffectViews,
   openActorEffectDialog
 } from "../../effects/effect-utils.js";
+import {
+  STAT_ICONS,
+  buildHealthGauge,
+  buildItemRow,
+  buildLedgerView,
+  buildSheetCode
+} from "./actor-sheet-view.js";
+import { animateGaugeNeedles, captureGaugeReadings } from "./gauge-motion.js";
+
+const NPC_CATEGORIES = [
+  { key: "inventory", tab: "inventory", types: ["item", "weapon"], empty: "Снаряжение пусто" },
+  { key: "spells", tab: "spells", types: ["spell"], empty: "Нет заклинаний" },
+  { key: "abilities", tab: "abilities", types: ["skill"], empty: "Нет способностей" },
+  { key: "effects", tab: "effects" }
+];
+
+const NPC_TABS = [
+  { key: "inventory", label: "Снаряжение", icon: "fa-toolbox" },
+  { key: "spells", label: "Заклинания", icon: "fa-book-open" },
+  { key: "abilities", label: "Способности", icon: "fa-scroll" },
+  { key: "effects", label: "Эффекты", icon: "fa-flask" }
+];
 
 export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.sheets.ActorSheetV2
 ) {
   static DEFAULT_OPTIONS = {
     classes: ["parovgrad", "sheet", "actor", "npc"],
-    position: { width: 760, height: 760 },
+    position: { width: 860, height: 860 },
     window: { title: "ParovGrad: NPC", resizable: true },
     form: {
       submitOnChange: true,
@@ -30,6 +52,18 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
   };
 
   _itemCategory = "inventory";
+  /** Last known needle positions, so a re-render can move the needle instead of jumping. */
+  _gaugeReadings = new Map();
+
+  async _preRender(context, options) {
+    await super._preRender(context, options);
+    captureGaugeReadings(this.element, this._gaugeReadings);
+  }
+
+  async _onRender(context, options) {
+    await super._onRender(context, options);
+    animateGaugeNeedles(this.element, this._gaugeReadings);
+  }
 
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
@@ -38,39 +72,34 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
     context.resourcePools = buildResourcePoolViews(this.document.system);
     context.healthInfluenceView = this._buildHealthInfluenceView();
     context.derivedHealthMax = Number(this.document.system.derivedHealthMax) || 0;
-
-    const categories = [
-      { key: "spells", label: "Заклинания", types: ["spell"], empty: "Нет заклинаний" },
-      { key: "abilities", label: "Способности", types: ["skill"], empty: "Нет способностей" },
-      { key: "inventory", label: "Инвентарь", types: ["item", "weapon"], empty: "Инвентарь пуст" }
-    ];
-    const selected = categories.find((category) => category.key === this._itemCategory) ?? categories[2];
-    const allItems = Array.from(this.document.items);
-    context.itemCategories = categories.map((category) => ({
-      key: category.key,
-      label: category.label,
-      selected: category.key === selected.key,
-      count: allItems.filter((item) => category.types.includes(item.type)).length
-    }));
-    context.itemCategoryEmpty = selected.empty;
-    // Keep previously embedded magic trees available for inspection and removal.
-    context.legacyMagicTrees = allItems.filter((item) => item.type === "magicTree")
-      .map((item) => ({ id: item.id, name: item.name, img: item.img }));
-    context.items = allItems
-      .filter((item) => selected.types.includes(item.type))
-      .map((item) => ({
-        id: item.id,
-        name: item.name,
-        type: item.type,
-        img: item.img,
-        isSpell: item.type === "spell",
-        equipped: item.system?.equipped === true
-      }));
+    context.healthGauge = buildHealthGauge(this.document.system);
+    context.sheetCode = buildSheetCode(this.document);
 
     context.effects = Array.from(this.document.effects)
       .sort((left, right) => left.sort - right.sort || left.name.localeCompare(right.name, "ru"))
       .map((effect) => getActorEffectView(effect))
       .concat(getActorPassiveItemEffectViews(this.document));
+
+    const allItems = Array.from(this.document.items);
+    const matchesCategory = (item, category) => Boolean(category.types?.includes(item.type));
+    const ledger = buildLedgerView({
+      categories: NPC_CATEGORIES,
+      tabs: NPC_TABS,
+      selectedKey: this._itemCategory,
+      countFor: (category) => category.key === "effects"
+        ? context.effects.length
+        : allItems.filter((item) => matchesCategory(item, category)).length
+    });
+    const selected = ledger.selected;
+    context.sheetTabs = ledger.sheetTabs;
+    context.isEffectsTab = selected.tab === "effects";
+    context.itemCategoryEmpty = selected.empty ?? "";
+    // Keep previously embedded magic trees available for inspection and removal.
+    context.legacyMagicTrees = allItems.filter((item) => item.type === "magicTree")
+      .map((item) => ({ id: item.id, name: item.name, img: item.img }));
+    context.items = allItems
+      .filter((item) => matchesCategory(item, selected))
+      .map((item, index) => buildItemRow(item, index));
 
     return context;
   }
@@ -83,12 +112,15 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
     super._attachPartListeners(partId, htmlElement, options);
     activateResourcePoolInputValidation(htmlElement, this.document);
 
-    htmlElement.querySelector(".pg-item-category")?.addEventListener("change", (event) => {
-      event.stopPropagation();
-      const category = event.currentTarget.value;
-      if (!["spells", "abilities", "inventory"].includes(category)) return;
-      this._itemCategory = category;
-      this.render({ parts: ["form"] });
+    htmlElement.querySelectorAll("[data-pg-category]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const category = button.dataset.pgCategory;
+        if (!NPC_CATEGORIES.some((entry) => entry.key === category) || category === this._itemCategory) return;
+        this._itemCategory = category;
+        this.render({ parts: ["form"] });
+      });
     });
 
     htmlElement.querySelectorAll(".pg-item-link").forEach((element) => {
@@ -262,6 +294,7 @@ export class ParovGradNpcSheet extends foundry.applications.api.HandlebarsApplic
       return {
         key,
         label,
+        icon: STAT_ICONS[key],
         value: Number(foundry.utils.getProperty(this.document.system, `stats.${key}`)) || 0,
         influenceTotal: total,
         influenceDisplay: total >= 0 ? `+${total}` : String(total),

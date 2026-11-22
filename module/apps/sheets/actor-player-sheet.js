@@ -14,13 +14,38 @@ import { openLearnSkillFromTreeDialog } from "../learn-skill-dialog.js";
 import { openItemPreparationDialog } from "../item-preparation-dialog.js";
 import { getPreparedItemIds } from "../../actors/item-preparation.js";
 import { openActorRestDialog } from "../rest-recovery-dialog.js";
+import {
+  STAT_ICONS,
+  buildHealthGauge,
+  buildItemRow,
+  buildLedgerView,
+  buildSheetCode
+} from "./actor-sheet-view.js";
+import { animateGaugeNeedles, captureGaugeReadings } from "./gauge-motion.js";
+
+/** Lower half of the sheet: one category per tab or known/prepared switch. */
+const PLAYER_CATEGORIES = [
+  { key: "inventory", tab: "inventory", types: ["item", "weapon"], empty: "Снаряжение пусто" },
+  { key: "spells", tab: "spells", label: "Известные", types: ["spell"], empty: "Нет известных заклинаний" },
+  { key: "preparedSpells", tab: "spells", label: "Подготовленные", types: ["spell"], preparedOnly: true, empty: "Нет подготовленных заклинаний" },
+  { key: "abilities", tab: "abilities", label: "Известные", types: ["skill"], empty: "Нет известных навыков" },
+  { key: "preparedSkills", tab: "abilities", label: "Подготовленные", types: ["skill"], preparedOnly: true, empty: "Нет подготовленных навыков" },
+  { key: "effects", tab: "effects" }
+];
+
+const PLAYER_TABS = [
+  { key: "inventory", label: "Снаряжение", icon: "fa-toolbox" },
+  { key: "spells", label: "Заклинания", icon: "fa-book-open" },
+  { key: "abilities", label: "Навыки", icon: "fa-scroll" },
+  { key: "effects", label: "Эффекты", icon: "fa-flask" }
+];
 
 export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.sheets.ActorSheetV2
 ) {
   static DEFAULT_OPTIONS = {
     classes: ["parovgrad", "sheet", "actor", "player"],
-    position: { width: 760, height: 760 },
+    position: { width: 860, height: 860 },
     window: { title: "ParovGrad: Player", resizable: true },
     form: {
       submitOnChange: true,
@@ -36,6 +61,18 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
   };
 
   _itemCategory = "inventory";
+  /** Last known needle positions, so a re-render can move the needle instead of jumping. */
+  _gaugeReadings = new Map();
+
+  async _preRender(context, options) {
+    await super._preRender(context, options);
+    captureGaugeReadings(this.element, this._gaugeReadings);
+  }
+
+  async _onRender(context, options) {
+    await super._onRender(context, options);
+    animateGaugeNeedles(this.element, this._gaugeReadings);
+  }
 
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
@@ -45,53 +82,49 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
     context.resourcePools = buildResourcePoolViews(this.document.system);
     context.healthInfluenceView = this._buildHealthInfluenceView();
     context.derivedHealthMax = Number(this.document.system.derivedHealthMax) || 0;
+    context.healthGauge = buildHealthGauge(this.document.system);
+    context.sheetCode = buildSheetCode(this.document);
 
-    const categories = [
-      { key: "spells", label: "Известные заклинания", types: ["spell"], empty: "Нет известных заклинаний" },
-      { key: "preparedSpells", label: "Подготовленные заклинания", types: ["spell"], preparedOnly: true, empty: "Нет подготовленных заклинаний" },
-      { key: "abilities", label: "Известные навыки", types: ["skill"], empty: "Нет известных навыков" },
-      { key: "preparedSkills", label: "Подготовленные навыки", types: ["skill"], preparedOnly: true, empty: "Нет подготовленных навыков" },
-      { key: "inventory", label: "Инвентарь", types: ["item", "weapon"], empty: "Инвентарь пуст" }
-    ];
-    const selected = categories.find((category) => category.key === this._itemCategory) ?? categories.at(-1);
+    context.effects = Array.from(this.document.effects)
+      .sort((left, right) => left.sort - right.sort || left.name.localeCompare(right.name, "ru"))
+      .map((effect) => getActorEffectView(effect))
+      .concat(getActorPassiveItemEffectViews(this.document));
+
     const allItems = Array.from(this.document.items);
     const preparedIds = new Set([
       ...getPreparedItemIds(this.document, "spell"),
       ...getPreparedItemIds(this.document, "skill")
     ]);
-    const matchesCategory = (item, category) => category.types.includes(item.type)
+    const matchesCategory = (item, category) => Boolean(category.types?.includes(item.type))
       && (!category.preparedOnly || preparedIds.has(item.id));
-    context.itemCategories = categories.map((category) => ({
-      key: category.key,
-      label: category.label,
-      selected: category.key === selected.key,
-      count: allItems.filter((item) => matchesCategory(item, category)).length
-    }));
-    context.itemCategoryEmpty = selected.empty;
-    context.isAbilitiesCategory = selected.types.includes("skill");
-    context.isPreparationCategory = selected.key !== "inventory";
-    context.preparationKnownCount = allItems.filter((item) => selected.types.includes(item.type)).length;
-    context.preparationPreparedCount = allItems.filter((item) => selected.types.includes(item.type) && preparedIds.has(item.id)).length;
+    const ledger = buildLedgerView({
+      categories: PLAYER_CATEGORIES,
+      tabs: PLAYER_TABS,
+      selectedKey: this._itemCategory,
+      countFor: (category) => category.key === "effects"
+        ? context.effects.length
+        : allItems.filter((item) => matchesCategory(item, category)).length
+    });
+    const selected = ledger.selected;
+    context.sheetTabs = ledger.sheetTabs;
+    context.preparationFilters = ledger.preparationFilters;
+    context.isEffectsTab = selected.tab === "effects";
+    context.itemCategoryEmpty = selected.empty ?? "";
+    context.isAbilitiesCategory = selected.tab === "abilities";
+    context.isPreparationCategory = selected.tab === "spells" || selected.tab === "abilities";
+    context.prepareItemType = { spells: "spell", abilities: "skill" }[selected.tab] ?? "";
+    const knownTypes = selected.types ?? [];
+    context.preparationKnownCount = allItems.filter((item) => knownTypes.includes(item.type)).length;
+    context.preparationPreparedCount = allItems.filter((item) => knownTypes.includes(item.type) && preparedIds.has(item.id)).length;
     context.canLearnSkill = this.isEditable;
     // Keep legacy embedded trees accessible for manual export/removal; never silently delete data.
     context.legacyMagicTrees = allItems.filter((item) => item.type === "magicTree")
       .map((item) => ({ id: item.id, name: item.name, img: item.img }));
     context.items = allItems
       .filter((item) => matchesCategory(item, selected))
-      .map((item) => ({
-        id: item.id,
-        name: item.name,
-        type: item.type,
-        img: item.img,
-        isWeapon: item.type === "weapon",
-        equipped: item.system?.equipped === true,
+      .map((item, index) => buildItemRow(item, index, {
         showPreparedBadge: !selected.preparedOnly && preparedIds.has(item.id)
       }));
-
-    context.effects = Array.from(this.document.effects)
-      .sort((left, right) => left.sort - right.sort || left.name.localeCompare(right.name, "ru"))
-      .map((effect) => getActorEffectView(effect))
-      .concat(getActorPassiveItemEffectViews(this.document));
 
     return context;
   }
@@ -117,13 +150,16 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
       await this._editPortrait();
     });
 
-    htmlElement.querySelector(".pg-item-category")?.addEventListener("change", (event) => {
-      // UI-only state: do not submit the category as an Actor field.
-      event.stopPropagation();
-      const category = event.currentTarget.value;
-      if (!["spells", "preparedSpells", "abilities", "preparedSkills", "inventory"].includes(category)) return;
-      this._itemCategory = category;
-      this.render({ parts: ["form"] });
+    htmlElement.querySelectorAll("[data-pg-category]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        // UI-only state: the ledger tab is not an Actor field.
+        event.preventDefault();
+        event.stopPropagation();
+        const category = button.dataset.pgCategory;
+        if (!PLAYER_CATEGORIES.some((entry) => entry.key === category) || category === this._itemCategory) return;
+        this._itemCategory = category;
+        this.render({ parts: ["form"] });
+      });
     });
 
     htmlElement.querySelectorAll(".pg-prepare-items-button").forEach((button) => {
@@ -470,6 +506,7 @@ export class ParovGradPlayerSheet extends foundry.applications.api.HandlebarsApp
       return {
         key,
         label,
+        icon: STAT_ICONS[key],
         value: Number(foundry.utils.getProperty(this.document.system, `stats.${key}`)) || 0,
         influenceTotal: total,
         influenceDisplay: total >= 0 ? `+${total}` : String(total),

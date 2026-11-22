@@ -1,6 +1,6 @@
 import { getItemDamageParts, damagePartOptions, damagePartLabel } from "../../damage/damage-types.js";
 import { attachDamageEditor } from "../../damage/damage-editor.js";
-import { attachItemPortraitListener } from "./item-portrait.js";
+import { attachItemModeToggle, attachItemPortraitListener, buildItemPassport } from "./item-portrait.js";
 import { animationHeaderControl } from "../animation-config.js";
 import { SPELL_TEMPLATE_TYPE_LABELS, getSpellTemplateConfig } from "../../canvas/spell-template.js";
 const STANDARD_EFFECT_DICE = ["", "d2", "d4", "d6", "d8", "d12", "d20", "d100"];
@@ -63,6 +63,7 @@ export class ParovGradSkillSheet extends foundry.applications.api.HandlebarsAppl
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.canEditPortrait = this.isEditable;
+    context.passport = buildItemPassport(this);
     const currentDamageDie = String(this.document.system?.damageDie || "d4").toLowerCase();
     const baseDamageDice = ["d4", "d6", "d8", "d12"];
     const damageDice = baseDamageDice.includes(currentDamageDie)
@@ -146,6 +147,7 @@ export class ParovGradSkillSheet extends foundry.applications.api.HandlebarsAppl
   _attachPartListeners(partId, htmlElement, options) {
     super._attachPartListeners(partId, htmlElement, options);
     attachItemPortraitListener(this, htmlElement);
+    attachItemModeToggle(this, htmlElement);
     if (!this._isEditMode) return;
     attachDamageEditor(this, htmlElement);
 

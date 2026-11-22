@@ -1,0 +1,706 @@
+/*
+ * ParovGrad — листы предметов «Технический паспорт» (v2):
+ * предмет, оружие, навык, заклинание, эффект. Окна древ магии/навыков не затрагиваются.
+ * Общие детали чертежа (рамка .pg-blueprint, штамп .pg-titleblock, рисунки .pg-ornament,
+ * метки .pg-tag/.pg-empty, иконочные кнопки) описаны в dossier.css.
+ *
+ *   1. Лист
+ *   2. Шапка: изображение «на миллиметровке» с размерными линиями, название, печать
+ *   3. Переключатель «надет» и кнопка режима
+ *   4. Разделы документа: нумерованные рубрики, спецификация с отточием, таблица диапазонов
+ *   5. Формы редактирования
+ *   6. Эффекты предмета, конструктор заклинания
+ *   7. Узкое окно
+ */
+
+/* =========================================================================
+   1. Лист
+   ========================================================================= */
+.pg-item-window .window-content:has(> .pg-passport) {
+  padding: 0;
+  overflow: hidden;
+  background: var(--pg-background-paper);
+}
+.pg-item-dossier.pg-passport {
+  container: pg-passport / inline-size;
+  background: var(--pg-background-paper);
+}
+.pg-passport .sheet-body { padding: 14px 16px 16px; }
+/* Ядро Foundry даёт dt/label тень от тёмной темы — на бумаге она не нужна. */
+.pg-passport :is(dt, dd, th, td, label, h1, h2, h3, p, strong, small) { text-shadow: none; }
+.pg-blueprint--passport { padding: 22px 20px 0 40px; }
+.pg-ornament--caliper {
+  -webkit-mask: var(--pg-ornament-caliper) right center / contain no-repeat;
+  mask: var(--pg-ornament-caliper) right center / contain no-repeat;
+}
+.pg-blueprint--passport::before {
+  top: auto;
+  bottom: 60px;
+  right: -90px;
+  width: 230px;
+  height: 230px;
+  opacity: 0.05;
+}
+
+/* =========================================================================
+   2. Шапка
+   ========================================================================= */
+.pg-passport__header {
+  position: relative;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  grid-template-areas:
+    "kicker kicker"
+    "figure title";
+  column-gap: 22px;
+  row-gap: 18px;
+  padding: 14px 0 22px;
+  border-bottom: 3px solid var(--pg-rule-strong);
+  box-shadow: 0 3px 0 var(--pg-paper), 0 4px 0 var(--pg-rule-strong);
+}
+.pg-passport__kicker {
+  grid-area: kicker;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 0;
+  border-top: 1px solid var(--pg-rule-strong);
+  border-bottom: 1px solid var(--pg-rule-strong);
+  font: 500 var(--pg-fs-xs)/1.5 var(--pg-font-headline);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--pg-ink);
+}
+.pg-passport__kicker i { font-size: 12px; color: var(--pg-brass); }
+
+/* Изображение — деталь на миллиметровке, обмеренная размерными линиями. */
+.pg-passport__figure {
+  grid-area: figure;
+  position: relative;
+  align-self: start;
+  margin: 14px 16px 0 0;
+}
+.pg-passport button.pg-item-portrait-edit {
+  position: relative;
+  display: block;
+  width: 134px;
+  height: 134px;
+  min-height: 0;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid var(--pg-rule-strong);
+  border-radius: 0;
+  background:
+    linear-gradient(color-mix(in srgb, var(--pg-rule) 22%, transparent) 1px, transparent 1px) 0 0 / 8px 8px,
+    linear-gradient(90deg, color-mix(in srgb, var(--pg-rule) 22%, transparent) 1px, transparent 1px) 0 0 / 8px 8px,
+    linear-gradient(color-mix(in srgb, var(--pg-rule) 40%, transparent) 1px, transparent 1px) 0 0 / 40px 40px,
+    linear-gradient(90deg, color-mix(in srgb, var(--pg-rule) 40%, transparent) 1px, transparent 1px) 0 0 / 40px 40px,
+    var(--pg-paper-light);
+  box-shadow: 3px 3px 0 color-mix(in srgb, var(--pg-ink) 18%, transparent);
+  overflow: hidden;
+  cursor: pointer;
+}
+.pg-passport button.pg-item-portrait-edit:disabled { opacity: 1; cursor: default; }
+.pg-passport .pg-item-portrait-edit img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border: 0;
+  border-radius: 0;
+  filter: drop-shadow(1px 2px 0 color-mix(in srgb, var(--pg-ink) 25%, transparent));
+}
+/* Размерные линии со стрелками-«чертёжными» засечками. */
+.pg-passport__dim {
+  position: absolute;
+  pointer-events: none;
+  color: var(--pg-ink-strong);
+}
+.pg-passport__dim--h {
+  top: -15px;
+  left: 0;
+  width: 134px;
+  height: 11px;
+  border-left: 1px solid var(--pg-ink-strong);
+  border-right: 1px solid var(--pg-ink-strong);
+  font: italic 10px/11px var(--pg-font-body);
+  text-align: center;
+}
+.pg-passport__dim--h::before {
+  content: "";
+  position: absolute;
+  inset: 0 1px;
+  z-index: -1;
+  background:
+    conic-gradient(from 66.8deg at 0 50%, var(--pg-ink-strong) 0 46.4deg, transparent 0) left center / 8px 6px no-repeat,
+    conic-gradient(from 246.8deg at 100% 50%, var(--pg-ink-strong) 0 46.4deg, transparent 0) right center / 8px 6px no-repeat,
+    linear-gradient(var(--pg-ink-strong), var(--pg-ink-strong)) center / 100% 1px no-repeat;
+}
+.pg-passport__dim--h { isolation: isolate; }
+.pg-passport__dim--h { text-shadow: 0 0 2px var(--pg-paper), 0 0 2px var(--pg-paper), 0 0 3px var(--pg-paper); }
+.pg-passport__dim--v {
+  top: 0;
+  left: 140px;
+  width: 11px;
+  height: 134px;
+  border-top: 1px solid var(--pg-ink-strong);
+  border-bottom: 1px solid var(--pg-ink-strong);
+  background:
+    conic-gradient(from 156.8deg at 50% 0, var(--pg-ink-strong) 0 46.4deg, transparent 0) center top 1px / 6px 8px no-repeat,
+    conic-gradient(from 336.8deg at 50% 100%, var(--pg-ink-strong) 0 46.4deg, transparent 0) center bottom 1px / 6px 8px no-repeat,
+    linear-gradient(var(--pg-ink-strong), var(--pg-ink-strong)) center / 1px 100% no-repeat;
+}
+
+.pg-passport__title {
+  grid-area: title;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding-top: 4px;
+}
+.pg-passport .pg-passport__title h1 {
+  margin: 0;
+  padding: 0 0 8px;
+  border: 0;
+  border-bottom: 1px solid var(--pg-rule-strong);
+  font: 500 clamp(22px, 4.6cqi, 30px)/1.1 var(--pg-font-headline);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+  color: var(--pg-ink-strong);
+}
+.pg-passport__lead {
+  margin: 0;
+  font: italic var(--pg-fs-md)/1.4 var(--pg-font-body);
+  color: var(--pg-ink-muted);
+}
+.pg-passport__lead strong { font-style: normal; color: var(--pg-ink-strong); }
+.pg-passport__lead span + span::before { content: "·"; margin: 0 7px; color: var(--pg-brass); }
+.pg-passport__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: 4px;
+}
+
+/* Резиновая печать на углу изображения. */
+.pg-passport__stamp {
+  position: absolute;
+  left: 67px;
+  bottom: 10px;
+  z-index: 2;
+  translate: -50% 0;
+  white-space: nowrap;
+  padding: 2px 9px;
+  border: 3px double currentColor;
+  border-radius: 3px;
+  font: 700 12px/1.4 var(--pg-font-headline);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--pg-mana) 88%, transparent);
+  background: color-mix(in srgb, var(--pg-paper-light) 72%, transparent);
+  transform: rotate(-9deg);
+  pointer-events: none;
+}
+.pg-passport__stamp.is-draft { color: color-mix(in srgb, var(--pg-danger) 82%, transparent); }
+
+/* =========================================================================
+   3. Переключатель «надет» (рубильник) и кнопка режима
+   ========================================================================= */
+.pg-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.pg-switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.pg-switch__lever {
+  position: relative;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 22px;
+  border: 1px solid var(--pg-brass-dark);
+  border-radius: 11px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 5px, color-mix(in srgb, var(--pg-ink) 14%, transparent) 5px 6px),
+    var(--pg-paper-dark);
+  box-shadow: inset 0 2px 3px rgba(30, 20, 5, 0.4);
+  transition: background-color 0.15s ease;
+}
+.pg-switch__lever::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f3e2b6, var(--pg-brass) 55%, var(--pg-brass-dark));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  transition: transform 0.18s ease;
+}
+.pg-switch input:checked + .pg-switch__lever {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 5px, rgba(0, 0, 0, 0.12) 5px 6px),
+    var(--pg-success);
+}
+.pg-switch input:checked + .pg-switch__lever::after { transform: translateX(22px); }
+.pg-switch input:focus-visible + .pg-switch__lever { outline: 2px solid var(--pg-focus); outline-offset: 2px; }
+.pg-switch input:disabled,
+.pg-switch input:disabled ~ * { cursor: default; }
+.pg-switch input:disabled + .pg-switch__lever { opacity: 0.6; }
+.pg-switch__text { display: flex; flex-direction: column; line-height: 1.2; }
+.pg-switch__text strong {
+  font: 600 var(--pg-fs-sm)/1.3 var(--pg-font-headline);
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+  color: var(--pg-ink-strong);
+}
+.pg-switch__text small { font: italic 11px/1.3 var(--pg-font-body); color: var(--pg-ink-muted); }
+
+.pg-passport button.pg-mode-toggle {
+  width: auto;
+  min-height: 30px;
+  margin-left: auto;
+  padding: 4px 14px;
+  gap: 7px;
+}
+.pg-passport button.pg-mode-toggle[aria-pressed="true"] {
+  background: linear-gradient(180deg, var(--pg-iron-light), var(--pg-iron));
+  border-color: var(--pg-ink-strong);
+  color: var(--pg-paper-light);
+  text-shadow: 0 1px 0 #000;
+  box-shadow: inset 0 0 0 1px var(--pg-brass), inset 0 1px 0 rgba(255, 230, 180, 0.15);
+}
+
+/* =========================================================================
+   4. Разделы документа
+   ========================================================================= */
+.pg-passport__body {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 22px 0 0;
+  counter-reset: pg-doc;
+}
+.pg-doc-section { min-width: 0; }
+/* Нумерованная рубрика + «штанга» с болтами. */
+.pg-passport .pg-doc-heading {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 0 0 9px;
+  border: 0;
+  font: 400 var(--pg-fs-lg)/1.15 var(--pg-font-headline);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pg-ink-strong);
+}
+.pg-passport .pg-doc-heading::before {
+  content: counter(pg-doc);
+  counter-increment: pg-doc;
+  display: grid;
+  place-items: center;
+  flex: 0 0 22px;
+  height: 22px;
+  border: 1px solid var(--pg-rule-strong);
+  border-radius: 50%;
+  background: var(--pg-paper-light);
+  font: 500 12px/1 var(--pg-font-headline);
+  letter-spacing: 0;
+}
+.pg-passport .pg-doc-heading::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 7px;
+  background:
+    radial-gradient(circle at 3.5px 50%, var(--pg-ink-strong) 0 2.6px, transparent 3px),
+    radial-gradient(circle at calc(100% - 3.5px) 50%, var(--pg-ink-strong) 0 2.6px, transparent 3px),
+    linear-gradient(var(--pg-ink-strong), var(--pg-ink-strong)) center / calc(100% - 6px) 2px no-repeat;
+}
+
+/* Спецификация: «Параметр ........ значение». */
+.pg-specs { display: flex; flex-direction: column; margin: 0; }
+.pg-specs__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 2px;
+}
+.pg-specs__row::after {
+  content: "";
+  order: 1;
+  flex: 1 1 24px;
+  min-width: 24px;
+  border-bottom: 1px dotted var(--pg-ink-muted);
+  transform: translateY(-4px);
+}
+.pg-specs__row dt {
+  order: 0;
+  flex: 0 0 auto;
+  font: 500 var(--pg-fs-sm)/1.3 var(--pg-font-headline);
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+  color: var(--pg-ink-muted);
+}
+.pg-specs__row dd {
+  order: 2;
+  flex: 0 1 auto;
+  max-width: 62%;
+  margin: 0;
+  font: 700 15px/1.3 var(--pg-font-body);
+  text-align: right;
+  overflow-wrap: anywhere;
+  color: var(--pg-ink-strong);
+}
+/* Список значений внутри спецификации (влияния, материалы). */
+.pg-chip-list { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.pg-chip-list li {
+  padding: 1px 8px;
+  border: 1px solid var(--pg-rule-strong);
+  background: var(--pg-paper-light);
+  font: 500 var(--pg-fs-sm)/1.5 var(--pg-font-headline);
+  letter-spacing: 0.04em;
+  color: var(--pg-ink-strong);
+}
+
+/* Таблица диапазонов доп. эффекта. */
+.pg-passport table.pg-range-table {
+  width: 100%;
+  margin: 0;
+  border: 1px solid var(--pg-rule-strong);
+  border-collapse: collapse;
+  background: color-mix(in srgb, var(--pg-paper-light) 70%, transparent);
+}
+.pg-passport .pg-range-table thead { background: none; }
+.pg-passport .pg-range-table th {
+  padding: 4px 10px;
+  border-bottom: 2px solid var(--pg-rule-strong);
+  background: var(--pg-ink-strong);
+  font: 500 var(--pg-fs-sm)/1.4 var(--pg-font-headline);
+  letter-spacing: var(--pg-tracking-caps);
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--pg-paper-light);
+}
+.pg-passport .pg-range-table th:first-child,
+.pg-passport .pg-range-table td:first-child {
+  width: 76px;
+  border-right: 1px solid var(--pg-rule-strong);
+  text-align: center;
+}
+.pg-passport .pg-range-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--pg-rule);
+  font: var(--pg-fs-md)/1.4 var(--pg-font-body);
+  color: var(--pg-ink);
+}
+.pg-passport .pg-range-table td:first-child { font: 600 15px/1.2 var(--pg-font-headline); color: var(--pg-ink-strong); }
+.pg-passport .pg-range-table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--pg-paper-shade) 30%, transparent); }
+
+/* Текст описания с буквицей. */
+.pg-prose {
+  font: 14.5px/1.55 var(--pg-font-body);
+  white-space: pre-line;
+  text-align: justify;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+  color: var(--pg-ink);
+}
+.pg-prose::first-letter {
+  float: left;
+  margin: 3px 7px 0 0;
+  font: 400 3.2em/0.8 var(--pg-font-display);
+  color: var(--pg-ink-strong);
+}
+.pg-prose-block + .pg-prose-block { margin-top: 10px; }
+.pg-prose-block h3 {
+  margin: 0 0 3px;
+  border: 0;
+  font: 600 var(--pg-fs-sm)/1.3 var(--pg-font-headline);
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+  color: var(--pg-ink-muted);
+}
+.pg-prose-block p { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+
+/* =========================================================================
+   5. Формы редактирования
+   ========================================================================= */
+.pg-passport .pg-doc-section > .pg-form-field + .pg-form-field,
+.pg-passport .pg-doc-section > .pg-form-grid + .pg-form-field,
+.pg-passport .pg-doc-section > .pg-form-field + .pg-form-grid { margin-top: 12px; }
+.pg-passport .pg-form-field { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.pg-passport .pg-form-grid { gap: 12px 16px; }
+.pg-passport .pg-form-field :is(input:not([type="checkbox"]), select) { min-height: 32px; }
+.pg-passport .pg-form-field textarea { min-height: 64px; line-height: 1.45; }
+.pg-passport .pg-form-hint { margin: 2px 0 0; }
+.pg-visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+/* Добавление диапазона: от | до | эффект | кнопка. */
+.pg-range-composer {
+  display: grid;
+  grid-template-columns: 76px 76px minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 10px;
+  border: 1px dashed var(--pg-rule-strong);
+  background: color-mix(in srgb, var(--pg-paper-light) 60%, transparent);
+}
+.pg-range-composer textarea { min-height: 32px !important; height: 32px; resize: vertical; }
+.pg-passport .pg-range-composer button { width: auto; min-height: 32px; padding: 4px 12px; gap: 6px; white-space: nowrap; }
+.pg-passport .pg-range-list { display: grid; gap: 6px; margin-top: 10px; }
+.pg-passport .pg-range-list .pg-weapon-effect-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 30px;
+  align-items: start;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid var(--pg-rule);
+  border-left: 3px solid var(--pg-brass);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--pg-field) 60%, transparent);
+}
+.pg-passport .pg-weapon-effect-row__range-fields { display: flex; align-items: center; gap: 6px; }
+.pg-passport .pg-weapon-effect-row__range-fields input { width: 60px; min-height: 30px; text-align: center; }
+.pg-passport .pg-weapon-effect-row__text { min-height: 30px; }
+.pg-passport button.pg-icon-button { flex: 0 0 30px; width: 30px; height: 30px; min-height: 0; padding: 0; font-size: 13px; }
+.pg-passport button.pg-icon-button:is(.pg-effect-modifier-delete, .pg-weapon-effect-delete) { color: var(--pg-danger); }
+
+/* Урон: строки формула | тип | ×. */
+.pg-passport .pg-damage-editor .pg-damage-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 32px; gap: 8px; margin: 8px 0 0; }
+.pg-passport .pg-damage-editor .pg-damage-delete { width: 32px; min-height: 32px; padding: 0; color: var(--pg-danger); font-size: 16px; }
+.pg-passport .pg-damage-editor .pg-damage-add { align-self: flex-start; width: auto; margin-top: 10px; padding: 4px 12px; gap: 6px; }
+
+/* Панель шаблона области (навык, заклинание). */
+.pg-passport .pg-spell-template-panel {
+  margin: 0;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--pg-rule-strong);
+  border-top: 3px double var(--pg-rule-strong);
+  background: color-mix(in srgb, var(--pg-paper-light) 60%, transparent);
+}
+.pg-passport .pg-spell-template-panel__header > div > strong {
+  font: 600 var(--pg-fs-sm)/1.3 var(--pg-font-headline);
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+}
+
+/* Строки «показатель + значение» (влияния эффекта, влияния заклинания). */
+.pg-passport .pg-effect-modifier-list { display: grid; gap: 6px; margin-top: 10px; }
+.pg-passport .pg-effect-modifier-row:not(.pg-weapon-effect-row),
+.pg-passport .pg-spell-influence-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 90px auto;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border: 1px solid var(--pg-rule);
+  border-left: 3px solid var(--pg-brass);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--pg-field) 60%, transparent);
+}
+.pg-passport .pg-spell-influence-row { grid-template-columns: minmax(0, 1fr) auto; }
+.pg-passport .pg-damage-modifier-row {
+  padding: 5px 6px;
+  border: 1px solid var(--pg-rule);
+  border-left: 3px solid var(--pg-brass);
+  background: color-mix(in srgb, var(--pg-field) 60%, transparent);
+}
+.pg-passport .pg-damage-modifier-row + .pg-damage-modifier-row { margin-top: 6px; }
+.pg-passport .pg-damage-modifier-row button { color: var(--pg-danger); }
+.pg-passport .pg-effect-modifier-empty {
+  padding: 12px 8px;
+  border: 1px dashed var(--pg-rule);
+  font-style: italic;
+  text-align: center;
+  color: var(--pg-ink-muted);
+}
+/* Механика влияний: вид | влияние | формула | тип урона. */
+.pg-passport .pg-spell-effect-list { gap: 6px; }
+.pg-passport .pg-spell-effect-row {
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  grid-auto-flow: row dense;
+  column-gap: 12px;
+  row-gap: 2px;
+  padding: 6px 10px;
+  border: 1px solid var(--pg-rule);
+  border-left: 3px solid var(--pg-ink-muted);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--pg-field) 70%, transparent);
+}
+.pg-passport .pg-spell-effect-row.is-damage { border-color: var(--pg-rule); border-left-color: var(--pg-danger); background: color-mix(in srgb, var(--pg-field) 70%, transparent); }
+.pg-passport .pg-spell-effect-row.is-healing { border-color: var(--pg-rule); border-left-color: var(--pg-success); background: color-mix(in srgb, var(--pg-field) 70%, transparent); }
+.pg-passport .pg-spell-effect-row strong {
+  font: 600 var(--pg-fs-sm)/1.3 var(--pg-font-headline);
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+  color: var(--pg-ink-strong);
+}
+.pg-passport .pg-spell-effect-row code {
+  grid-column: 3;
+  grid-row: 1;
+  padding: 1px 8px;
+  border: 1px solid var(--pg-rule-strong);
+  border-radius: 0;
+  background: var(--pg-paper-light);
+  font: 600 14px/1.3 var(--pg-font-headline);
+  letter-spacing: 0.04em;
+  color: var(--pg-ink-strong);
+}
+.pg-passport .pg-spell-effect-row > span:nth-of-type(2) {
+  grid-column: 2 / -1;
+  font: italic var(--pg-fs-sm)/1.3 var(--pg-font-body);
+  color: var(--pg-ink-muted);
+}
+
+/* Материальные компоненты — нумерованный перечень. */
+.pg-material-list { margin: 0; padding: 0; list-style: none; counter-reset: pg-material; }
+.pg-material-list li {
+  display: flex;
+  gap: 10px;
+  padding: 5px 2px;
+  border-bottom: 1px solid var(--pg-rule);
+  counter-increment: pg-material;
+}
+.pg-material-list li::before {
+  content: counter(pg-material, decimal-leading-zero);
+  flex: 0 0 auto;
+  font: 500 var(--pg-fs-sm)/1.6 var(--pg-font-headline);
+  color: var(--pg-ink-muted);
+}
+.pg-passport :is(.pg-effect-modifier-add-row, .pg-spell-influence-add-row, .pg-damage-modifier-add-row) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pg-passport :is(.pg-effect-modifier-add-row, .pg-spell-influence-add-row, .pg-damage-modifier-add-row) > :is(input, select) { flex: 1 1 140px; min-width: 0; }
+.pg-passport :is(.pg-effect-modifier-add-row, .pg-spell-influence-add-row, .pg-damage-modifier-add-row) > button { flex: 0 0 auto; width: auto; min-height: 32px; padding: 4px 12px; }
+.pg-passport .pg-effect-modifier-value-input { flex: 0 0 90px !important; }
+
+/* =========================================================================
+   6. Эффекты предмета, конструктор заклинания
+   ========================================================================= */
+.pg-passport .pg-item-effects {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+.pg-passport .pg-item-effect-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--pg-rule-strong);
+  border-top: 3px double var(--pg-rule-strong);
+  background: color-mix(in srgb, var(--pg-paper-light) 65%, transparent);
+}
+.pg-passport .pg-item-effect-group--editable { border-style: dashed; border-top-style: double; }
+.pg-passport .pg-item-effect-group__heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
+.pg-passport .pg-item-effect-group__heading h3 {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font: 600 var(--pg-fs-sm)/1.3 var(--pg-font-headline);
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+  color: var(--pg-ink-strong);
+}
+.pg-passport .pg-item-effect-group__heading button { width: auto; min-height: 26px; padding: 2px 9px; gap: 5px; font-size: 11px; }
+.pg-passport .pg-item-effect-group .pg-empty { padding: 10px 6px; font-size: 13px; }
+.pg-passport .pg-item-effect-drop-hint {
+  margin: 0;
+  padding: 7px;
+  border: 1px dashed var(--pg-rule);
+  font: italic 12px/1.3 var(--pg-font-body);
+  text-align: center;
+  color: var(--pg-ink-muted);
+}
+.pg-passport .pg-item-effect-list { display: grid; gap: 6px; margin: 0; }
+.pg-passport .pg-item-effect-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px;
+  border: 1px solid var(--pg-rule);
+  border-left: 3px solid var(--pg-brass);
+  background: color-mix(in srgb, var(--pg-field) 75%, transparent);
+}
+.pg-passport .pg-item-effect-row__icon { flex: 0 0 32px; width: 32px; height: 32px; border: 1px solid var(--pg-rule); border-radius: 0; object-fit: cover; }
+.pg-passport .pg-item-effect-row__body strong { font: 700 14px/1.25 var(--pg-font-body); color: var(--pg-ink-strong); }
+.pg-passport .pg-item-effect-row__body p { margin: 2px 0 0; font-size: 12.5px; white-space: pre-wrap; }
+.pg-passport .pg-item-effect-row__actions { display: flex; gap: 3px; }
+.pg-passport .pg-item-effect-row__actions button { width: 26px; height: 26px; min-height: 0; padding: 0; font-size: 11px; }
+.pg-passport .pg-item-effect-row__actions .pg-item-effect-delete { color: var(--pg-danger); }
+
+/* Конструктор заклинания — врезка на миллиметровке. */
+.pg-passport .pg-spell-builder-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--pg-rule-strong);
+  border-radius: 0;
+  background:
+    linear-gradient(color-mix(in srgb, var(--pg-mana) 12%, transparent) 1px, transparent 1px) 0 0 / 12px 12px,
+    linear-gradient(90deg, color-mix(in srgb, var(--pg-mana) 12%, transparent) 1px, transparent 1px) 0 0 / 12px 12px,
+    color-mix(in srgb, var(--pg-paper-light) 80%, transparent);
+}
+.pg-passport .pg-spell-builder-callout strong {
+  font: 600 var(--pg-fs-md)/1.3 var(--pg-font-headline);
+  letter-spacing: var(--pg-tracking-caps);
+  text-transform: uppercase;
+}
+.pg-passport .pg-spell-builder-callout span { font: italic var(--pg-fs-sm)/1.4 var(--pg-font-body); color: var(--pg-ink-muted); }
+.pg-passport .pg-spell-builder-callout button { width: auto; min-height: 30px; padding: 4px 14px; gap: 7px; }
+.pg-passport .pg-spell-construction-status { margin: 10px 0 0; border-radius: 0; }
+
+/* =========================================================================
+   7. Узкое окно
+   ========================================================================= */
+@container pg-passport (max-width: 560px) {
+  .pg-passport .sheet-body { padding: 10px; }
+  .pg-blueprint--passport { padding: 20px 12px 0 32px; }
+  .pg-blueprint--passport .pg-blueprint__margin { width: 18px; }
+  .pg-passport__header {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "kicker" "figure" "title";
+  }
+  .pg-passport__figure { justify-self: center; }
+  .pg-range-composer { grid-template-columns: 1fr 1fr; }
+  .pg-range-composer__text { grid-column: 1 / -1; }
+  .pg-passport .pg-range-list .pg-weapon-effect-row { grid-template-columns: minmax(0, 1fr) 30px; }
+  .pg-passport .pg-weapon-effect-row__text { grid-column: 1 / -1; grid-row: 2; }
+  .pg-passport .pg-form-grid--two-columns { grid-template-columns: minmax(0, 1fr); }
+  .pg-titleblock--passport { grid-template-columns: minmax(0, 1fr); margin-right: -12px; }
+  .pg-titleblock--passport .pg-titleblock__art { display: none; }
+}

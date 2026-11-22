@@ -118,12 +118,12 @@
 .application:is(.parovgrad, .ParovGrad) .window-content {
   font-family: var(--pg-font-body);
 }
-:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config) :is(h1, h2, h3, h4) {
+:is(.pg-player-dossier, .pg-character, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config) :is(h1, h2, h3, h4) {
   font-family: var(--pg-font-headline);
   color: var(--pg-ink-strong);
   text-shadow: none;
 }
-:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config) :is(.pg-form-hint, .pg-roll-dialog__hint) {
+:is(.pg-player-dossier, .pg-character, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config) :is(.pg-form-hint, .pg-roll-dialog__hint) {
   font-family: var(--pg-font-body);
   font-style: italic;
   color: var(--pg-ink-muted);
@@ -137,7 +137,7 @@
 }
 
 /* Подписи полей: узкий гротеск капителью, как подзаголовки колонок. */
-:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config)
+:is(.pg-player-dossier, .pg-character, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config)
   :is(.pg-form-field > label, .pg-dossier-field > label, .pg-roll-dialog__field > label, .pg-weapon-stat__label, .pg-pool-inputs label) {
   font-family: var(--pg-font-headline);
   font-weight: 500;
@@ -151,7 +151,7 @@
    3. Элементы управления
    ========================================================================= */
 /* Кнопка — латунная пластина. */
-:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-dialog, .pg-animation-config) button:not(.header-control, .pg-portrait-edit, .pg-item-portrait-edit, .pg-item-icon-button, .pg-item-link, .pg-effect-row__name, .pg-magic-tree-node, .pg-magic-tree-icon-button),
+:is(.pg-player-dossier, .pg-character, .pg-item-dossier, .pg-tree-app, .pg-dialog, .pg-animation-config) button:not(.header-control, .pg-portrait-edit, .pg-item-portrait-edit, .pg-item-icon-button, .pg-item-link, .pg-effect-row__name, .pg-magic-tree-node, .pg-magic-tree-icon-button, .pg-ledger__tab, .pg-spec__item, .pg-portrait-edit),
 :is(.pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config) .form-footer button,
 .pg-chat-card .pg-chat-button {
   /* Размеры кнопок задаёт раскладка (system-styles.css); тема меняет только вид. */
@@ -167,7 +167,7 @@
   text-transform: uppercase;
   text-shadow: 0 1px 0 rgba(255, 245, 220, 0.5);
 }
-:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-dialog, .pg-animation-config) button:not(.header-control, .pg-portrait-edit, .pg-item-portrait-edit, .pg-item-icon-button, .pg-item-link, .pg-effect-row__name, .pg-magic-tree-node, .pg-magic-tree-icon-button):hover:not(:disabled),
+:is(.pg-player-dossier, .pg-character, .pg-item-dossier, .pg-tree-app, .pg-dialog, .pg-animation-config) button:not(.header-control, .pg-portrait-edit, .pg-item-portrait-edit, .pg-item-icon-button, .pg-item-link, .pg-effect-row__name, .pg-magic-tree-node, .pg-magic-tree-icon-button, .pg-ledger__tab, .pg-spec__item, .pg-portrait-edit):hover:not(:disabled),
 :is(.pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config) .form-footer button:hover:not(:disabled),
 .pg-chat-card .pg-chat-button:hover:not(:disabled) {
   background: var(--pg-background-brass-hover);
@@ -175,7 +175,7 @@
   color: var(--pg-ink-strong);
   box-shadow: var(--pg-shadow-plate), 0 0 0 1px var(--pg-brass-light);
 }
-:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-dialog, .pg-animation-config) button:active:not(:disabled),
+:is(.pg-player-dossier, .pg-character, .pg-item-dossier, .pg-tree-app, .pg-dialog, .pg-animation-config) button:active:not(:disabled),
 .pg-chat-card .pg-chat-button:active:not(:disabled) {
   box-shadow: inset 0 2px 3px rgba(60, 40, 10, 0.35);
 }
@@ -199,21 +199,21 @@
 }
 
 /* Опасное действие — киноварь. */
-:is(.pg-player-dossier, .pg-item-dossier) :is(.pg-item-delete, .pg-effect-delete),
+:is(.pg-player-dossier, .pg-character, .pg-item-dossier) :is(.pg-item-delete, .pg-effect-delete),
 .pg-chat-card .pg-chat-button--danger,
 .pg-dialog .form-footer button[data-action="no"] {
   color: var(--pg-danger);
 }
 
 /* Фокус — медный контур. */
-:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-chat-card) :is(button, input, select, textarea):focus-visible {
+:is(.pg-player-dossier, .pg-character, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-chat-card) :is(button, input, select, textarea):focus-visible {
   outline: 2px solid var(--pg-focus);
   outline-offset: 2px;
   box-shadow: none;
 }
 
 /* Поля ввода — «бланк»: светлая бумага, тонкая рамка, без скруглений. */
-:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config)
+:is(.pg-player-dossier, .pg-character, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config)
   :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]), select, textarea) {
   border: 1px solid var(--pg-field-border);
   border-radius: var(--pg-radius);
@@ -222,7 +222,7 @@
   font-family: var(--pg-font-body);
   box-shadow: inset 0 1px 2px rgba(40, 28, 10, 0.12);
 }
-:is(.pg-player-dossier, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config)
+:is(.pg-player-dossier, .pg-character, .pg-item-dossier, .pg-tree-app, .pg-tree-dialog, .pg-effect-window, .pg-dialog, .pg-animation-config)
   :is(input[type="checkbox"], input[type="radio"]) {
   accent-color: var(--pg-brass-dark);
 }

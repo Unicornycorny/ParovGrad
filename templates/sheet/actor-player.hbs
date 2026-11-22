@@ -1,275 +1,303 @@
-<section class="pg-sheet pg-player-dossier">
+<section class="pg-sheet pg-character">
   <div class="sheet-body">
-    <header class="pg-dossier-header">
-      <figure class="pg-dossier-portrait">
-        <button type="button" class="pg-portrait-edit" title="Изменить портрет" aria-label="Изменить портрет персонажа" {{#unless canEditProfile}}disabled{{/unless}}>
-          <img src="{{document.img}}" alt="Портрет: {{document.name}}">
-        </button>
-      </figure>
-      <div class="pg-dossier-identity">
-        <div class="pg-dossier-kicker">Личное дело <span aria-hidden="true">◆</span> Лист персонажа</div>
-        <div class="pg-dossier-brand" aria-hidden="true">Паров-Град</div>
-        <h1 class="pg-character-name">
-          <input type="text" name="name" value="{{document.name}}" aria-label="Имя персонажа" title="Имя персонажа" placeholder="Имя персонажа" {{#unless canEditProfile}}disabled{{/unless}}>
-        </h1>
-      </div>
-      <div class="pg-dossier-seal" aria-hidden="true">ПГ</div>
-    </header>
+    <div class="pg-blueprint">
+      <div class="pg-blueprint__zones" aria-hidden="true"><span>А</span><span>Б</span><span>В</span><span>Г</span><span>Д</span><span>Е</span></div>
+      <div class="pg-blueprint__margin" aria-hidden="true"><span>Инв. № подл.</span><span>Подп. и дата</span><span>Взам. инв. №</span></div>
 
-    <section class="pg-dossier-section pg-dossier-stats">
-      <h2>Характеристики</h2>
-      <div class="pg-dossier-stat-grid">
-
-      {{#each statViews}}
-      <div class="pg-stat-row">
-        <label for="pg-stat-{{this.key}}">{{this.label}}</label>
-        <div class="pg-stat-controls pg-stat-controls--with-influence">
-          <input id="pg-stat-{{this.key}}" type="number" name="system.stats.{{this.key}}" min="1" max="20"
-            value="{{this.value}}">
-          <input type="text" class="pg-stat-influence" value="{{this.influenceDisplay}}" readonly disabled tabindex="-1"
-            title="{{this.influenceTooltip}}" aria-label="Сумма внешних влияний: {{this.influenceDisplay}}">
-          <button type="button" class="pg-stat-roll" data-stat-key="{{this.key}}"
-            aria-label="Проверка характеристики {{this.label}}"
-            title="Проверка характеристики {{this.label}} (итог: {{this.effectiveValue}})">
-            D20
+      <header class="pg-masthead">
+        <figure class="pg-masthead__portrait">
+          <button type="button" class="pg-portrait-edit" title="Изменить портрет" aria-label="Изменить портрет персонажа" {{#unless canEditProfile}}disabled{{/unless}}>
+            <img src="{{document.img}}" alt="Портрет: {{document.name}}">
           </button>
-        </div>
-      </div>
-      {{/each}}
-      </div>
-      <div class="pg-dossier-pool-grid" aria-label="Шкалы ресурсов">
-        {{#each resourcePools}}
-        <div class="pg-pool-card pg-pool-card--{{this.key}}">
-          <div class="pg-pool-heading">
-            <strong>{{this.label}}</strong>
-            <span>{{this.value}} / {{this.max}}</span>
+          <figcaption aria-hidden="true">Фото · {{sheetCode}}</figcaption>
+        </figure>
+
+        <div class="pg-masthead__identity">
+          <div class="pg-masthead__kicker">
+            <span>Личное дело</span>
+            <i class="fa-solid fa-dice-d20" aria-hidden="true"></i>
+            <span>Лист персонажа</span>
           </div>
-          <div class="pg-pool-bar" aria-hidden="true">
-            <div class="pg-pool-bar-fill" style="width: {{this.fillPercent}}%;"></div>
+          <div class="pg-masthead__brand" aria-hidden="true">Паров-Град</div>
+          <div class="pg-masthead__name">
+            <input type="text" name="name" value="{{document.name}}" aria-label="Имя персонажа" title="Имя персонажа" placeholder="Имя персонажа" {{#unless canEditProfile}}disabled{{/unless}}>
           </div>
-          <div class="pg-pool-inputs">
-            <label for="pg-pool-{{this.key}}-value">Сейчас
-              <input id="pg-pool-{{this.key}}-value" type="number" step="1" min="0" max="{{this.max}}"
-                name="system.{{this.key}}.value" value="{{this.value}}" required>
-            </label>
-            <span class="pg-pool-divider" aria-hidden="true">/</span>
-            <label for="pg-pool-{{this.key}}-max">Максимум
-              <input id="pg-pool-{{this.key}}-max" type="number" step="1" min="0"
-                name="system.{{this.key}}.max" value="{{this.max}}" required>
-            </label>
+
+          <div class="pg-register" role="group" aria-label="Учётные данные">
+            <div class="pg-register__cell pg-register__cell--level">
+              <label for="pg-level-{{document.id}}">Уровень</label>
+              <div class="pg-register__level">
+                <input id="pg-level-{{document.id}}" type="number" name="system.level" min="0" value="{{system.level}}">
+                <button type="button" class="pg-level-up-button" title="Повысить уровень" aria-label="Повысить уровень">
+                  <i class="fa-solid fa-angles-up" aria-hidden="true"></i>
+                </button>
+              </div>
+            </div>
+            <div class="pg-register__cell">
+              <label for="pg-life-path-{{document.id}}">Жизн. путь</label>
+              <input id="pg-life-path-{{document.id}}" type="number" name="system.lifePath" min="1" max="5" value="{{system.lifePath}}" title="Жизненный путь">
+            </div>
+            <div class="pg-register__cell">
+              <label for="pg-experience-{{document.id}}">Опыт</label>
+              <input id="pg-experience-{{document.id}}" type="number" name="system.experience" min="0" value="{{system.experience}}">
+            </div>
+            <div class="pg-register__cell">
+              <label for="pg-skill-points-{{document.id}}">Очки навыков</label>
+              <input id="pg-skill-points-{{document.id}}" type="number" name="system.skillPoints" min="0" step="1" value="{{system.skillPoints}}">
+            </div>
+            <div class="pg-register__cell">
+              <label for="pg-inspiration-{{document.id}}">Вдохновение</label>
+              <input id="pg-inspiration-{{document.id}}" type="number" name="system.inspiration" min="0" value="{{system.inspiration}}">
+            </div>
           </div>
         </div>
-        {{/each}}
-      </div>
-    </section>
+      </header>
 
-    <section class="pg-dossier-section pg-dossier-resources">
-      <div class="pg-section-header">
-        <h2>Показатели</h2>
-        <button type="button" class="pg-rest-button" {{#unless canEditProfile}}disabled{{/unless}}>
-          <i class="fa-solid fa-bed" aria-hidden="true"></i> Отдых
-        </button>
-      </div>
-      <div class="pg-dossier-resource-grid">
+      <div class="pg-character__layout">
+        <div class="pg-character__main">
+          <section class="pg-character__condition" aria-labelledby="pg-condition-{{document.id}}">
+            <header class="pg-rubric-bar">
+              <h2 id="pg-condition-{{document.id}}">Состояние</h2>
+              <button type="button" class="pg-rest-button" {{#unless canEditProfile}}disabled{{/unless}}>
+                <i class="fa-solid fa-bed" aria-hidden="true"></i> Отдых
+              </button>
+            </header>
 
-      <div class="pg-dossier-field">
-        <label for="pg-life-path">Жизненный путь</label>
-        <input id="pg-life-path" type="number" name="system.lifePath" min="1" max="5" value="{{system.lifePath}}">
-      </div>
+            <div class="pg-manifold" aria-label="Шкалы ресурсов">
+              <div class="pg-gauge pg-gauge--health" data-gauge-key="health" style="--pg-gauge-fill: {{healthGauge.fillPercent}};">
+                <div class="pg-gauge__dial" role="meter" aria-label="Здоровье" aria-valuemin="0" aria-valuemax="{{healthGauge.max}}" aria-valuenow="{{healthGauge.value}}">
+                  <span class="pg-gauge__arc" aria-hidden="true"></span>
+                  <span class="pg-gauge__ticks" aria-hidden="true"></span>
+                  <span class="pg-gauge__needle" aria-hidden="true"></span>
+                  <span class="pg-gauge__hub" aria-hidden="true"></span>
+                  <span class="pg-gauge__readout" aria-hidden="true"><strong>{{healthGauge.value}}</strong><small>из {{healthGauge.max}}</small></span>
+                </div>
+                <div class="pg-gauge__title">Здоровье</div>
+                <div class="pg-gauge__inputs">
+                  <label for="pg-health-value-{{document.id}}"><span>Сейчас</span>
+                    <input id="pg-health-value-{{document.id}}" type="number" name="system.health.value" min="0" max="{{derivedHealthMax}}" value="{{system.health.value}}">
+                  </label>
+                  <span class="pg-gauge__slash" aria-hidden="true">/</span>
+                  <label><span>Макс.</span>
+                    <input type="number" value="{{derivedHealthMax}}" disabled aria-label="Максимальное здоровье">
+                  </label>
+                </div>
+                <div class="pg-gauge__note" title="{{healthInfluenceView.influenceTooltip}}">
+                  Влияние на макс.: <strong class="pg-stat-influence">{{healthInfluenceView.influenceDisplay}}</strong>
+                </div>
+              </div>
 
-      <div class="pg-dossier-field">
-        <label>Вдохновение</label>
-        <input type="number" name="system.inspiration" min="0" value="{{system.inspiration}}">
-      </div>
+              {{#each resourcePools}}
+              <div class="pg-gauge pg-gauge--{{this.key}} pg-pool-card--{{this.key}}" data-gauge-key="{{this.key}}" style="--pg-gauge-fill: {{this.fillPercent}};">
+                <div class="pg-gauge__dial" role="meter" aria-label="{{this.label}}" aria-valuemin="0" aria-valuemax="{{this.max}}" aria-valuenow="{{this.value}}">
+                  <span class="pg-gauge__arc" aria-hidden="true"></span>
+                  <span class="pg-gauge__ticks" aria-hidden="true"></span>
+                  <span class="pg-gauge__needle" aria-hidden="true"></span>
+                  <span class="pg-gauge__hub" aria-hidden="true"></span>
+                  <span class="pg-gauge__readout" aria-hidden="true"><strong>{{this.value}}</strong><small>из {{this.max}}</small></span>
+                </div>
+                <div class="pg-gauge__title">{{this.label}}</div>
+                <div class="pg-gauge__inputs pg-pool-inputs">
+                  <label for="pg-pool-{{this.key}}-value"><span>Сейчас</span>
+                    <input id="pg-pool-{{this.key}}-value" type="number" step="1" min="0" max="{{this.max}}"
+                      name="system.{{this.key}}.value" value="{{this.value}}" required>
+                  </label>
+                  <span class="pg-pool-divider" aria-hidden="true">/</span>
+                  <label for="pg-pool-{{this.key}}-max"><span>Макс.</span>
+                    <input id="pg-pool-{{this.key}}-max" type="number" step="1" min="0"
+                      name="system.{{this.key}}.max" value="{{this.max}}" required>
+                  </label>
+                </div>
+              </div>
+              {{/each}}
+            </div>
+          </section>
 
-      <div class="pg-dossier-field">
-        <label>Очки навыков</label>
-        <input type="number" name="system.skillPoints" min="0" step="1" value="{{system.skillPoints}}">
-      </div>
+          <section class="pg-ledger" aria-label="Снаряжение, заклинания, навыки и эффекты">
+            <nav class="pg-ledger__tabs" aria-label="Разделы листа">
+              {{#each sheetTabs}}
+              <button type="button" class="pg-ledger__tab {{#if this.active}}is-active{{/if}}" data-pg-category="{{this.key}}" aria-pressed="{{#if this.active}}true{{else}}false{{/if}}">
+                <i class="fa-solid {{this.icon}}" aria-hidden="true"></i>
+                <span class="pg-ledger__label">{{this.label}}</span>
+                <span class="pg-ledger__count">{{this.count}}</span>
+              </button>
+              {{/each}}
+            </nav>
 
-      <div class="pg-dossier-field">
-        <label>Опыт</label>
-        <input type="number" name="system.experience" min="0" value="{{system.experience}}">
-      </div>
+            <div class="pg-ledger__panel">
+              {{#if isEffectsTab}}
+              <div class="pg-ledger__toolbar">
+                <p class="pg-form-hint">Перетащите на лист или токен шаблон эффекта либо активный эффект.</p>
+                <button type="button" class="pg-effect-create"><i class="fa-solid fa-plus" aria-hidden="true"></i> Эффект</button>
+              </div>
 
-      <div class="pg-dossier-field pg-dossier-level">
-        <label>Уровень</label>
-        <div class="pg-level-up-controls">
-          <input type="number" name="system.level" min="0" value="{{system.level}}">
-          <button type="button" class="pg-level-up-button">Повысить уровень</button>
-        </div>
-      </div>
+              {{#if effects.length}}
+              <ul class="pg-effect-list pg-effect-cards">
+                {{#each effects}}
+                <li class="pg-effect-row pg-effect-card {{#if this.disabled}}is-disabled{{/if}}" data-effect-id="{{this.id}}" draggable="{{#if this.isItemPassive}}false{{else}}true{{/if}}">
+                  <img class="pg-effect-row__icon" src="{{this.img}}" alt="">
 
-      <div class="pg-dossier-field pg-dossier-health-influence">
-        <label>Внешнее влияние на макс. здоровье</label>
-        <input type="text" class="pg-stat-influence" value="{{healthInfluenceView.influenceDisplay}}" readonly disabled
-          tabindex="-1" title="{{healthInfluenceView.influenceTooltip}}">
-      </div>
+                  <div class="pg-effect-row__content">
+                    <div class="pg-effect-row__title-line">
+                      {{#if this.isItemPassive}}
+                      <button type="button" class="pg-item-link pg-effect-row__name" data-item-id="{{this.sourceItemId}}">{{this.name}}</button>
+                      <span class="pg-effect-badge">От надетого предмета</span>
+                      {{else}}
+                      <button type="button" class="pg-effect-edit pg-effect-row__name" data-effect-id="{{this.id}}">{{this.name}}</button>
+                      {{/if}}
+                      {{#if this.disabled}}<span class="pg-effect-badge pg-effect-badge--off">Выключен</span>{{/if}}
+                    </div>
 
-      <div class="pg-dossier-field pg-dossier-health">
-        <label>Здоровье</label>
-        <div class="pg-dossier-health-values">
-        <input type="number" name="system.health.value" min="0" max="{{derivedHealthMax}}"
-          value="{{system.health.value}}">
-        /
-        <input type="number" value="{{derivedHealthMax}}" disabled aria-label="Максимальное здоровье">
-        </div>
-      </div>
-      </div>
-    </section>
+                    <div class="pg-effect-row__meta">
+                      <span>Ур. {{this.level}}</span>
+                      <span>{{#if this.effectType}}{{this.effectType}}{{else}}Без типа{{/if}}</span>
+                      <span>Изменений: {{this.changesCount}}</span>
+                    </div>
 
-    <section class="pg-dossier-section pg-dossier-effects">
-      <div class="pg-section-header">
-        <h2>Эффекты</h2>
-        <button type="button" class="pg-effect-create">+ Добавить эффект</button>
-      </div>
+                    {{#if this.impact}}<div class="pg-effect-row__text"><strong>Воздействие:</strong> {{this.impact}}</div>{{/if}}
+                    {{#if this.removal}}<div class="pg-effect-row__text"><strong>Снятие:</strong> {{this.removal}}</div>{{/if}}
+                    {{#if this.modifierSummary}}<div class="pg-effect-row__text"><strong>Влияния:</strong> {{this.modifierSummary}}</div>{{/if}}
+                    {{#if this.sourceLabel}}<div class="pg-effect-row__source">Источник: {{this.sourceLabel}}</div>{{/if}}
+                  </div>
 
-      <p class="pg-form-hint">Можно добавить эффект кнопкой или перетащить на лист/токен шаблон эффекта либо уже
-        существующий активный эффект.</p>
-
-      {{#if effects.length}}
-      <ul class="pg-effect-list">
-        {{#each effects}}
-        <li class="pg-effect-row {{#if this.disabled}}is-disabled{{/if}}" data-effect-id="{{this.id}}" draggable="{{#if this.isItemPassive}}false{{else}}true{{/if}}">
-          <img class="pg-effect-row__icon" src="{{this.img}}" alt="{{this.name}}">
-
-          <div class="pg-effect-row__content">
-            <div class="pg-effect-row__title-line">
-              {{#if this.isItemPassive}}
-              <button type="button" class="pg-item-link pg-effect-row__name" data-item-id="{{this.sourceItemId}}">{{this.name}}</button>
-              <span class="pg-effect-badge">От надетого предмета</span>
+                  <div class="pg-effect-row__actions">
+                    {{#if this.isItemPassive}}
+                    <button type="button" class="pg-item-link pg-icon-button" data-item-id="{{this.sourceItemId}}" title="Открыть предмет" aria-label="Открыть предмет {{this.name}}"><i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i></button>
+                    {{else}}
+                    <button type="button" class="pg-effect-toggle pg-icon-button" data-effect-id="{{this.id}}" title="{{#if this.disabled}}Включить{{else}}Выключить{{/if}}" aria-label="{{#if this.disabled}}Включить{{else}}Выключить{{/if}} эффект {{this.name}}"><i class="fa-solid {{#if this.disabled}}fa-toggle-off{{else}}fa-toggle-on{{/if}}" aria-hidden="true"></i></button>
+                    <button type="button" class="pg-effect-edit pg-icon-button" data-effect-id="{{this.id}}" title="Изменить" aria-label="Изменить эффект {{this.name}}"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+                    <button type="button" class="pg-effect-delete pg-icon-button" data-effect-id="{{this.id}}" title="Удалить" aria-label="Удалить эффект {{this.name}}"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+                    {{/if}}
+                  </div>
+                </li>
+                {{/each}}
+              </ul>
               {{else}}
-              <button type="button" class="pg-effect-edit pg-effect-row__name"
-                data-effect-id="{{this.id}}">{{this.name}}</button>
+              <p class="pg-empty">Нет активных эффектов</p>
               {{/if}}
-              {{#if this.disabled}}<span class="pg-effect-badge">Выключен</span>{{/if}}
+
+              {{else}}
+              <div class="pg-ledger__toolbar">
+                {{#if preparationFilters.length}}
+                <div class="pg-segmented" role="group" aria-label="Что показать">
+                  {{#each preparationFilters}}
+                  <button type="button" class="pg-segmented__option {{#if this.active}}is-active{{/if}}" data-pg-category="{{this.key}}" aria-pressed="{{#if this.active}}true{{else}}false{{/if}}">{{this.label}} <span>{{this.count}}</span></button>
+                  {{/each}}
+                </div>
+                {{else}}
+                <p class="pg-form-hint">Перетащите предмет на лист, чтобы добавить его в снаряжение.</p>
+                {{/if}}
+
+                <div class="pg-ledger__actions">
+                  {{#if prepareItemType}}
+                  <button type="button" class="pg-prepare-items-button" data-item-type="{{prepareItemType}}">
+                    <i class="fa-solid fa-list-check" aria-hidden="true"></i> Подготовить
+                  </button>
+                  {{/if}}
+                  {{#if isAbilitiesCategory}}{{#if canLearnSkill}}
+                  <button type="button" class="pg-learn-skill-button" title="Выучить навык из древа навыков">
+                    <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i> Изучить
+                  </button>
+                  {{/if}}{{/if}}
+                </div>
+              </div>
+
+              {{#if isPreparationCategory}}
+              <p class="pg-preparation-summary">Подготовлено: <strong>{{preparationPreparedCount}}</strong> из {{preparationKnownCount}} известных</p>
+              {{/if}}
+
+              {{#if items.length}}
+              <div class="pg-spec__head" aria-hidden="true"><span>Поз.</span><span>Наименование</span><span>Действия</span></div>
+              <ol class="pg-item-list pg-spec">
+                {{#each items}}
+                <li class="pg-item-row pg-spec__row">
+                  <span class="pg-spec__pos" aria-hidden="true">{{this.position}}</span>
+                  <button type="button" class="pg-item-link pg-spec__item" data-item-id="{{this.id}}" title="Открыть: {{this.name}}">
+                    <img class="pg-spec__icon" src="{{this.img}}" alt="" loading="lazy">
+                    <span class="pg-spec__text">
+                      <span class="pg-spec__name">{{this.name}}</span>
+                      <span class="pg-spec__meta">
+                        <span>{{this.typeLabel}}</span>
+                        {{#if this.equipped}}<span class="pg-tag">Надет</span>{{/if}}
+                        {{#if this.showPreparedBadge}}<span class="pg-tag">Подготовлено</span>{{/if}}
+                      </span>
+                    </span>
+                  </button>
+                  <button type="button" class="pg-item-roll pg-icon-button" data-item-id="{{this.id}}" aria-label="Использовать: {{this.name}}" title="Использовать">
+                    <i class="fa-solid fa-dice-d20" aria-hidden="true"></i>
+                  </button>
+                  <button type="button" class="pg-item-delete pg-icon-button" data-item-id="{{this.id}}" aria-label="Удалить: {{this.name}}" title="Удалить предмет">
+                    <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                  </button>
+                </li>
+                {{/each}}
+              </ol>
+              {{else}}
+              <p class="pg-empty">{{itemCategoryEmpty}}</p>
+              {{/if}}
+              {{/if}}
             </div>
+          </section>
 
-            <div class="pg-effect-row__meta">
-              <span>Уровень: {{this.level}}</span>
-              <span>Тип: {{#if this.effectType}}{{this.effectType}}{{else}}—{{/if}}</span>
-              <span>Изменений: {{this.changesCount}}</span>
-            </div>
-
-            {{#if this.impact}}
-            <div class="pg-effect-row__text"><strong>Воздействие:</strong> {{this.impact}}</div>
-            {{/if}}
-
-            {{#if this.removal}}
-            <div class="pg-effect-row__text"><strong>Снятие:</strong> {{this.removal}}</div>
-            {{/if}}
-
-            {{#if this.modifierSummary}}
-            <div class="pg-effect-row__text"><strong>Влияния:</strong> {{this.modifierSummary}}</div>
-            {{/if}}
-
-            {{#if this.sourceLabel}}
-            <div class="pg-effect-row__source">Источник: {{this.sourceLabel}}</div>
-            {{/if}}
-          </div>
-
-          <div class="pg-effect-row__actions">
-            {{#if this.isItemPassive}}
-            <button type="button" class="pg-item-link" data-item-id="{{this.sourceItemId}}">Открыть предмет</button>
-            {{else}}
-            <button type="button" class="pg-effect-toggle" data-effect-id="{{this.id}}">{{#if
-              this.disabled}}Включить{{else}}Выключить{{/if}}</button>
-            <button type="button" class="pg-effect-edit" data-effect-id="{{this.id}}">Изменить</button>
-            <button type="button" class="pg-effect-delete" data-effect-id="{{this.id}}">Удалить</button>
-            {{/if}}
-          </div>
-        </li>
-        {{/each}}
-      </ul>
-      {{else}}
-      <p>Нет активных эффектов</p>
-      {{/if}}
-    </section>
-
-    <section class="pg-dossier-section pg-dossier-items">
-      <h2>Предметы</h2>
-      <div class="pg-preparation-controls">
-        <button type="button" class="pg-prepare-items-button" data-item-type="spell">
-          <i class="fa-solid fa-book-open" aria-hidden="true"></i> Подготовить заклинания
-        </button>
-        <button type="button" class="pg-prepare-items-button" data-item-type="skill">
-          <i class="fa-solid fa-list-check" aria-hidden="true"></i> Подготовить навыки
-        </button>
-      </div>
-      <div class="pg-item-category-menu">
-        <label>Категория
-          <select class="pg-item-category" aria-label="Категория предметов">
-            {{#each itemCategories}}
-            <option value="{{this.key}}" {{#if this.selected}}selected{{/if}}>{{this.label}} ({{this.count}})</option>
-            {{/each}}
-          </select>
-        </label>
-      </div>
-
-      {{#if isPreparationCategory}}
-      <p class="pg-form-hint pg-preparation-summary">Подготовлено: {{preparationPreparedCount}} из {{preparationKnownCount}} известных.</p>
-      {{/if}}
-
-      {{#if isAbilitiesCategory}}
-        {{#if canLearnSkill}}
-        <div class="pg-learn-skill-controls">
-          <button type="button" class="pg-learn-skill-button" title="Выучить навык из древа навыков">
-            <i class="fa-solid fa-graduation-cap"></i> Изучить навык
-          </button>
+          {{#if legacyMagicTrees.length}}
+          <section class="pg-legacy-trees">
+            <header class="pg-rubric-bar"><h2>Ранее добавленные древа магии</h2></header>
+            <p class="pg-form-hint">Древа магии должны храниться в каталоге предметов мира. Эти старые записи оставлены для сохранения данных: перед удалением экспортируйте их через меню листа.</p>
+            <ol class="pg-item-list pg-spec">
+              {{#each legacyMagicTrees}}
+              <li class="pg-item-row pg-spec__row">
+                <span class="pg-spec__pos" aria-hidden="true">—</span>
+                <button type="button" class="pg-item-link pg-spec__item" data-item-id="{{this.id}}" title="Открыть: {{this.name}}">
+                  <img class="pg-spec__icon" src="{{this.img}}" alt="" loading="lazy">
+                  <span class="pg-spec__text"><span class="pg-spec__name">{{this.name}}</span><span class="pg-spec__meta"><span>Древо магии</span></span></span>
+                </button>
+                <button type="button" class="pg-item-delete pg-legacy-tree-delete pg-icon-button" data-item-id="{{this.id}}" aria-label="Удалить древо магии {{this.name}}" title="Удалить древо магии"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+              </li>
+              {{/each}}
+            </ol>
+          </section>
+          {{/if}}
         </div>
-        {{/if}}
-      {{/if}}
 
-      {{#if items.length}}
-      <ul class="pg-item-list pg-item-grid">
-        {{#each items}}
-        <li class="pg-item-row pg-item-tile">
-          <button type="button" class="pg-item-link pg-item-icon-button" data-item-id="{{this.id}}" title="{{this.name}}" aria-label="Открыть: {{this.name}}">
-            <img class="pg-dossier-item-icon" src="{{this.img}}" alt="" loading="lazy">
-          </button>
+        <aside class="pg-character__aside" aria-labelledby="pg-stats-{{document.id}}">
+          <header class="pg-rubric-bar"><h2 id="pg-stats-{{document.id}}">Характеристики</h2></header>
+          <ol class="pg-stats">
+            {{#each statViews}}
+            <li class="pg-stat pg-stat--{{this.key}}">
+              <span class="pg-stat__icon" aria-hidden="true"><i class="fa-solid {{this.icon}}"></i></span>
+              <label class="pg-stat__label" for="pg-stat-{{this.key}}">{{this.label}}</label>
+              <input class="pg-stat__value" id="pg-stat-{{this.key}}" type="number" name="system.stats.{{this.key}}" min="1" max="20" value="{{this.value}}">
+              <span class="pg-stat__mods pg-stat-influence" title="{{this.influenceTooltip}}" aria-label="Внешние влияния: {{this.influenceDisplay}}, итог {{this.effectiveValue}}">
+                <span class="pg-stat__influence">{{this.influenceDisplay}}</span>
+                <span class="pg-stat__total">= {{this.effectiveValue}}</span>
+              </span>
+              <button type="button" class="pg-stat-roll" data-stat-key="{{this.key}}"
+                aria-label="Проверка характеристики {{this.label}}"
+                title="Проверка характеристики {{this.label}} (итог: {{this.effectiveValue}})">
+                <i class="fa-solid fa-dice-d20" aria-hidden="true"></i>
+              </button>
+            </li>
+            {{/each}}
+          </ol>
+          <div class="pg-ornament pg-ornament--gear-train" aria-hidden="true"></div>
+        </aside>
+      </div>
 
-          <div class="pg-item-tile-name" title="{{this.name}}">{{this.name}}</div>
-          {{#if this.equipped}}<span class="pg-item-prepared-badge">Надет</span>{{/if}}
-          {{#if this.showPreparedBadge}}<span class="pg-item-prepared-badge">Подготовлено</span>{{/if}}
-
-          <button type="button" class="pg-item-roll" data-item-id="{{this.id}}" aria-label="Использовать предмет"
-            title="Использовать предмет">
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <path
-                d="M11.2 2.3a2 2 0 0 1 1.6 0l7 3.1A2 2 0 0 1 21 7.2v9.6a2 2 0 0 1-1.2 1.8l-7 3.1a2 2 0 0 1-1.6 0l-7-3.1A2 2 0 0 1 3 16.8V7.2a2 2 0 0 1 1.2-1.8l7-3.1ZM8.1 5.1l3.9 1.7 3.9-1.7L12 3.4 8.1 5.1Zm9.9 2.3-4 1.8v4.1l4-1.8V7.4Zm-12 0v4.1l4 1.8V9.2l-4-1.8Zm4 13.1v-4.1l-4-1.8v4.1l4 1.8Zm4 0 4-1.8v-4.1l-4 1.8v4.1Z" />
-            </svg>
-          </button>
-
-          <button type="button" class="pg-item-delete" data-item-id="{{this.id}}" aria-label="Удалить предмет"
-            title="Удалить предмет">
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <path
-                d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v8h-2V9zm4 0h2v8h-2V9zM7 9h2v8H7V9zm-1 12h12a2 2 0 0 0 2-2V7H4v12a2 2 0 0 0 2 2z" />
-            </svg>
-          </button>
-        </li>
-        {{/each}}
-      </ul>
-      {{else}}
-      <p>{{itemCategoryEmpty}}</p>
-      {{/if}}
-    </section>
-    {{#if legacyMagicTrees.length}}
-    <section class="pg-dossier-section pg-legacy-trees">
-      <h2>Ранее добавленные древа магии</h2>
-      <p class="pg-form-hint">Древа магии должны храниться в каталоге предметов мира. Эти старые записи оставлены для сохранения данных: перед удалением экспортируйте их через меню листа.</p>
-      <ul class="pg-item-list pg-item-grid">
-        {{#each legacyMagicTrees}}
-        <li class="pg-item-row pg-item-tile">
-          <button type="button" class="pg-item-link pg-item-icon-button" data-item-id="{{this.id}}" title="{{this.name}}" aria-label="Открыть: {{this.name}}">
-            <img class="pg-dossier-item-icon" src="{{this.img}}" alt="" loading="lazy">
-          </button>
-          <button type="button" class="pg-item-delete pg-legacy-tree-delete" data-item-id="{{this.id}}" aria-label="Удалить древо магии">Удалить</button>
-        </li>
-        {{/each}}
-      </ul>
-    </section>
-    {{/if}}
-    <footer class="pg-dossier-footer" aria-hidden="true"><span>Паров-Град</span><span>◆</span><span>Личное дело</span></footer>
+      <footer class="pg-titleblock" aria-hidden="true">
+        <div class="pg-titleblock__art pg-ornament pg-ornament--steam-engine"></div>
+        <div class="pg-titleblock__grid">
+          <span class="pg-titleblock__key">Разраб.</span>
+          <span class="pg-titleblock__value">{{document.name}}</span>
+          <span class="pg-titleblock__title"><b>Паров-Град</b><small>Личное дело</small></span>
+          <span class="pg-titleblock__key">Уровень</span>
+          <span class="pg-titleblock__value">{{system.level}}</span>
+          <span class="pg-titleblock__key">Путь</span>
+          <span class="pg-titleblock__value">{{system.lifePath}}</span>
+          <span class="pg-titleblock__meta"><small>Лит.</small>П</span>
+          <span class="pg-titleblock__meta"><small>Лист</small>1</span>
+          <span class="pg-titleblock__meta"><small>Шифр</small>{{sheetCode}}</span>
+        </div>
+      </footer>
+    </div>
   </div>
 </section>
